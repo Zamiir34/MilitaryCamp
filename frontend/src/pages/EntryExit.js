@@ -173,24 +173,26 @@ export default function EntryExit() {
       {/* Filters */}
       <div className="card" style={{ marginBottom: '1rem', padding: '1rem' }}>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', flex: 1, minWidth: 180 }}>
+          <div style={{ position: 'relative', flex: '1 1 200px' }}>
             <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input className="input" style={{ paddingLeft: 32 }} placeholder="Search records..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-          <select className="input" style={{ width: 130 }} value={filterType} onChange={e => setFilterType(e.target.value)}>
-            <option value="">All Types</option><option>Personnel</option><option>Vehicle</option><option>Visitor</option>
-          </select>
-          <select className="input" style={{ width: 130 }} value={filterAction} onChange={e => setFilterAction(e.target.value)}>
-            <option value="">Entry & Exit</option><option value="Entry">Entry Only</option><option value="Exit">Exit Only</option>
-          </select>
-          <input className="input" style={{ width: 150 }} type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} />
+          <div style={{ display: 'flex', gap: '0.75rem', flex: '1 1 auto', flexWrap: 'wrap' }}>
+            <select className="input" style={{ flex: 1, minWidth: 120 }} value={filterType} onChange={e => setFilterType(e.target.value)}>
+              <option value="">All Types</option><option>Personnel</option><option>Vehicle</option><option>Visitor</option>
+            </select>
+            <select className="input" style={{ flex: 1, minWidth: 120 }} value={filterAction} onChange={e => setFilterAction(e.target.value)}>
+              <option value="">Entry & Exit</option><option value="Entry">Entry Only</option><option value="Exit">Exit Only</option>
+            </select>
+            <input className="input" style={{ flex: 1, minWidth: 120 }} type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} />
+          </div>
         </div>
       </div>
 
       {/* Log table */}
       <div className="card" style={{ padding: 0 }}>
         <div className="table-container">
-          <table>
+          <table style={{ minWidth: 1000 }}>
             <thead>
               <tr>
                 <th>Log ID</th><th>Date / Time</th><th>Action</th><th>Type</th><th>Name</th><th>ID / Plate</th><th>Gate</th><th>Auth</th><th>Officer</th>

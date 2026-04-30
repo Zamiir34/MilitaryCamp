@@ -94,7 +94,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div className="stats-grid">
         <StatCard icon={Users} label="Active Personnel" value={stats?.totalPersonnel} color="var(--accent-green)" />
         <StatCard icon={Car} label="Registered Vehicles" value={stats?.totalVehicles} color="var(--accent-cyan)" />
         <StatCard icon={UserCheck} label="Visitors Today" value={stats?.visitorEntriesToday} color="var(--accent-blue)" />
@@ -104,33 +104,35 @@ export default function Dashboard() {
       </div>
 
       {/* Charts Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
         {/* Area chart */}
-        <div className="card">
+        <div className="card" style={{ flex: '1 1 60%' }}>
           <div style={{ marginBottom: '1rem' }}>
             <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 14, letterSpacing: '0.05em', textTransform: 'uppercase' }}>7-Day Activity</div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Entry and exit movements</div>
           </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={chart || []}>
-              <defs>
-                <linearGradient id="entryGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="exitGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(30,58,34,0.5)" />
-              <XAxis dataKey="date" stroke="var(--text-muted)" tick={{ fontSize: 10, fontFamily: 'Share Tech Mono' }} tickFormatter={v => v.slice(5)} />
-              <YAxis stroke="var(--text-muted)" tick={{ fontSize: 10, fontFamily: 'Share Tech Mono' }} />
-              <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="entries" stroke="#22c55e" strokeWidth={2} fill="url(#entryGrad)" />
-              <Area type="monotone" dataKey="exits" stroke="#06b6d4" strokeWidth={2} fill="url(#exitGrad)" />
-            </AreaChart>
-          </ResponsiveContainer>
+          <div style={{ height: 200, width: '100%' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chart || []}>
+                <defs>
+                  <linearGradient id="entryGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="exitGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(30,58,34,0.5)" />
+                <XAxis dataKey="date" stroke="var(--text-muted)" tick={{ fontSize: 10, fontFamily: 'Share Tech Mono' }} tickFormatter={v => v.slice(5)} />
+                <YAxis stroke="var(--text-muted)" tick={{ fontSize: 10, fontFamily: 'Share Tech Mono' }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Area type="monotone" dataKey="entries" stroke="#22c55e" strokeWidth={2} fill="url(#entryGrad)" />
+                <Area type="monotone" dataKey="exits" stroke="#06b6d4" strokeWidth={2} fill="url(#exitGrad)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Today breakdown */}
@@ -138,52 +140,56 @@ export default function Dashboard() {
           <div style={{ marginBottom: '1rem' }}>
             <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 14, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Today's Breakdown</div>
           </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={[
-              { name: 'Personnel', value: stats?.personnelEntriesToday || 0 },
-              { name: 'Vehicles', value: stats?.vehicleEntriesToday || 0 },
-              { name: 'Visitors', value: stats?.visitorEntriesToday || 0 },
-            ]}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(30,58,34,0.5)" />
-              <XAxis dataKey="name" stroke="var(--text-muted)" tick={{ fontSize: 10, fontFamily: 'Share Tech Mono' }} />
-              <YAxis stroke="var(--text-muted)" tick={{ fontSize: 10, fontFamily: 'Share Tech Mono' }} />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="value" fill="var(--accent-green-dim)" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <div style={{ height: 200, width: '100%' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={[
+                { name: 'Personnel', value: stats?.personnelEntriesToday || 0 },
+                { name: 'Vehicles', value: stats?.vehicleEntriesToday || 0 },
+                { name: 'Visitors', value: stats?.visitorEntriesToday || 0 },
+              ]}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(30,58,34,0.5)" />
+                <XAxis dataKey="name" stroke="var(--text-muted)" tick={{ fontSize: 10, fontFamily: 'Share Tech Mono' }} />
+                <YAxis stroke="var(--text-muted)" tick={{ fontSize: 10, fontFamily: 'Share Tech Mono' }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="value" fill="var(--accent-green-dim)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
       {/* Bottom Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
         {/* Recent Activity */}
         <div className="card">
           <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 14, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '1rem' }}>Recent Activity</div>
-          <div>
-            {(recentActivity || []).map((log, i) => (
-              <div key={log._id || i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < recentActivity.length - 1 ? '1px solid rgba(30,58,34,0.4)' : 'none' }}>
-                <div style={{
-                  width: 28, height: 28, borderRadius: 6, flexShrink: 0,
-                  background: log.action === 'Entry' ? 'rgba(34,197,94,0.15)' : 'rgba(6,182,212,0.15)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                  {log.action === 'Entry'
-                    ? <ArrowUpRight size={14} color="var(--accent-green)" />
-                    : <ArrowDownLeft size={14} color="var(--accent-cyan)" />}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: log.isAuthorized ? 'var(--text-primary)' : 'var(--accent-red)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {log.subjectName}
+          <div className="table-container">
+            <div style={{ minWidth: '100%' }}>
+              {(recentActivity || []).map((log, i) => (
+                <div key={log._id || i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < recentActivity.length - 1 ? '1px solid rgba(30,58,34,0.4)' : 'none' }}>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: 6, flexShrink: 0,
+                    background: log.action === 'Entry' ? 'rgba(34,197,94,0.15)' : 'rgba(6,182,212,0.15)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    {log.action === 'Entry'
+                      ? <ArrowUpRight size={14} color="var(--accent-green)" />
+                      : <ArrowDownLeft size={14} color="var(--accent-cyan)" />}
                   </div>
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Share Tech Mono, monospace' }}>
-                    {log.type} • {log.gate}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: log.isAuthorized ? 'var(--text-primary)' : 'var(--accent-red)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {log.subjectName}
+                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Share Tech Mono, monospace' }}>
+                      {log.type} • {log.gate}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Share Tech Mono, monospace', flexShrink: 0 }}>
+                    {format(new Date(log.createdAt), 'HH:mm')}
                   </div>
                 </div>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Share Tech Mono, monospace', flexShrink: 0 }}>
-                  {format(new Date(log.createdAt), 'HH:mm')}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 

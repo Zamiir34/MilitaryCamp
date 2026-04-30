@@ -33,7 +33,7 @@ export default function MyWork() {
           <p className="page-subtitle">Personal activity summary for {format(new Date(), 'MMMM dd, yyyy')}</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-           <div className="card" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0 }}>
+           <div className="card" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0, background: 'rgba(34,197,94,0.05)' }}>
               <CheckCircle size={16} color="var(--accent-green)" />
               <span style={{ fontSize: 13, fontWeight: 600 }}>{summary.logsCount + summary.personnelCount + summary.vehiclesCount + summary.visitorsCount + summary.resolvedAlertsCount} Total Actions</span>
            </div>
@@ -42,24 +42,40 @@ export default function MyWork() {
 
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(34,197,94,0.1)', color: 'var(--accent-green)' }}><ArrowLeftRight size={20} /></div>
-          <div className="stat-value">{summary.logsCount}</div>
-          <div className="stat-label">Logs Recorded</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div className="stat-label">Logs Recorded</div>
+              <div className="stat-value" style={{ color: 'var(--accent-green)' }}>{summary.logsCount}</div>
+            </div>
+            <div style={{ padding: '8px', borderRadius: 8, background: 'rgba(34,197,94,0.1)', color: 'var(--accent-green)' }}><ArrowLeftRight size={20} /></div>
+          </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(59,130,246,0.1)', color: 'var(--accent-blue)' }}><Users size={20} /></div>
-          <div className="stat-value">{summary.personnelCount}</div>
-          <div className="stat-label">Personnel Registered</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div className="stat-label">Personnel</div>
+              <div className="stat-value" style={{ color: 'var(--accent-blue)' }}>{summary.personnelCount}</div>
+            </div>
+            <div style={{ padding: '8px', borderRadius: 8, background: 'rgba(59,130,246,0.1)', color: 'var(--accent-blue)' }}><Users size={20} /></div>
+          </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(234,179,8,0.1)', color: 'var(--accent-yellow)' }}><Car size={20} /></div>
-          <div className="stat-value">{summary.vehiclesCount}</div>
-          <div className="stat-label">Vehicles Registered</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div className="stat-label">Vehicles</div>
+              <div className="stat-value" style={{ color: 'var(--accent-gold)' }}>{summary.vehiclesCount}</div>
+            </div>
+            <div style={{ padding: '8px', borderRadius: 8, background: 'rgba(245,158,11,0.1)', color: 'var(--accent-gold)' }}><Car size={20} /></div>
+          </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(168,85,247,0.1)', color: 'var(--accent-purple)' }}><UserCheck size={20} /></div>
-          <div className="stat-value">{summary.visitorsCount}</div>
-          <div className="stat-label">Visitors Registered</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div className="stat-label">Visitors</div>
+              <div className="stat-value" style={{ color: '#a855f7' }}>{summary.visitorsCount}</div>
+            </div>
+            <div style={{ padding: '8px', borderRadius: 8, background: 'rgba(168,85,247,0.1)', color: '#a855f7' }}><UserCheck size={20} /></div>
+          </div>
         </div>
       </div>
 
@@ -67,7 +83,7 @@ export default function MyWork() {
         <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: 18, marginBottom: '1rem', textTransform: 'uppercase' }}>Recent Activity</h2>
         <div className="card" style={{ padding: 0 }}>
           <div className="table-container">
-            <table>
+            <table style={{ minWidth: 600 }}>
               <thead>
                 <tr>
                   <th>Time</th><th>Type</th><th>Action / Name</th><th>Details</th>
@@ -81,7 +97,7 @@ export default function MyWork() {
                     {details.logs.map(log => (
                       <tr key={log._id}>
                         <td><span className="mono" style={{ fontSize: 12 }}>{format(new Date(log.createdAt), 'HH:mm')}</span></td>
-                        <td><span className="badge badge-gray">{log.type} Log</span></td>
+                        <td><span className={`badge ${log.action === 'Entry' ? 'badge-green' : 'badge-blue'}`}>{log.type} Log</span></td>
                         <td><span style={{ fontWeight: 600 }}>{log.action}: {log.subjectName}</span></td>
                         <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{log.gate} • {log.purpose || 'No notes'}</td>
                       </tr>

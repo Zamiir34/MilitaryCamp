@@ -256,3 +256,128 @@ tbody tr:hover { background: var(--bg-elevated); }
 
 /* Sidebar active */
 .nav-active { background: rgba(34,197,94,0.1) !important; color: var(--accent-green) !important; border-color: rgba(34,197,94,0.4) !important; }
+
+/* Grid Layouts */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Responsive Utilities */
+.desktop-only { display: flex !important; }
+.mobile-only { display: none !important; }
+
+@media (max-width: 1024px) {
+  .desktop-only { display: none !important; }
+  .mobile-only { display: flex !important; }
+}
+
+@media (max-width: 1024px) {
+  .hide-mobile { display: none !important; }
+  
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .page-header .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .modal {
+    padding: 1.25rem;
+    margin: 0.5rem;
+    width: calc(100% - 1rem);
+    max-height: 90vh;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .stat-card {
+    padding: 1rem;
+  }
+  
+  .stat-card .stat-value {
+    font-size: 24px;
+  }
+
+  .page-title { font-size: 20px; }
+}
+
+@media (max-width: 480px) {
+  .btn span { display: none; }
+  .btn { padding: 8px; }
+  .btn i, .btn svg { margin: 0; }
+}
+
+/* Layout Classes (to replace inline styles) */
+.layout-container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar {
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+  z-index: 50;
+  position: relative;
+}
+
+.sidebar-collapsed { width: 64px; }
+.sidebar-expanded { width: 240px; }
+
+@media (max-width: 1024px) {
+  .sidebar {
+    position: fixed;
+    height: 100vh;
+    left: -280px;
+    width: 260px !important;
+  }
+  .sidebar-mobile-open {
+    left: 0 !important;
+  }
+  .sidebar-collapsed, .sidebar-expanded {
+    width: 260px !important;
+  }
+}
+
+.main-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.top-bar {
+  height: 64px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.content-area {
+  flex: 1;
+  overflow: auto;
+  padding: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .top-bar { padding: 0 1rem; }
+  .content-area { padding: 1rem; }
+}

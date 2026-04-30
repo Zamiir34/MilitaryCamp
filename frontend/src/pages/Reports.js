@@ -68,19 +68,20 @@ export default function Reports() {
       {/* Date picker & controls */}
       <div className="card" style={{ marginBottom: '1rem', padding: '1rem' }}>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 auto' }}>
             <Calendar size={14} color="var(--text-muted)" />
-            <input className="input" type="date" value={reportDate} onChange={e => setReportDate(e.target.value)} style={{ width: 160 }} />
+            <input className="input" type="date" value={reportDate} onChange={e => setReportDate(e.target.value)} style={{ width: '100%', maxWidth: 160 }} />
           </div>
-          <button className="btn btn-ghost" onClick={fetchReport} disabled={loading}>
+          <button className="btn btn-ghost" onClick={fetchReport} disabled={loading} style={{ flex: '0 0 auto' }}>
             <RefreshCw size={14} /> {loading ? 'Loading...' : 'Refresh'}
           </button>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center', width: '100%', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border)' }} className="mobile-only"></div>
+          <div style={{ flex: '1 1 100%', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Export range:</span>
-            <input className="input" type="date" value={exportRange.start} onChange={e => setExportRange(p => ({ ...p, start: e.target.value }))} style={{ width: 145 }} />
+            <input className="input" type="date" value={exportRange.start} onChange={e => setExportRange(p => ({ ...p, start: e.target.value }))} style={{ width: 140, flex: '1 1 auto' }} />
             <span style={{ color: 'var(--text-muted)' }}>—</span>
-            <input className="input" type="date" value={exportRange.end} onChange={e => setExportRange(p => ({ ...p, end: e.target.value }))} style={{ width: 145 }} />
-            <button className="btn btn-gold" onClick={handleExportExcel}>
+            <input className="input" type="date" value={exportRange.end} onChange={e => setExportRange(p => ({ ...p, end: e.target.value }))} style={{ width: 140, flex: '1 1 auto' }} />
+            <button className="btn btn-gold" onClick={handleExportExcel} style={{ width: '100%' }}>
               <FileSpreadsheet size={14} /> Export Excel
             </button>
           </div>
@@ -108,29 +109,33 @@ export default function Reports() {
           </div>
 
           {/* Charts */}
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
             <div className="card">
               <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 14, textTransform: 'uppercase', marginBottom: '1rem' }}>Activity by Hour</div>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={Array.from({ length: 12 }, (_, i) => ({ hour: `${i * 2}:00`, count: Math.floor(Math.random() * 30) + 2 }))}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(30,58,34,0.5)" />
-                  <XAxis dataKey="hour" stroke="var(--text-muted)" tick={{ fontSize: 9, fontFamily: 'Share Tech Mono' }} />
-                  <YAxis stroke="var(--text-muted)" tick={{ fontSize: 9, fontFamily: 'Share Tech Mono' }} />
-                  <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, fontFamily: 'Share Tech Mono', fontSize: 11 }} />
-                  <Bar dataKey="count" fill="var(--accent-green-dim)" radius={[3, 3, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <div style={{ height: 200, width: '100%' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={Array.from({ length: 12 }, (_, i) => ({ hour: `${i * 2}:00`, count: Math.floor(Math.random() * 30) + 2 }))}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(30,58,34,0.5)" />
+                    <XAxis dataKey="hour" stroke="var(--text-muted)" tick={{ fontSize: 9, fontFamily: 'Share Tech Mono' }} />
+                    <YAxis stroke="var(--text-muted)" tick={{ fontSize: 9, fontFamily: 'Share Tech Mono' }} />
+                    <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, fontFamily: 'Share Tech Mono', fontSize: 11 }} />
+                    <Bar dataKey="count" fill="var(--accent-green-dim)" radius={[3, 3, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
             <div className="card">
               <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 14, textTransform: 'uppercase', marginBottom: '1rem' }}>Entry Types</div>
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie data={pieData} cx="50%" cy="50%" outerRadius={75} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} style={{ fontSize: 10 }}>
-                    {pieData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
-                  </Pie>
-                  <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, fontFamily: 'Share Tech Mono', fontSize: 11 }} />
-                </PieChart>
-              </ResponsiveContainer>
+              <div style={{ height: 200, width: '100%' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={pieData} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} style={{ fontSize: 10 }}>
+                      {pieData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
+                    </Pie>
+                    <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, fontFamily: 'Share Tech Mono', fontSize: 11 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
 

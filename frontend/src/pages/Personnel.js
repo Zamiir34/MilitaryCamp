@@ -109,25 +109,27 @@ export default function Personnel() {
       {/* Filters */}
       <div className="card" style={{ marginBottom: '1rem', padding: '1rem' }}>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+          <div style={{ position: 'relative', flex: '1 1 300px' }}>
             <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input className="input" style={{ paddingLeft: 32 }} placeholder="Search by name, ID, unit..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-          <select className="input" style={{ width: 140 }} value={filterType} onChange={e => setFilterType(e.target.value)}>
-            <option value="">All Types</option>
-            <option>Military</option><option>Civilian</option><option>Staff</option>
-          </select>
-          <select className="input" style={{ width: 140 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-            <option value="">All Status</option>
-            <option>Active</option><option>Inactive</option><option>Suspended</option>
-          </select>
+          <div style={{ display: 'flex', gap: '0.75rem', flex: '1 1 auto' }}>
+            <select className="input" style={{ flex: 1, minWidth: 120 }} value={filterType} onChange={e => setFilterType(e.target.value)}>
+              <option value="">All Types</option>
+              <option>Military</option><option>Civilian</option><option>Staff</option>
+            </select>
+            <select className="input" style={{ flex: 1, minWidth: 120 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+              <option value="">All Status</option>
+              <option>Active</option><option>Inactive</option><option>Suspended</option>
+            </select>
+          </div>
         </div>
       </div>
 
       {/* Table */}
       <div className="card" style={{ padding: 0 }}>
         <div className="table-container">
-          <table>
+          <table style={{ minWidth: 800 }}>
             <thead>
               <tr>
                 <th>ID</th><th>Name</th><th>Rank</th><th>Unit</th><th>Type</th><th>Status</th><th>Registered</th><th>Actions</th>
@@ -152,8 +154,8 @@ export default function Personnel() {
                       <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => openQR(p)} title="View QR"><QrCode size={12} /></button>
                       {canAccess(['Administrator', 'SecurityOfficer']) && (
                         <>
-                          <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => openEdit(p)}><Edit2 size={12} /></button>
-                          <button className="btn btn-danger" style={{ padding: '4px 8px' }} onClick={() => handleDelete(p._id)}><Trash2 size={12} /></button>
+                          <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => openEdit(p)} title="Edit"><Edit2 size={12} /></button>
+                          <button className="btn btn-danger" style={{ padding: '4px 8px' }} onClick={() => handleDelete(p._id)} title="Delete"><Trash2 size={12} /></button>
                         </>
                       )}
                     </div>
