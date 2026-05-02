@@ -35,7 +35,7 @@ export default function MyWork() {
         <div style={{ display: 'flex', gap: 8 }}>
            <div className="card" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0, background: 'rgba(34,197,94,0.05)' }}>
               <CheckCircle size={16} color="var(--accent-green)" />
-              <span style={{ fontSize: 13, fontWeight: 600 }}>{summary.logsCount + summary.personnelCount + summary.vehiclesCount + summary.visitorsCount + summary.resolvedAlertsCount} Total Actions</span>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>{(summary.logsCount || 0) + (summary.personnelCount || 0) + (summary.vehiclesCount || 0) + (summary.visitorsCount || 0) + (summary.resolvedAlertsCount || 0)} Total Actions</span>
            </div>
         </div>
       </div>

@@ -12,10 +12,8 @@ const userSchema = new mongoose.Schema({
   badgeNumber: { type: String },
   militaryId: { type: String, unique: true, sparse: true },
   isActive: { type: Boolean, default: true },
-  lastLogin: { type: Date },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-});
+  lastLogin: { type: Date }
+}, { timestamps: true });
 
 userSchema.pre('save', async function () {
   if (!this.isModified('password')) return;

@@ -46,7 +46,9 @@ router.post('/entry', auth, async (req, res) => {
   try {
     const { type, subjectName } = req.body;
     if (!type) return res.status(400).json({ message: 'Type is required (Personnel, Vehicle, or Visitor)' });
-    if (!subjectName || !subjectName.trim()) return res.status(400).json({ message: 'Subject name is required' });
+    if (!subjectName || (typeof subjectName === 'string' && !subjectName.trim())) {
+      return res.status(400).json({ message: 'Subject name is required' });
+    }
 
     const logId = generateLogId();
     const log = new EntryLog({
@@ -89,7 +91,9 @@ router.post('/exit', auth, async (req, res) => {
   try {
     const { type, subjectName } = req.body;
     if (!type) return res.status(400).json({ message: 'Type is required (Personnel, Vehicle, or Visitor)' });
-    if (!subjectName || !subjectName.trim()) return res.status(400).json({ message: 'Subject name is required' });
+    if (!subjectName || (typeof subjectName === 'string' && !subjectName.trim())) {
+      return res.status(400).json({ message: 'Subject name is required' });
+    }
 
     const logId = generateLogId();
     const log = new EntryLog({

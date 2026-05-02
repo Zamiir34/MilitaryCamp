@@ -17,9 +17,7 @@ const visitorSchema = new mongoose.Schema({
   vehiclePlate: { type: String },
   status: { type: String, enum: ['Pending', 'Approved', 'Denied', 'Completed'], default: 'Pending' },
   notes: { type: String },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-});
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+}, { timestamps: true });
 
 module.exports = mongoose.model('Visitor', visitorSchema);

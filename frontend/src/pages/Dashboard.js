@@ -185,7 +185,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Share Tech Mono, monospace', flexShrink: 0 }}>
-                    {format(new Date(log.createdAt), 'HH:mm')}
+                    {log.createdAt ? format(new Date(log.createdAt), 'HH:mm') : '--:--'}
                   </div>
                 </div>
               ))}
@@ -203,7 +203,7 @@ export default function Dashboard() {
             <div key={alert._id || i} style={{ padding: '8px 10px', borderRadius: 6, marginBottom: 6, background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
                 <span style={{ fontSize: 11, fontFamily: 'Rajdhani, sans-serif', fontWeight: 600 }} className={`severity-${alert.severity}`}>{alert.severity}</span>
-                <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Share Tech Mono, monospace' }}>{format(new Date(alert.createdAt), 'HH:mm')}</span>
+                <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Share Tech Mono, monospace' }}>{alert.createdAt ? format(new Date(alert.createdAt), 'HH:mm') : '--:--'}</span>
               </div>
               <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{alert.message}</div>
             </div>

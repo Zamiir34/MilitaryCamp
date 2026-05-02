@@ -16,9 +16,7 @@ const vehicleSchema = new mongoose.Schema({
   qrCode: { type: String },
   status: { type: String, enum: ['Active', 'Blacklisted', 'Inactive'], default: 'Active' },
   notes: { type: String },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-});
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+}, { timestamps: true });
 
 module.exports = mongoose.model('Vehicle', vehicleSchema);

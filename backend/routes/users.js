@@ -45,8 +45,13 @@ router.put('/:id', auth, requireRole('Administrator'), async (req, res) => {
 
     if (password) updateData.password = password;
     updateData.updatedAt = new Date();
-    const user = await User.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
+    
+    const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    Object.assign(user, updateData);
+    await user.save();
+    
     res.json(user);
   } catch (err) {
     res.status(400).json({ message: err.message });

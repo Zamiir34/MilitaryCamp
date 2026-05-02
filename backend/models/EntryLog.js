@@ -18,9 +18,8 @@ const entryLogSchema = new mongoose.Schema({
   isAuthorized: { type: Boolean, default: true },
   notes: { type: String },
   recordedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  recordedByName: { type: String },
-  createdAt: { type: Date, default: Date.now }
-});
+  recordedByName: { type: String }
+}, { timestamps: true });
 
 // Auto-calculate duration when exitTime is set
 entryLogSchema.pre('save', async function () {

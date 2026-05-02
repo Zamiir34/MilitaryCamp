@@ -13,9 +13,7 @@ const personnelSchema = new mongoose.Schema({
   status: { type: String, enum: ['Active', 'Inactive', 'Suspended'], default: 'Active' },
   qrCode: { type: String },
   authorizedZones: [{ type: String }],
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-});
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+}, { timestamps: true });
 
 module.exports = mongoose.model('Personnel', personnelSchema);

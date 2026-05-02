@@ -35,7 +35,10 @@ router.get('/export/excel', auth, async (req, res) => {
     const { startDate, endDate } = req.query;
     const query = {};
     if (startDate && endDate) {
-      query.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      query.createdAt = { $gte: start, $lte: end };
     }
     const logs = await EntryLog.find(query).sort({ createdAt: -1 }).limit(1000);
 

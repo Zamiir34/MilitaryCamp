@@ -142,7 +142,7 @@ export default function Reports() {
           {/* Log table */}
           <div className="card" style={{ padding: 0 }}>
             <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 14, textTransform: 'uppercase' }}>
-              Daily Activity Log — {format(new Date(reportDate), 'PPP')}
+              Daily Activity Log — {reportDate ? format(new Date(reportDate), 'PPP') : 'No Date Selected'}
             </div>
             <div className="table-container">
               <table>
@@ -155,7 +155,7 @@ export default function Reports() {
                   {(report.logs || []).slice(0, 50).map((log, i) => (
                     <tr key={i}>
                       <td><span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{log.logId}</span></td>
-                      <td><span className="mono" style={{ fontSize: 11 }}>{format(new Date(log.createdAt), 'HH:mm:ss')}</span></td>
+                      <td><span className="mono" style={{ fontSize: 11 }}>{log.createdAt ? format(new Date(log.createdAt), 'HH:mm:ss') : 'N/A'}</span></td>
                       <td><span className={`badge ${{ Personnel: 'badge-blue', Vehicle: 'badge-green', Visitor: 'badge-yellow' }[log.type] || 'badge-gray'}`}>{log.type}</span></td>
                       <td style={{ color: log.action === 'Entry' ? 'var(--accent-green)' : 'var(--accent-cyan)', fontWeight: 700, fontSize: 12, fontFamily: 'Rajdhani' }}>{log.action}</td>
                       <td>{log.subjectName}</td>
