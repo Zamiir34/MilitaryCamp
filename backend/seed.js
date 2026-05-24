@@ -89,9 +89,9 @@ async function seed() {
     if (personnelCount === 0) {
       const QRCode = require('qrcode');
       const samplePersonnel = [
-        { personnelId: 'P20240001', fullName: 'SGT. John Mitchell', rank: 'Sergeant', unit: 'Alpha Company', idNumber: 'MIL-001234', type: 'Military', status: 'Active' },
-        { personnelId: 'P20240002', fullName: 'CPL. Sarah Adams', rank: 'Corporal', unit: 'Bravo Company', idNumber: 'MIL-001235', type: 'Military', status: 'Active' },
-        { personnelId: 'P20240003', fullName: 'Dr. Robert Chen', rank: 'Civilian', unit: 'Medical Division', idNumber: 'CIV-003421', type: 'Civilian', status: 'Active' },
+        { personnelId: 'P20260001', fullName: 'SGT. John Mitchell', rank: 'Sergeant', unit: 'Alpha Company', idNumber: 'MIL-001234', type: 'Military', status: 'Active' },
+        { personnelId: 'P20260002', fullName: 'CPL. Sarah Adams', rank: 'Corporal', unit: 'Bravo Company', idNumber: 'MIL-001235', type: 'Military', status: 'Active' },
+        { personnelId: 'P20260003', fullName: 'Dr. Robert Chen', rank: 'Civilian', unit: 'Medical Division', idNumber: 'CIV-003421', type: 'Civilian', status: 'Active' },
       ];
       for (const p of samplePersonnel) {
         const qrCode = await QRCode.toDataURL(JSON.stringify({ type: 'Personnel', id: p.personnelId, name: p.fullName }));
@@ -105,8 +105,8 @@ async function seed() {
     if (vehicleCount === 0) {
       const QRCode = require('qrcode');
       const sampleVehicles = [
-        { vehicleId: 'V20240001', plateNumber: 'MIL-4472', vehicleType: 'Military Vehicle', make: 'Toyota', model: 'Land Cruiser', color: 'Olive Green', ownerName: 'Alpha Company', isAuthorized: true, status: 'Active' },
-        { vehicleId: 'V20240002', plateNumber: 'MIL-3310', vehicleType: 'Truck', make: 'IVECO', model: 'Daily', color: 'Khaki', ownerName: 'Logistics Unit', isAuthorized: true, status: 'Active' },
+        { vehicleId: 'V20260001', plateNumber: 'MIL-4472', vehicleType: 'Military Vehicle', make: 'Toyota', model: 'Land Cruiser', color: 'Olive Green', ownerName: 'Alpha Company', isAuthorized: true, status: 'Active' },
+        { vehicleId: 'V20260002', plateNumber: 'MIL-3310', vehicleType: 'Truck', make: 'IVECO', model: 'Daily', color: 'Khaki', ownerName: 'Logistics Unit', isAuthorized: true, status: 'Active' },
       ];
       for (const v of sampleVehicles) {
         const qrCode = await QRCode.toDataURL(JSON.stringify({ type: 'Vehicle', id: v.vehicleId, plate: v.plateNumber }));

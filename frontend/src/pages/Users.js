@@ -3,6 +3,7 @@ import { Plus, Edit2, Trash2, X, Shield, Eye, EyeOff } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import { useAuth } from '../context/AuthContext';
 
 const DEMO = [
   { _id: '1', username: 'admin', fullName: 'System Administrator', role: 'Administrator', email: 'admin@camp.mil', isActive: true, lastLogin: new Date().toISOString(), createdAt: new Date().toISOString() },
@@ -10,9 +11,15 @@ const DEMO = [
   { _id: '3', username: 'guard_stevens', fullName: 'CPL. Mark Stevens', role: 'Guard', email: 'mstevens@camp.mil', rank: 'Corporal', isActive: true, lastLogin: new Date(Date.now() - 7200000).toISOString(), createdAt: new Date().toISOString() },
 ];
 
-const INITIAL_FORM = { username: '', password: '', fullName: '', email: '', role: 'Guard', phone: '', rank: '', badgeNumber: '', militaryId: '', isActive: true };
+const INITIAL_FORM = { 
+  username: '', password: '', fullName: '', email: '', role: 'Guard', 
+  phone: '', rank: '', badgeNumber: '', militaryId: '', isActive: true,
+  hasVehicle: false,
+  vehicleDetails: { plateNumber: '', model: '', color: '' }
+};
 
 export default function Users() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
@@ -58,12 +65,16 @@ export default function Users() {
   };
 
   const handleDelete = async (id) => {
+    if (id === currentUser?._id) {
+      toast.error('You cannot delete your own account.');
+      return;
+    }
     if (!window.confirm('Delete this user?')) return;
     try {
       await api.delete(`/users/${id}`);
       toast.success('User deleted');
       fetchUsers();
-    } catch { toast.error('Failed'); }
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to delete user'); }
   };
 
   const roleConfig = { Administrator: 'badge-red', SecurityOfficer: 'badge-yellow', Guard: 'badge-green' };
@@ -124,6 +135,12 @@ export default function Users() {
               <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => setModal(null)}><X size={16} /></button>
             </div>
             <form onSubmit={handleSubmit}>
+              <div style={{ background: 'rgba(239, 68, 68, 0.06)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '0.75rem 1rem', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10, marginBottom: '1.25rem' }}>
+                <Shield size={18} color="var(--accent-red)" style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.4 }}>
+                  SECURITY WARNING: Personnel access credentials (including Guard & Officer accounts) must be created and registered strictly by an authorized Camp Administrator.
+                </span>
+              </div>
               <div className="form-grid">
                 <div className="form-group"><label className="form-label">Username *</label><input className="input" value={form.username} onChange={e => setForm(p => ({ ...p, username: e.target.value }))} required /></div>
                 <div className="form-group">
@@ -144,9 +161,41 @@ export default function Users() {
                 </div>
                 <div className="form-group"><label className="form-label">Rank</label><input className="input" value={form.rank} onChange={e => setForm(p => ({ ...p, rank: e.target.value }))} /></div>
                 <div className="form-group"><label className="form-label">Phone</label><input className="input" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} /></div>
-                <div className="form-group"><label className="form-label">Badge Number</label><input className="input" value={form.badgeNumber} onChange={e => setForm(p => ({ ...p, badgeNumber: e.target.value }))} /></div>
-                <div className="form-group"><label className="form-label">Military ID (Personnel ID)</label><input className="input" value={form.militaryId} onChange={e => setForm(p => ({ ...p, militaryId: e.target.value }))} placeholder="PXXXXXXXX" /></div>
-                <div className="form-group" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                 <div className="form-group">
+                   <label className="form-label">Military ID (Personnel ID)</label>
+                   <input className="input" value={form.militaryId} onChange={e => setForm(p => ({ ...p, militaryId: e.target.value }))} placeholder="Leave blank to auto-generate (2026xxxx)" />
+                   <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>* If blank, a new 2026-prefix ID will be assigned.</div>
+                 </div>
+                <div className="form-group" style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 16, fontWeight: 700 }}>
+                    <input 
+                      type="checkbox" 
+                      checked={form.hasVehicle} 
+                      onChange={e => setForm(p => ({ ...p, hasVehicle: e.target.checked }))}
+                      style={{ width: 20, height: 20 }}
+                    />
+                    Do you drive a car?
+                  </label>
+                </div>
+
+                {form.hasVehicle && (
+                  <>
+                    <div className="form-group">
+                      <label className="form-label">Plate Number *</label>
+                      <input className="input" value={form.vehicleDetails?.plateNumber || ''} onChange={e => setForm(p => ({ ...p, vehicleDetails: { ...p.vehicleDetails, plateNumber: e.target.value } }))} required={form.hasVehicle} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Vehicle Model *</label>
+                      <input className="input" value={form.vehicleDetails?.model || ''} onChange={e => setForm(p => ({ ...p, vehicleDetails: { ...p.vehicleDetails, model: e.target.value } }))} required={form.hasVehicle} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Color *</label>
+                      <input className="input" value={form.vehicleDetails?.color || ''} onChange={e => setForm(p => ({ ...p, vehicleDetails: { ...p.vehicleDetails, color: e.target.value } }))} required={form.hasVehicle} />
+                    </div>
+                  </>
+                )}
+
+                <div className="form-group" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8, gridColumn: '1 / -1' }}>
                   <input type="checkbox" id="isActive" checked={form.isActive} onChange={e => setForm(p => ({ ...p, isActive: e.target.checked }))} style={{ width: 16, height: 16 }} />
                   <label htmlFor="isActive" className="form-label" style={{ marginTop: 0 }}>Active Account</label>
                 </div>

@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, CheckCircle, ArrowLeftRight, Users, Car, UserCheck, Bell } from 'lucide-react';
+import { Clock, CheckCircle, ArrowLeftRight, Users, Car, UserCheck, Bell, Shield, ShieldOff } from 'lucide-react';
 import api from '../utils/api';
 import { format } from 'date-fns';
+import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
 export default function MyWork() {
+  const { user, toggleDuty } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -21,6 +24,15 @@ export default function MyWork() {
     fetchData();
   }, []);
 
+  const handleToggleDuty = async () => {
+    const res = await toggleDuty();
+    if (res.success) {
+      toast.success(res.message);
+    } else {
+      toast.error(res.message);
+    }
+  };
+
   if (loading) return <div className="loading">Loading your work for today...</div>;
 
   const { summary, details } = data || { summary: {}, details: { logs: [], personnel: [], vehicles: [], visitors: [], resolvedAlerts: [] } };
@@ -32,10 +44,18 @@ export default function MyWork() {
           <h1 className="page-title">My Work Today</h1>
           <p className="page-subtitle">Personal activity summary for {format(new Date(), 'MMMM dd, yyyy')}</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-           <div className="card" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0, background: 'rgba(34,197,94,0.05)' }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+           <button 
+              onClick={handleToggleDuty}
+              className={`btn ${user?.isOnDuty ? 'btn-danger' : 'btn-primary'}`}
+              style={{ padding: '0.6rem 1.2rem', gap: 10, borderRadius: 30 }}
+           >
+              {user?.isOnDuty ? <ShieldOff size={18} /> : <Shield size={18} />}
+              {user?.isOnDuty ? 'Stop Duty' : 'Start Duty'}
+           </button>
+           <div className="card" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0, background: 'rgba(34,197,94,0.05)', borderRadius: 30 }}>
               <CheckCircle size={16} color="var(--accent-green)" />
-              <span style={{ fontSize: 13, fontWeight: 600 }}>{(summary.logsCount || 0) + (summary.personnelCount || 0) + (summary.vehiclesCount || 0) + (summary.visitorsCount || 0) + (summary.resolvedAlertsCount || 0)} Total Actions</span>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>{(summary.logsCount || 0) + (summary.personnelCount || 0) + (summary.vehiclesCount || 0) + (summary.visitorsCount || 0) + (summary.resolvedAlertsCount || 0)} Actions</span>
            </div>
         </div>
       </div>
@@ -72,9 +92,9 @@ export default function MyWork() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div className="stat-label">Visitors</div>
-              <div className="stat-value" style={{ color: '#a855f7' }}>{summary.visitorsCount}</div>
+              <div className="stat-value" style={{ color: 'var(--accent-purple)' }}>{summary.visitorsCount}</div>
             </div>
-            <div style={{ padding: '8px', borderRadius: 8, background: 'rgba(168,85,247,0.1)', color: '#a855f7' }}><UserCheck size={20} /></div>
+            <div style={{ padding: '8px', borderRadius: 8, background: 'rgba(139,92,246,0.1)', color: 'var(--accent-purple)' }}><UserCheck size={20} /></div>
           </div>
         </div>
       </div>
@@ -96,7 +116,7 @@ export default function MyWork() {
                   <>
                     {details.logs.map(log => (
                       <tr key={log._id}>
-                        <td><span className="mono" style={{ fontSize: 12 }}>{format(new Date(log.createdAt), 'HH:mm')}</span></td>
+                        <td><span className="mono" style={{ fontSize: 12 }}>{log.createdAt ? format(new Date(log.createdAt), 'HH:mm') : '--'}</span></td>
                         <td><span className={`badge ${log.action === 'Entry' ? 'badge-green' : 'badge-blue'}`}>{log.type} Log</span></td>
                         <td><span style={{ fontWeight: 600 }}>{log.action}: {log.subjectName}</span></td>
                         <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{log.gate} • {log.purpose || 'No notes'}</td>
@@ -104,7 +124,7 @@ export default function MyWork() {
                     ))}
                     {details.personnel.map(p => (
                       <tr key={p._id}>
-                        <td><span className="mono" style={{ fontSize: 12 }}>{format(new Date(p.createdAt), 'HH:mm')}</span></td>
+                        <td><span className="mono" style={{ fontSize: 12 }}>{p.createdAt ? format(new Date(p.createdAt), 'HH:mm') : '--'}</span></td>
                         <td><span className="badge badge-blue">New Personnel</span></td>
                         <td><span style={{ fontWeight: 600 }}>{p.fullName}</span></td>
                         <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{p.rank} • {p.unit}</td>
@@ -112,7 +132,7 @@ export default function MyWork() {
                     ))}
                     {details.vehicles.map(v => (
                       <tr key={v._id}>
-                        <td><span className="mono" style={{ fontSize: 12 }}>{format(new Date(v.createdAt), 'HH:mm')}</span></td>
+                        <td><span className="mono" style={{ fontSize: 12 }}>{v.createdAt ? format(new Date(v.createdAt), 'HH:mm') : '--'}</span></td>
                         <td><span className="badge badge-yellow">New Vehicle</span></td>
                         <td><span style={{ fontWeight: 600 }}>{v.plateNumber}</span></td>
                         <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{v.model} • {v.ownerName}</td>
@@ -120,7 +140,7 @@ export default function MyWork() {
                     ))}
                     {details.visitors.map(v => (
                       <tr key={v._id}>
-                        <td><span className="mono" style={{ fontSize: 12 }}>{format(new Date(v.createdAt), 'HH:mm')}</span></td>
+                        <td><span className="mono" style={{ fontSize: 12 }}>{v.createdAt ? format(new Date(v.createdAt), 'HH:mm') : '--'}</span></td>
                         <td><span className="badge badge-purple">New Visitor</span></td>
                         <td><span style={{ fontWeight: 600 }}>{v.fullName}</span></td>
                         <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>Purpose: {v.purposeOfVisit}</td>

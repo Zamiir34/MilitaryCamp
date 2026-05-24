@@ -10,6 +10,11 @@ router.get('/', auth, async (req, res) => {
     if (isResolved !== undefined) query.isResolved = isResolved === 'true';
     if (severity) query.severity = severity;
 
+    // Data Isolation: Non-admins only see records created after they joined the system
+    if (req.user.role !== 'Administrator') {
+      query.createdAt = { $gte: req.user.createdAt };
+    }
+
     const total = await Alert.countDocuments(query);
     const alerts = await Alert.find(query).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(parseInt(limit));
     res.json({ data: alerts, total });

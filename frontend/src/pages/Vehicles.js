@@ -6,13 +6,6 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 
-const DEMO = [
-  { _id: '1', vehicleId: 'V20240001', plateNumber: 'MIL-4472', vehicleType: 'Military Vehicle', make: 'Toyota', model: 'Land Cruiser', color: 'Olive Green', ownerName: 'Alpha Company', isAuthorized: true, status: 'Active', createdAt: new Date().toISOString() },
-  { _id: '2', vehicleId: 'V20240002', plateNumber: 'MIL-3310', vehicleType: 'Truck', make: 'IVECO', model: 'Daily', color: 'Khaki', ownerName: 'Logistics Unit', isAuthorized: true, status: 'Active', createdAt: new Date().toISOString() },
-  { _id: '3', vehicleId: 'V20240003', plateNumber: 'CIV-8841', vehicleType: 'Car', make: 'Toyota', model: 'Camry', color: 'White', ownerName: 'Dr. Robert Chen', isAuthorized: false, status: 'Active', createdAt: new Date().toISOString() },
-  { _id: '4', vehicleId: 'V20240004', plateNumber: 'XYZ-1234', vehicleType: 'Car', make: 'Unknown', model: 'Unknown', color: 'Black', ownerName: 'Unknown', isAuthorized: false, status: 'Blacklisted', createdAt: new Date().toISOString() },
-];
-
 const INITIAL_FORM = { plateNumber: '', vehicleType: 'Car', make: '', model: '', color: '', year: '', ownerName: '', ownerIdNumber: '', ownerPhone: '', registrationNumber: '', isAuthorized: false, status: 'Active', notes: '' };
 
 export default function Vehicles() {
@@ -36,9 +29,10 @@ export default function Vehicles() {
       const { data } = await api.get(`/vehicles?${params}`);
       setVehicles(data.data || data);
       setTotal(data.total || (data.data || data).length);
-    } catch {
-      setVehicles(DEMO);
-      setTotal(DEMO.length);
+    } catch (err) {
+      console.error('Failed to fetch vehicles:', err);
+      setVehicles([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -129,15 +123,13 @@ export default function Vehicles() {
                     }
                   </td>
                   <td><span className={`badge ${statusBadge[v.status] || 'badge-gray'}`}>{v.status}</span></td>
-                  <td><span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{format(new Date(v.createdAt), 'yyyy-MM-dd')}</span></td>
+                  <td><span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{v.createdAt ? format(new Date(v.createdAt), 'yyyy-MM-dd') : '--'}</span></td>
                   <td>
                     <div style={{ display: 'flex', gap: 4 }}>
                       <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => { setSelected(v); setModal('qr'); }}><QrCode size={12} /></button>
+                      <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => openEdit(v)}><Edit2 size={12} /></button>
                       {canAccess(['Administrator', 'SecurityOfficer']) && (
-                        <>
-                          <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => openEdit(v)}><Edit2 size={12} /></button>
-                          <button className="btn btn-danger" style={{ padding: '4px 8px' }} onClick={() => handleDelete(v._id)}><Trash2 size={12} /></button>
-                        </>
+                        <button className="btn btn-danger" style={{ padding: '4px 8px' }} onClick={() => handleDelete(v._id)}><Trash2 size={12} /></button>
                       )}
                     </div>
                   </td>
@@ -225,10 +217,17 @@ export default function Vehicles() {
               <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => setModal(null)}><X size={16} /></button>
             </div>
             <div style={{ background: 'white', padding: '1rem', borderRadius: 8, display: 'inline-block', marginBottom: '1rem' }}>
-              <QRCodeSVG value={JSON.stringify({ type: 'Vehicle', id: selected.vehicleId, plate: selected.plateNumber })} size={180} />
+              <QRCodeSVG value={`${window.location.origin}/verify/${selected.vehicleId}`} size={180} />
             </div>
             <div className="mono" style={{ fontWeight: 700, fontSize: 18, color: 'var(--accent-green)' }}>{selected.plateNumber}</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{selected.make} {selected.model}</div>
+            
+            <div style={{ marginTop: '1.5rem', padding: '0.75rem', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)', textAlign: 'left' }}>
+               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, fontWeight: 700, textTransform: 'uppercase' }}>QR Verification Link</div>
+               <a href={`${window.location.origin}/verify/${selected.vehicleId}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: 'var(--accent-primary)', wordBreak: 'break-all', fontFamily: 'Share Tech Mono, monospace' }}>
+                 {`${window.location.origin}/verify/${selected.vehicleId}`}
+               </a>
+            </div>
           </div>
         </div>
       )}

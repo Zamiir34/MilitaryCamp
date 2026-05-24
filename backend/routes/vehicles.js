@@ -42,6 +42,12 @@ router.get('/:id', auth, async (req, res) => {
 
 router.post('/', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
+    const { plateNumber } = req.body;
+    const existing = await Vehicle.findOne({ plateNumber: { $regex: new RegExp('^' + plateNumber.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') } });
+    if (existing) {
+      return res.status(400).json({ message: `Vehicle already registered with plate: ${plateNumber}` });
+    }
+
     const vehicleId = generateId();
     const qrData = JSON.stringify({ type: 'Vehicle', id: vehicleId, plate: req.body.plateNumber });
     const qrCode = await QRCode.toDataURL(qrData);
@@ -54,9 +60,15 @@ router.post('/', auth, requireRole('Administrator', 'SecurityOfficer'), async (r
   }
 });
 
-router.put('/:id', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
+router.put('/:id', auth, async (req, res) => {
   try {
-    const vehicle = await Vehicle.findByIdAndUpdate(req.params.id, { ...req.body, updatedAt: new Date() }, { new: true });
+    const updateData = { ...req.body, updatedAt: new Date() };
+    if (req.user.role === 'Guard') {
+      const dateStr = new Date().toLocaleString('en-US');
+      const logMsg = `[Guard ${req.user.fullName} updated record on ${dateStr}]`;
+      updateData.notes = updateData.notes ? `${updateData.notes} | ${logMsg}` : logMsg;
+    }
+    const vehicle = await Vehicle.findByIdAndUpdate(req.params.id, updateData, { new: true });
     if (!vehicle) return res.status(404).json({ message: 'Not found' });
     res.json(vehicle);
   } catch (err) {

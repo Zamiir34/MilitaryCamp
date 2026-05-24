@@ -12,7 +12,15 @@ const personnelSchema = new mongoose.Schema({
   type: { type: String, enum: ['Military', 'Civilian', 'Staff'], default: 'Military' },
   status: { type: String, enum: ['Active', 'Inactive', 'Suspended'], default: 'Active' },
   qrCode: { type: String },
+  hasVehicle: { type: Boolean, default: false },
+  vehicleDetails: {
+    plateNumber: { type: String },
+    model: { type: String },
+    color: { type: String }
+  },
   authorizedZones: [{ type: String }],
+  serviceVerified: { type: Boolean, default: false },
+  serviceHistory: { type: String },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 

@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const QRCode = require('qrcode');
 const Visitor = require('../models/Visitor');
+const User = require('../models/User');
+const Message = require('../models/Message');
 const { auth, requireRole } = require('../middleware/auth');
 
 const generateId = () => 'VIS' + Date.now().toString().slice(-7);
@@ -17,6 +19,11 @@ router.get('/', auth, async (req, res) => {
       { organization: { $regex: search, $options: 'i' } }
     ];
     if (status) query.status = status;
+    
+    // Data Isolation: Non-admins only see records created after they joined
+    if (req.user.role !== 'Administrator') {
+      query.createdAt = { $gte: req.user.createdAt };
+    }
 
     const total = await Visitor.countDocuments(query);
     const visitors = await Visitor.find(query)
@@ -47,6 +54,34 @@ router.post('/', auth, async (req, res) => {
     const qrCode = await QRCode.toDataURL(qrData);
     const visitor = new Visitor({ ...req.body, visitorId, qrCode, createdBy: req.user._id });
     await visitor.save();
+
+    // Auto-notify host if they are a system user
+    if (req.body.hostName) {
+      try {
+        const host = await User.findOne({ 
+          fullName: { $regex: new RegExp('^' + req.body.hostName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') }, 
+          isActive: true 
+        });
+        
+        if (host) {
+          const messageContent = `${req.body.fullName}: waxaa kuu yimid qof ku doonaya, ma soodeeyaa mise waan ciliyaa?`;
+          const message = await Message.create({
+            sender: req.user._id,
+            recipient: host._id,
+            content: messageContent
+          });
+
+          const io = req.app.get('io');
+          if (io) {
+            const populated = await message.populate('sender', 'fullName role rank');
+            io.to(host._id.toString()).emit('new_message', populated);
+          }
+        }
+      } catch (notifyErr) {
+        console.warn('Host notification failed:', notifyErr.message);
+      }
+    }
+
     res.status(201).json(visitor);
   } catch (err) {
     console.error('Visitor registration error:', err);
@@ -56,7 +91,13 @@ router.post('/', auth, async (req, res) => {
 
 router.put('/:id', auth, async (req, res) => {
   try {
-    const visitor = await Visitor.findByIdAndUpdate(req.params.id, { ...req.body, updatedAt: new Date() }, { new: true });
+    const updateData = { ...req.body, updatedAt: new Date() };
+    if (req.user.role === 'Guard') {
+      const dateStr = new Date().toLocaleString('en-US');
+      const logMsg = `[Guard ${req.user.fullName} updated record on ${dateStr}]`;
+      updateData.notes = updateData.notes ? `${updateData.notes} | ${logMsg}` : logMsg;
+    }
+    const visitor = await Visitor.findByIdAndUpdate(req.params.id, updateData, { new: true });
     if (!visitor) return res.status(404).json({ message: 'Not found' });
     res.json(visitor);
   } catch (err) {

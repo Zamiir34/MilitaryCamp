@@ -5,18 +5,12 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 
-const DEMO = [
-  { _id: '1', alertId: 'ALT001', type: 'Unauthorized Access', severity: 'Critical', message: 'Unknown individual bypassed Gate 2 sensor', details: 'Security camera captured unidentified individual at 03:45. No valid ID presented.', gate: 'Gate 2', isResolved: false, createdAt: new Date(Date.now() - 1800000).toISOString() },
-  { _id: '2', alertId: 'ALT002', type: 'Blacklisted Vehicle', severity: 'High', message: 'Blacklisted vehicle plate XYZ-1234 detected at Vehicle Gate', details: 'Vehicle attempted entry at 09:15. Plate matches blacklist database.', gate: 'Vehicle Gate', isResolved: false, createdAt: new Date(Date.now() - 3600000).toISOString() },
-  { _id: '3', alertId: 'ALT003', type: 'Expired Permit', severity: 'Medium', message: 'Visitor permit expired: James Thompson (VIS240001)', details: 'Visitor permit expired 2 hours ago. Visitor still present in camp.', gate: 'Main Gate', isResolved: false, createdAt: new Date(Date.now() - 7200000).toISOString() },
-  { _id: '4', alertId: 'ALT004', type: 'System Alert', severity: 'Low', message: 'Gate 3 sensor offline - maintenance required', details: 'Gate 3 proximity sensor not responding. Physical inspection required.', gate: 'Gate 3', isResolved: true, createdAt: new Date(Date.now() - 86400000).toISOString() },
-];
-
 const severityConfig = {
-  Critical: { color: '#ef4444', bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.3)', icon: '🔴' },
+  Critical: { color: 'var(--accent-red)', bg: 'rgba(244,63,94,0.1)', border: 'rgba(244,63,94,0.3)', icon: '🔴' },
   High: { color: '#f97316', bg: 'rgba(249,115,22,0.1)', border: 'rgba(249,115,22,0.3)', icon: '🟠' },
-  Medium: { color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.3)', icon: '🟡' },
-  Low: { color: '#3b82f6', bg: 'rgba(59,130,246,0.1)', border: 'rgba(59,130,246,0.3)', icon: '🔵' },
+  Medium: { color: 'var(--accent-gold)', bg: 'rgba(251,191,36,0.1)', border: 'rgba(251,191,36,0.3)', icon: '🟡' },
+  Low: { color: 'var(--accent-blue)', bg: 'rgba(59,130,246,0.1)', border: 'rgba(59,130,246,0.3)', icon: '🔵' },
+  Info: { color: 'var(--accent-cyan)', bg: 'rgba(6,182,212,0.1)', border: 'rgba(6,182,212,0.3)', icon: 'ℹ️' },
 };
 
 export default function Alerts() {
@@ -39,9 +33,10 @@ export default function Alerts() {
       const { data } = await api.get(`/alerts?${params}`);
       setAlerts(data.data || data);
       setTotal(data.total || (data.data || data).length);
-    } catch {
-      setAlerts(DEMO.filter(a => filterResolved === '' || String(a.isResolved) === filterResolved));
-      setTotal(DEMO.length);
+    } catch (err) {
+      console.error('Failed to fetch alerts:', err);
+      setAlerts([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -52,12 +47,12 @@ export default function Alerts() {
   const handleResolve = async (id) => {
     try {
       await api.put(`/alerts/${id}/resolve`);
-      toast.success('Alert resolved');
+      toast.success('Notification resolved');
       fetchAlerts();
     } catch {
       // Demo mode: toggle locally
       setAlerts(prev => prev.map(a => a._id === id ? { ...a, isResolved: true } : a));
-      toast.success('Alert resolved');
+      toast.success('Notification resolved');
     }
   };
 
@@ -66,7 +61,7 @@ export default function Alerts() {
     setSubmitting(true);
     try {
       await api.post('/alerts', form);
-      toast.success('Alert created');
+      toast.success('Notification created');
       setModal(null);
       fetchAlerts();
     } catch {
@@ -82,11 +77,11 @@ export default function Alerts() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Security Alerts</h1>
-          <p className="page-subtitle">{unresolved} unresolved alerts</p>
+          <h1 className="page-title">Notifications</h1>
+          <p className="page-subtitle">{unresolved} pending updates</p>
         </div>
-        <button className="btn btn-danger" onClick={() => setModal('create')}>
-          <Bell size={14} /> Create Alert
+        <button className="btn btn-primary" onClick={() => setModal('create')}>
+          <Bell size={14} /> New Notification
         </button>
       </div>
 
@@ -95,7 +90,7 @@ export default function Alerts() {
         <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: 10 }}>
           <AlertTriangle size={16} color="var(--accent-red)" />
           <span style={{ fontSize: 13, color: 'var(--accent-red)', fontFamily: 'Rajdhani, sans-serif', fontWeight: 600 }}>
-            {unresolved} ACTIVE ALERT{unresolved > 1 ? 'S' : ''} REQUIRING ATTENTION
+            {unresolved} ACTIVE NOTIFICATION{unresolved > 1 ? 'S' : ''} REQUIRING ATTENTION
           </span>
         </div>
       )}
@@ -104,13 +99,13 @@ export default function Alerts() {
       <div className="card" style={{ marginBottom: '1rem', padding: '1rem' }}>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           <select className="input" style={{ width: 160 }} value={filterResolved} onChange={e => setFilterResolved(e.target.value)}>
-            <option value="false">Active Alerts</option>
-            <option value="true">Resolved Alerts</option>
-            <option value="">All Alerts</option>
+            <option value="false">Active</option>
+            <option value="true">Resolved</option>
+            <option value="">All</option>
           </select>
           <select className="input" style={{ width: 140 }} value={filterSeverity} onChange={e => setFilterSeverity(e.target.value)}>
             <option value="">All Severities</option>
-            <option>Critical</option><option>High</option><option>Medium</option><option>Low</option>
+            <option>Critical</option><option>High</option><option>Medium</option><option>Low</option><option>Info</option>
           </select>
         </div>
       </div>
@@ -123,7 +118,7 @@ export default function Alerts() {
           <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>
             <Shield size={32} color="var(--accent-green)" style={{ margin: '0 auto 0.5rem' }} />
             <div style={{ color: 'var(--accent-green)', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700 }}>All Clear</div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>No active alerts</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>No active notifications</div>
           </div>
         ) : alerts.map(alert => {
           const cfg = severityConfig[alert.severity] || severityConfig.Low;
@@ -147,7 +142,7 @@ export default function Alerts() {
                   <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>{alert.message}</div>
                   {alert.details && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{alert.details}</div>}
                   <div className="mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 6 }}>
-                    {alert.alertId} • {format(new Date(alert.createdAt), 'yyyy-MM-dd HH:mm:ss')}
+                    {alert.alertId} • {alert.createdAt ? format(new Date(alert.createdAt), 'yyyy-MM-dd HH:mm:ss') : '--'}
                   </div>
                 </div>
                 {!alert.isResolved && canAccess(['Administrator', 'SecurityOfficer']) && (
@@ -166,20 +161,26 @@ export default function Alerts() {
         <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: 500 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 18, textTransform: 'uppercase' }}>Create Alert</h2>
+              <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 18, textTransform: 'uppercase' }}>New Notification</h2>
               <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => setModal(null)}><X size={16} /></button>
             </div>
             <form onSubmit={handleCreate}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div className="form-group"><label className="form-label">Alert Type</label>
-                  <select className="input" value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))}>
-                    <option>Unauthorized Access</option><option>Blacklisted Vehicle</option><option>Expired Permit</option><option>Suspicious Activity</option><option>System Alert</option>
+                <div className="form-group"><label className="form-label">Type</label>
+                   <select className="input" value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))}>
+                    <option>Unauthorized Access</option>
+                    <option>Blacklisted Vehicle</option>
+                    <option>Expired Permit</option>
+                    <option>Suspicious Activity</option>
+                    <option>Personnel Exit</option>
+                    <option>Notification</option>
+                    <option>System Alert</option>
                   </select>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div className="form-group"><label className="form-label">Severity</label>
                     <select className="input" value={form.severity} onChange={e => setForm(p => ({ ...p, severity: e.target.value }))}>
-                      <option>Critical</option><option>High</option><option>Medium</option><option>Low</option>
+                      <option>Critical</option><option>High</option><option>Medium</option><option>Low</option><option>Info</option>
                     </select>
                   </div>
                   <div className="form-group"><label className="form-label">Gate</label>
@@ -193,7 +194,7 @@ export default function Alerts() {
               </div>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: '1.5rem' }}>
                 <button type="button" className="btn btn-ghost" onClick={() => setModal(null)}>Cancel</button>
-                <button type="submit" className="btn btn-danger" disabled={submitting}>{submitting ? 'Creating...' : 'Create Alert'}</button>
+                <button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? 'Creating...' : 'Create'}</button>
               </div>
             </form>
           </div>

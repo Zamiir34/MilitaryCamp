@@ -37,8 +37,16 @@ router.get('/me', auth, async (req, res) => {
 });
 
 // Logout (client-side handles token removal, but we track it)
-router.post('/logout', auth, async (req, res) => {
-  res.json({ message: 'Logged out successfully' });
+// Toggle duty status
+router.put('/duty', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    user.isOnDuty = !user.isOnDuty;
+    await user.save();
+    res.json({ isOnDuty: user.isOnDuty, message: `Duty status: ${user.isOnDuty ? 'ON' : 'OFF'}` });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 module.exports = router;

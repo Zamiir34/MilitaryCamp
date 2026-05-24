@@ -11,7 +11,14 @@ const userSchema = new mongoose.Schema({
   rank: { type: String },
   badgeNumber: { type: String },
   militaryId: { type: String, unique: true, sparse: true },
+  hasVehicle: { type: Boolean, default: false },
+  vehicleDetails: {
+    plateNumber: { type: String },
+    model: { type: String },
+    color: { type: String }
+  },
   isActive: { type: Boolean, default: true },
+  isOnDuty: { type: Boolean, default: false },
   lastLogin: { type: Date }
 }, { timestamps: true });
 

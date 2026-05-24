@@ -3,17 +3,10 @@ import { FileSpreadsheet, FileDown, Calendar, BarChart3, RefreshCw } from 'lucid
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
+import { formatDate, formatHumanDate, formatTime } from '../utils/dateUtils';
 import { format } from 'date-fns';
 
-const DEMO_REPORT = {
-  summary: { total: 247, entries: 156, exits: 134, personnel: 98, vehicles: 42, visitors: 16, unauthorized: 3 },
-  logs: [
-    { logId: 'LOG001', type: 'Personnel', action: 'Entry', subjectName: 'SGT. John Mitchell', gate: 'Main Gate', createdAt: new Date().toISOString(), isAuthorized: true },
-    { logId: 'LOG002', type: 'Vehicle', action: 'Entry', subjectName: 'MIL-4472', gate: 'Vehicle Gate', createdAt: new Date(Date.now() - 600000).toISOString(), isAuthorized: true },
-  ]
-};
-
-const COLORS = ['#22c55e', '#06b6d4', '#f59e0b'];
+const COLORS = ['#00f0ff', '#caff33', '#8b5cf6', '#fbbf24', '#f43f5e'];
 
 export default function Reports() {
   const [reportDate, setReportDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -26,8 +19,13 @@ export default function Reports() {
     try {
       const { data } = await api.get(`/reports/daily?date=${reportDate}`);
       setReport(data);
-    } catch {
-      setReport({ ...DEMO_REPORT, date: reportDate });
+    } catch (err) {
+      console.error('Failed to fetch report:', err);
+      setReport({
+        summary: { total: 0, entries: 0, exits: 0, personnel: 0, vehicles: 0, visitors: 0, unauthorized: 0 },
+        logs: [],
+        activityByHour: [] // Ensure this exists for the chart
+      });
     } finally {
       setLoading(false);
     }
@@ -98,7 +96,7 @@ export default function Reports() {
               { label: 'Exits', value: s?.exits, color: 'var(--accent-cyan)' },
               { label: 'Personnel', value: s?.personnel, color: 'var(--accent-blue)' },
               { label: 'Vehicles', value: s?.vehicles, color: 'var(--accent-gold)' },
-              { label: 'Visitors', value: s?.visitors, color: '#a78bfa' },
+              { label: 'Visitors', value: s?.visitors, color: 'var(--accent-purple)' },
               { label: 'Unauthorized', value: s?.unauthorized, color: 'var(--accent-red)' },
             ].map(item => (
               <div key={item.label} className="stat-card" style={{ borderLeft: `3px solid ${item.color}`, padding: '1rem' }}>
@@ -114,12 +112,12 @@ export default function Reports() {
               <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 14, textTransform: 'uppercase', marginBottom: '1rem' }}>Activity by Hour</div>
               <div style={{ height: 200, width: '100%' }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={Array.from({ length: 12 }, (_, i) => ({ hour: `${i * 2}:00`, count: Math.floor(Math.random() * 30) + 2 }))}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(30,58,34,0.5)" />
+                  <BarChart data={report.activityByHour || []}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(56, 189, 248, 0.1)" />
                     <XAxis dataKey="hour" stroke="var(--text-muted)" tick={{ fontSize: 9, fontFamily: 'Share Tech Mono' }} />
                     <YAxis stroke="var(--text-muted)" tick={{ fontSize: 9, fontFamily: 'Share Tech Mono' }} />
                     <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, fontFamily: 'Share Tech Mono', fontSize: 11 }} />
-                    <Bar dataKey="count" fill="var(--accent-green-dim)" radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="count" fill="var(--accent-primary)" radius={[3, 3, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -142,7 +140,7 @@ export default function Reports() {
           {/* Log table */}
           <div className="card" style={{ padding: 0 }}>
             <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 14, textTransform: 'uppercase' }}>
-              Daily Activity Log — {reportDate ? format(new Date(reportDate), 'PPP') : 'No Date Selected'}
+              Daily Activity Log — {formatHumanDate(reportDate)}
             </div>
             <div className="table-container">
               <table>
@@ -155,7 +153,7 @@ export default function Reports() {
                   {(report.logs || []).slice(0, 50).map((log, i) => (
                     <tr key={i}>
                       <td><span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{log.logId}</span></td>
-                      <td><span className="mono" style={{ fontSize: 11 }}>{log.createdAt ? format(new Date(log.createdAt), 'HH:mm:ss') : 'N/A'}</span></td>
+                      <td><span className="mono" style={{ fontSize: 11 }}>{formatTime(log.createdAt)}</span></td>
                       <td><span className={`badge ${{ Personnel: 'badge-blue', Vehicle: 'badge-green', Visitor: 'badge-yellow' }[log.type] || 'badge-gray'}`}>{log.type}</span></td>
                       <td style={{ color: log.action === 'Entry' ? 'var(--accent-green)' : 'var(--accent-cyan)', fontWeight: 700, fontSize: 12, fontFamily: 'Rajdhani' }}>{log.action}</td>
                       <td>{log.subjectName}</td>

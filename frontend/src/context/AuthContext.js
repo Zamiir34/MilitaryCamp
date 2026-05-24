@@ -36,8 +36,20 @@ export const AuthProvider = ({ children }) => {
     return roles.includes(user.role);
   }, [user]);
 
+  const toggleDuty = useCallback(async () => {
+    try {
+      const { data } = await api.put('/auth/duty');
+      const updatedUser = { ...user, isOnDuty: data.isOnDuty };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      return { success: true, message: data.message };
+    } catch (err) {
+      return { success: false, message: 'Failed to update duty status' };
+    }
+  }, [user]);
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, canAccess }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, canAccess, toggleDuty }}>
       {children}
     </AuthContext.Provider>
   );

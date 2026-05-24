@@ -1,11 +1,26 @@
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const jwt = require('jsonwebtoken');
 
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+});
+
+// Make io accessible in routes
+app.set('io', io);
 
 // Middleware
 app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:3000', credentials: true }));
@@ -23,6 +38,31 @@ app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/alerts', require('./routes/alerts'));
 app.use('/api/qrcode', require('./routes/qrcode'));
+app.use('/api/chat', require('./routes/chat'));
+app.use('/api/public', require('./routes/public'));
+
+// Socket.IO — authenticate via JWT, join personal room
+io.use((socket, next) => {
+  try {
+    const token = socket.handshake.auth?.token;
+    if (!token) return next(new Error('Authentication required'));
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'military_secret_key_2024');
+    socket.userId = decoded.userId;
+    next();
+  } catch {
+    next(new Error('Invalid token'));
+  }
+});
+
+io.on('connection', (socket) => {
+  // Each user joins their own room so we can target messages precisely
+  socket.join(socket.userId);
+  console.log(`[Socket] User ${socket.userId} connected`);
+
+  socket.on('disconnect', () => {
+    console.log(`[Socket] User ${socket.userId} disconnected`);
+  });
+});
 
 // Error handler
 app.use((err, req, res, next) => {
@@ -37,13 +77,12 @@ const connectDB = async () => {
     console.log('MongoDB connected');
   } catch (err) {
     console.error('MongoDB connection error:', err.message);
-    // Continue without DB for demo
   }
 };
 
 connectDB();
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 module.exports = app;

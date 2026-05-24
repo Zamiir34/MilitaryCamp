@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const visitorSchema = new mongoose.Schema({
   visitorId: { type: String, required: true, unique: true },
   fullName: { type: String, required: true },
+  visitorType: { type: String, enum: ['Military', 'Civilian'], required: true },
   idNumber: { type: String, required: true },
   phone: { type: String, required: true },
   email: { type: String },

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowUpRight, ArrowDownLeft, Plus, Search, Filter, Clock, QrCode, User, Car, UserCheck } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
+import { formatDateTime, formatTime } from '../utils/dateUtils';
 import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 
@@ -13,7 +14,7 @@ const DEMO_LOGS = [
 ];
 
 const INITIAL_FORM = {
-  type: 'Personnel', subjectName: '', subjectId: '', gate: 'Main Gate', purpose: '', isAuthorized: true, notes: ''
+  type: 'Personnel', subjectName: '', subjectId: '', gate: 'Main Gate', purpose: '', isAuthorized: true, notes: '', category: ''
 };
 
 export default function EntryExit() {
@@ -71,7 +72,12 @@ export default function EntryExit() {
     try {
       const endpoint = modal === 'entry' ? '/entries/entry' : '/entries/exit';
       await api.post(endpoint, form);
-      toast.success(`${modal === 'entry' ? 'Entry' : 'Exit'} recorded successfully`);
+      
+      if (modal === 'exit' && form.category === 'Military') {
+        toast.success('A soldier has left');
+      } else {
+        toast.success(`${modal === 'entry' ? 'Entry' : 'Exit'} recorded successfully`);
+      }
       setModal(null);
       setForm(INITIAL_FORM);
       setQrInput('');
@@ -125,14 +131,26 @@ export default function EntryExit() {
 
   const selectSubject = (item) => {
     if (form.type === 'Personnel') {
-      setForm(p => ({ ...p, subjectName: item.fullName, subjectId: item.personnelId, isAuthorized: item.status === 'Active' }));
+      setForm(p => ({ 
+        ...p, 
+        subjectName: item.fullName, 
+        subjectId: item.personnelId, 
+        isAuthorized: item.status === 'Active',
+        category: item.type // This stores 'Military', 'Civilian', etc.
+      }));
     } else if (form.type === 'Vehicle') {
       // make/model are optional fields — build a safe display name
       const vehicleName = [item.make, item.model].filter(Boolean).join(' ') || item.vehicleType || 'Vehicle';
       const displayName = `${vehicleName} (${item.plateNumber})`;
       setForm(p => ({ ...p, subjectName: displayName, subjectId: item.plateNumber, isAuthorized: item.isAuthorized && item.status === 'Active' }));
     } else if (form.type === 'Visitor') {
-      setForm(p => ({ ...p, subjectName: item.fullName, subjectId: item.visitorId, isAuthorized: item.status === 'Approved' }));
+      setForm(p => ({ 
+        ...p, 
+        subjectName: item.fullName, 
+        subjectId: item.visitorId, 
+        isAuthorized: item.status === 'Approved',
+        category: item.visitorType 
+      }));
     }
     setSearchResults([]);
   };
@@ -160,7 +178,7 @@ export default function EntryExit() {
       <div className="card" style={{ marginBottom: '1rem', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
         <Clock size={16} color="var(--accent-green)" />
         <span className="mono" style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent-green)', letterSpacing: '0.1em' }}>
-          {format(now, 'HH:mm:ss')}
+          {formatTime(now)}
         </span>
         <span className="mono" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
           {format(now, 'EEEE, MMMM d, yyyy')}
@@ -204,7 +222,7 @@ export default function EntryExit() {
               ) : logs.map(log => (
                 <tr key={log._id}>
                   <td><span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{log.logId}</span></td>
-                  <td><span className="mono" style={{ fontSize: 11 }}>{format(new Date(log.createdAt), 'yyyy-MM-dd HH:mm:ss')}</span></td>
+                  <td><span className="mono" style={{ fontSize: 11 }}>{log.createdAt ? format(new Date(log.createdAt), 'yyyy-MM-dd HH:mm:ss') : '--'}</span></td>
                   <td>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, fontFamily: 'Rajdhani, sans-serif', color: log.action === 'Entry' ? 'var(--accent-green)' : 'var(--accent-cyan)' }}>
                       {log.action === 'Entry' ? <ArrowUpRight size={12} /> : <ArrowDownLeft size={12} />}
@@ -241,7 +259,7 @@ export default function EntryExit() {
                 <button className="btn btn-ghost" style={{ padding: '4px 8px', borderColor: 'var(--accent-green)', color: 'var(--accent-green)' }} onClick={() => setShowQrPaste(!showQrPaste)}>
                   <QrCode size={16} /> QR Auto-fill
                 </button>
-                <span className="mono" style={{ fontSize: 16, color: 'var(--accent-green)' }}>{format(now, 'HH:mm:ss')}</span>
+                <span className="mono" style={{ fontSize: 16, color: 'var(--accent-green)' }}>{formatTime(now)}</span>
               </div>
             </div>
 
