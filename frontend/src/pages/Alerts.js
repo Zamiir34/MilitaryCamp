@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Bell, CheckCircle, AlertTriangle, Shield, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Bell, CheckCircle, AlertTriangle, Shield, X, Zap } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
+import { getSocket } from '../utils/socket';
 
 const severityConfig = {
   Critical: { color: 'var(--accent-red)', bg: 'rgba(244,63,94,0.1)', border: 'rgba(244,63,94,0.3)', icon: '🔴' },
@@ -23,6 +24,13 @@ export default function Alerts() {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({ type: 'Unauthorized Access', severity: 'Medium', message: '', details: '', gate: 'Main Gate' });
   const [submitting, setSubmitting] = useState(false);
+  const [newIds, setNewIds] = useState(new Set()); // tracks freshly received IDs for "NEW" badge
+  const filterResolvedRef = useRef(filterResolved);
+  const filterSeverityRef = useRef(filterSeverity);
+
+  // Keep refs in sync so socket handler always sees latest filter values
+  useEffect(() => { filterResolvedRef.current = filterResolved; }, [filterResolved]);
+  useEffect(() => { filterSeverityRef.current = filterSeverity; }, [filterSeverity]);
 
   const fetchAlerts = async () => {
     setLoading(true);
@@ -43,6 +51,28 @@ export default function Alerts() {
   };
 
   useEffect(() => { fetchAlerts(); }, [filterResolved, filterSeverity]);
+
+  // Real-time: subscribe to new_alert socket events
+  useEffect(() => {
+    const socket = getSocket();
+    const handler = (alert) => {
+      // Only prepend if current filter would show it
+      const showingActive = filterResolvedRef.current === 'false';
+      const showingAll    = filterResolvedRef.current === '';
+      const severityMatch = !filterSeverityRef.current || filterSeverityRef.current === alert.severity;
+      if ((showingActive || showingAll) && severityMatch) {
+        setAlerts(prev => [alert, ...prev]);
+        setTotal(prev => prev + 1);
+        setNewIds(prev => new Set([...prev, alert.alertId]));
+        // Auto-clear "NEW" badge after 8 seconds
+        setTimeout(() => {
+          setNewIds(prev => { const s = new Set(prev); s.delete(alert.alertId); return s; });
+        }, 8000);
+      }
+    };
+    socket.on('new_alert', handler);
+    return () => socket.off('new_alert', handler);
+  }, []);
 
   const handleResolve = async (id) => {
     try {
@@ -122,17 +152,36 @@ export default function Alerts() {
           </div>
         ) : alerts.map(alert => {
           const cfg = severityConfig[alert.severity] || severityConfig.Low;
+          const isNew = newIds.has(alert.alertId);
           return (
-            <div key={alert._id} className="animate-fadeIn" style={{
-              background: 'var(--bg-card)',
-              border: `1px solid ${alert.isResolved ? 'var(--border)' : cfg.border}`,
-              borderRadius: 8,
-              padding: '1rem 1.25rem',
-              opacity: alert.isResolved ? 0.6 : 1
-            }}>
+            <div
+              key={alert._id || alert.alertId}
+              className="animate-fadeIn"
+              style={{
+                background: isNew ? `${cfg.bg}` : 'var(--bg-card)',
+                border: `1px solid ${isNew ? cfg.color : alert.isResolved ? 'var(--border)' : cfg.border}`,
+                borderRadius: 8,
+                padding: '1rem 1.25rem',
+                opacity: alert.isResolved ? 0.6 : 1,
+                transition: 'all 0.4s ease',
+                boxShadow: isNew ? `0 0 12px ${cfg.color}30` : 'none'
+              }}
+            >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                    {isNew && (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 3,
+                        fontSize: 9, fontWeight: 800, fontFamily: 'Rajdhani, sans-serif',
+                        letterSpacing: '0.1em', textTransform: 'uppercase',
+                        color: '#fff', background: cfg.color,
+                        borderRadius: 4, padding: '1px 6px',
+                        animation: 'pulse-primary 1.5s infinite'
+                      }}>
+                        <Zap size={8} /> LIVE
+                      </span>
+                    )}
                     <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'Rajdhani, sans-serif', letterSpacing: '0.08em', textTransform: 'uppercase', color: cfg.color }}>{alert.severity}</span>
                     <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Share Tech Mono, monospace' }}>•</span>
                     <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Rajdhani, sans-serif', fontWeight: 600 }}>{alert.type}</span>
@@ -142,7 +191,8 @@ export default function Alerts() {
                   <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>{alert.message}</div>
                   {alert.details && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{alert.details}</div>}
                   <div className="mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 6 }}>
-                    {alert.alertId} • {alert.createdAt ? format(new Date(alert.createdAt), 'yyyy-MM-dd HH:mm:ss') : '--'}
+                    {alert.alertId} • {alert.createdAt ? format(new Date(alert.createdAt), 'yyyy-MM-dd HH:mm:ss') : 'Just now'}
+                    {alert.reportedBy && ` • Reporter: ${alert.reportedBy.fullName || 'Unknown'}`}
                   </div>
                 </div>
                 {!alert.isResolved && canAccess(['Administrator', 'SecurityOfficer']) && (

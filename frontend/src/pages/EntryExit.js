@@ -230,7 +230,10 @@ export default function EntryExit() {
                     </span>
                   </td>
                   <td><span className={`badge ${typeBadge[log.type] || 'badge-gray'}`}>{log.type}</span></td>
-                  <td style={{ fontWeight: 600, color: !log.isAuthorized ? 'var(--accent-red)' : 'var(--text-primary)' }}>{log.subjectName}</td>
+                  <td style={{ fontWeight: 600, color: !log.isAuthorized ? 'var(--accent-red)' : 'var(--text-primary)' }}>
+                    {log.subjectName}
+                    {log.type === 'Vehicle' && log.vehicle?.ownerName && <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{log.vehicle.ownerName} ({log.vehicle.category || 'Military'})</div>}
+                  </td>
                   <td><span className="mono" style={{ fontSize: 11 }}>{log.subjectId}</span></td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{log.gate}</td>
                   <td>{log.isAuthorized ? <span className="badge badge-green">AUTH</span> : <span className="badge badge-red">UNAUTH</span>}</td>

@@ -16,7 +16,7 @@ router.get('/', auth, async (req, res) => {
     }
 
     const total = await Alert.countDocuments(query);
-    const alerts = await Alert.find(query).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(parseInt(limit));
+    const alerts = await Alert.find(query).populate('reportedBy', 'fullName rank role').sort({ createdAt: -1 }).skip((page - 1) * limit).limit(parseInt(limit));
     res.json({ data: alerts, total });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -26,8 +26,11 @@ router.get('/', auth, async (req, res) => {
 router.post('/', auth, async (req, res) => {
   try {
     const alertId = 'ALT' + Date.now().toString().slice(-9);
-    const alert = new Alert({ ...req.body, alertId });
+    const alert = new Alert({ ...req.body, alertId, reportedBy: req.user._id });
     await alert.save();
+    // Broadcast to all connected clients in real-time
+    const io = req.app.get('io');
+    if (io) io.emit('new_alert', alert.toObject());
     res.status(201).json(alert);
   } catch (err) {
     res.status(400).json({ message: err.message });

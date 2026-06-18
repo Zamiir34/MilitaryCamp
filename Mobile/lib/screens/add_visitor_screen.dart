@@ -434,23 +434,20 @@ class _AddVisitorScreenState extends State<AddVisitorScreen> {
             
             _buildPhotoSection(),
             
-            if (_visitorType != 'Military') ...[
-              _Section(
+            _Section(
                 label: 'VISITOR DETAILS',
                 children: [
-                  _Field(ctrl: _fullNameCtrl, label: 'Full Name', required: true),
-                  _Field(
-                    ctrl: _idNumberCtrl, 
-                    label: 'National ID Number', 
-                    required: true,
-                  ),
-                  _Field(ctrl: _phoneCtrl, label: 'Phone Number', required: true, keyboardType: TextInputType.phone),
-                  _Field(ctrl: _emailCtrl, label: 'Email', keyboardType: TextInputType.emailAddress),
-                  _Field(
-                    ctrl: _orgCtrl, 
-                    label: 'Organization / Rank',
-                    hint: 'e.g. Ministry of Health',
-                  ),
+                  if (_visitorType != 'Military') ...[
+                    _Field(ctrl: _fullNameCtrl, label: 'Full Name', required: true),
+                    _Field(
+                      ctrl: _idNumberCtrl, 
+                      label: 'National ID Number', 
+                      required: true,
+                    ),
+                    _Field(ctrl: _phoneCtrl, label: 'Phone Number', required: true, keyboardType: TextInputType.phone),
+                  ],
+                  _Field(ctrl: _emailCtrl, label: 'Email', required: true, keyboardType: TextInputType.emailAddress),
+                  if (_visitorType != 'Military') ...[
                   _Field(
                     ctrl: _hostCtrl, 
                     label: 'Military Officer to Visit',
@@ -458,27 +455,7 @@ class _AddVisitorScreenState extends State<AddVisitorScreen> {
                     hint: 'Enter officer\'s full name',
                   ),
                   _Field(ctrl: _purposeCtrl, label: 'Purpose of Visit', required: true),
-                  
-                  // Visit Date Selector
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: InkWell(
-                      onTap: _selectDateTime,
-                      child: InputDecorator(
-                        decoration: const InputDecoration(labelText: 'Visit Date & Time *'),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              DateFormat('yyyy-MM-dd HH:mm').format(_visitDate),
-                              style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
-                            ),
-                            const Icon(Icons.calendar_today, size: 16, color: AppColors.primary),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                  ],
                 ],
               ),
               const SizedBox(height: 16),
@@ -516,7 +493,6 @@ class _AddVisitorScreenState extends State<AddVisitorScreen> {
                   ]
                 ],
               ),
-            ],
           ],
         ),
       ),

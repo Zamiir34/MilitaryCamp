@@ -12,6 +12,7 @@ const vehicleSchema = new mongoose.Schema({
   ownerIdNumber: { type: String },
   ownerPhone: { type: String },
   registrationNumber: { type: String },
+  category: { type: String, enum: ['Military', 'Civilian', 'Visitor', 'Contractor'], default: 'Military' },
   isAuthorized: { type: Boolean, default: false },
   qrCode: { type: String },
   status: { type: String, enum: ['Active', 'Blacklisted', 'Inactive'], default: 'Active' },

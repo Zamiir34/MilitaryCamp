@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 
-const INITIAL_FORM = { plateNumber: '', vehicleType: 'Car', make: '', model: '', color: '', year: '', ownerName: '', ownerIdNumber: '', ownerPhone: '', registrationNumber: '', isAuthorized: false, status: 'Active', notes: '' };
+const INITIAL_FORM = { plateNumber: '', vehicleType: 'Car', make: '', model: '', color: '', year: '', ownerName: '', ownerIdNumber: '', ownerPhone: '', registrationNumber: '', isAuthorized: false, status: 'Active', notes: '', category: 'Military' };
 
 export default function Vehicles() {
   const { canAccess } = useAuth();
@@ -128,9 +128,6 @@ export default function Vehicles() {
                     <div style={{ display: 'flex', gap: 4 }}>
                       <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => { setSelected(v); setModal('qr'); }}><QrCode size={12} /></button>
                       <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => openEdit(v)}><Edit2 size={12} /></button>
-                      {canAccess(['Administrator', 'SecurityOfficer']) && (
-                        <button className="btn btn-danger" style={{ padding: '4px 8px' }} onClick={() => handleDelete(v._id)}><Trash2 size={12} /></button>
-                      )}
                     </div>
                   </td>
                 </tr>
@@ -180,6 +177,12 @@ export default function Vehicles() {
                 <div className="form-group">
                   <label className="form-label">Owner Name *</label>
                   <input className="input" value={form.ownerName} onChange={e => setForm(p => ({ ...p, ownerName: e.target.value }))} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Owner Category *</label>
+                  <select className="input" value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}>
+                    <option>Military</option><option>Civilian</option><option>Visitor</option><option>Contractor</option>
+                  </select>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Owner Phone</label>

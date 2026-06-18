@@ -193,6 +193,7 @@ export default function Dashboard() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 16, fontWeight: 700, color: log.isAuthorized ? 'var(--text-primary)' : 'var(--accent-red)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {log.subjectName}
+                      {log.type === 'Vehicle' && log.vehicle?.ownerName && <span style={{fontSize: 12, fontWeight: 600, color: 'var(--text-muted)'}}> • {log.vehicle.ownerName} ({log.vehicle.category || 'Military'})</span>}
                     </div>
                     <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: 'Share Tech Mono, monospace', fontWeight: 600 }}>
                       {log.type} • {log.gate}
@@ -220,6 +221,10 @@ export default function Dashboard() {
                 <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Share Tech Mono, monospace' }}>{alert.createdAt ? format(new Date(alert.createdAt), 'HH:mm') : '--:--'}</span>
               </div>
               <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{alert.message}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
+                {alert.reportedBy ? `Reported by: ${alert.reportedBy.fullName || 'Unknown'}` : 'System Alert'} 
+                {alert.gate && ` • Location: ${alert.gate}`}
+              </div>
             </div>
           ))}
         </div>

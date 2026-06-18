@@ -39,7 +39,7 @@ router.get('/daily', auth, async (req, res) => {
       }
     }
 
-    const logs = await EntryLog.find({ createdAt: { $gte: start, $lt: end } }).sort({ createdAt: 1 });
+    const logs = await EntryLog.find({ createdAt: { $gte: start, $lt: end } }).populate('vehicle', 'ownerName category').sort({ createdAt: 1 });
     const summary = {
       total: logs.length,
       entries: logs.filter(l => l.action === 'Entry').length,
@@ -74,10 +74,121 @@ router.get('/daily', auth, async (req, res) => {
   }
 });
 
+// Get reports by date range and filters
+router.get('/range', auth, async (req, res) => {
+  try {
+    const { startDate, endDate, type, gate, action, isAuthorized } = req.query;
+    let start, end;
+    if (startDate && endDate) {
+      const [sYear, sMonth, sDay] = startDate.split('-').map(Number);
+      const [eYear, eMonth, eDay] = endDate.split('-').map(Number);
+      start = new Date(sYear, sMonth - 1, sDay, 0, 0, 0, 0);
+      end = new Date(eYear, eMonth - 1, eDay, 23, 59, 59, 999);
+    } else {
+      start = new Date();
+      start.setHours(0, 0, 0, 0);
+      end = new Date(start);
+      end.setDate(end.getDate() + 1);
+    }
+
+    const query = { createdAt: { $gte: start, $lte: end } };
+    if (type) query.type = type;
+    if (gate) query.gate = gate;
+    if (action) query.action = action;
+    if (isAuthorized !== undefined && isAuthorized !== '') {
+      query.isAuthorized = isAuthorized === 'true';
+    }
+
+    // Data Isolation: Non-admins only see records created after they joined
+    if (req.user.role !== 'Administrator') {
+      const userJoinDate = new Date(req.user.createdAt);
+      if (start < userJoinDate) {
+        if (end <= userJoinDate) {
+          return res.json({
+            logs: [],
+            summary: { total: 0, entries: 0, exits: 0, personnel: 0, vehicles: 0, visitors: 0, unauthorized: 0 },
+            trendData: [],
+            gateData: []
+          });
+        }
+        start = userJoinDate;
+        query.createdAt.$gte = start;
+      }
+    }
+
+    const logs = await EntryLog.find(query).populate('vehicle', 'ownerName category').sort({ createdAt: -1 });
+
+    const summary = {
+      total: logs.length,
+      entries: logs.filter(l => l.action === 'Entry').length,
+      exits: logs.filter(l => l.action === 'Exit').length,
+      personnel: logs.filter(l => l.type === 'Personnel').length,
+      vehicles: logs.filter(l => l.type === 'Vehicle').length,
+      visitors: logs.filter(l => l.type === 'Visitor').length,
+      unauthorized: logs.filter(l => !l.isAuthorized).length
+    };
+
+    // Calculate hourly breakdown if start and end dates are the same (single day)
+    // Otherwise group by daily trend
+    const isSingleDay = startDate === endDate || (!startDate && !endDate);
+    
+    let trendData = [];
+    if (isSingleDay) {
+      // Hourly breakdown
+      const hourlyMap = {};
+      for (let i = 0; i < 24; i++) {
+        hourlyMap[`${String(i).padStart(2, '0')}:00`] = { label: `${String(i).padStart(2, '0')}:00`, entries: 0, exits: 0, count: 0 };
+      }
+      logs.forEach(log => {
+        const hour = new Date(log.createdAt).getHours();
+        const label = `${String(hour).padStart(2, '0')}:00`;
+        if (hourlyMap[label]) {
+          hourlyMap[label].count += 1;
+          if (log.action === 'Entry') hourlyMap[label].entries += 1;
+          else hourlyMap[label].exits += 1;
+        }
+      });
+      trendData = Object.values(hourlyMap).sort((a, b) => a.label.localeCompare(b.label));
+    } else {
+      // Daily trend
+      const dailyMap = {};
+      let current = new Date(start);
+      let safetyCounter = 0;
+      while (current <= end && safetyCounter < 100) {
+        const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
+        dailyMap[dateStr] = { label: dateStr, entries: 0, exits: 0, count: 0 };
+        current.setDate(current.getDate() + 1);
+        safetyCounter++;
+      }
+      logs.forEach(log => {
+        const logDate = new Date(log.createdAt);
+        const dateStr = `${logDate.getFullYear()}-${String(logDate.getMonth() + 1).padStart(2, '0')}-${String(logDate.getDate()).padStart(2, '0')}`;
+        if (dailyMap[dateStr]) {
+          dailyMap[dateStr].count += 1;
+          if (log.action === 'Entry') dailyMap[dateStr].entries += 1;
+          else dailyMap[dateStr].exits += 1;
+        }
+      });
+      trendData = Object.values(dailyMap).sort((a, b) => a.label.localeCompare(b.label));
+    }
+
+    // Gate breakdown
+    const gateMap = {};
+    logs.forEach(log => {
+      gateMap[log.gate] = (gateMap[log.gate] || 0) + 1;
+    });
+    const gateData = Object.keys(gateMap).map(g => ({ name: g, count: gateMap[g] }));
+
+    res.json({ logs, summary, trendData, gateData, isSingleDay });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Export to Excel
 router.get('/export/excel', auth, async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, type, gate, action, isAuthorized } = req.query;
     const query = {};
     if (startDate && endDate) {
       const [sYear, sMonth, sDay] = startDate.split('-').map(Number);
@@ -85,6 +196,12 @@ router.get('/export/excel', auth, async (req, res) => {
       const start = new Date(sYear, sMonth - 1, sDay, 0, 0, 0, 0);
       const end = new Date(eYear, eMonth - 1, eDay, 23, 59, 59, 999);
       query.createdAt = { $gte: start, $lte: end };
+    }
+    if (type) query.type = type;
+    if (gate) query.gate = gate;
+    if (action) query.action = action;
+    if (isAuthorized !== undefined && isAuthorized !== '') {
+      query.isAuthorized = isAuthorized === 'true';
     }
 
     // Data Isolation: Non-admins only see records created after they joined
@@ -97,7 +214,7 @@ router.get('/export/excel', auth, async (req, res) => {
       }
     }
 
-    const logs = await EntryLog.find(query).sort({ createdAt: -1 }).limit(1000);
+    const logs = await EntryLog.find(query).populate('vehicle', 'ownerName category').sort({ createdAt: -1 }).limit(2000);
 
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'Military Camp System';
@@ -126,7 +243,7 @@ router.get('/export/excel', auth, async (req, res) => {
         createdAt: new Date(log.createdAt).toLocaleString(),
         type: log.type,
         action: log.action,
-        subjectName: log.subjectName,
+        subjectName: log.type === 'Vehicle' && log.vehicle ? `${log.subjectName} (${log.vehicle.ownerName} - ${log.vehicle.category || 'Military'})` : log.subjectName,
         subjectId: log.subjectId,
         gate: log.gate,
         isAuthorized: log.isAuthorized ? 'Yes' : 'No',

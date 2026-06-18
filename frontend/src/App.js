@@ -13,7 +13,7 @@ import EntryExit from './pages/EntryExit';
 import Reports from './pages/Reports';
 import Alerts from './pages/Alerts';
 import Users from './pages/Users';
-import QRScan from './pages/QRScan';
+import Attendance from './pages/Attendance';
 import MyWork from './pages/MyWork';
 import Chat from './pages/Chat';
 import Verify from './pages/Verify';
@@ -59,7 +59,7 @@ function App() {
               <Route path="reports" element={<Reports />} />
               <Route path="notifications" element={<Alerts />} />
               <Route path="users" element={<PrivateRoute roles={['Administrator']}><Users /></PrivateRoute>} />
-              <Route path="qr-scan" element={<QRScan />} />
+              <Route path="attendance" element={<Attendance />} />
               <Route path="chat" element={<Chat />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -13,15 +13,27 @@ class AddPersonnelScreen extends StatefulWidget {
   @override State<AddPersonnelScreen> createState() => _AddPersonnelScreenState();
 }
 
+// Official military units
+const _kUnits = [
+  'Taliska 18',
+  'Taliska 20',
+  'Taliska 64',
+  'Guutada Gor Gor',
+];
+
 class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
   final _form = GlobalKey<FormState>();
   final _api = ApiService();
   bool _saving = false;
   String _category = 'military', _status = 'active';
+  String _selectedZone = 'Zone A';
+  String _selectedUnit = _kUnits.first; // unit dropdown selection
+  String? _transferredFrom; // tracks where personnel transferred from
   int _accessLevel = 1;
   final _fields = <String, TextEditingController>{
     'firstName': TextEditingController(), 'lastName': TextEditingController(),
-    'rank': TextEditingController(), 'unit': TextEditingController(),
+    'militaryId': TextEditingController(),
+    'rank': TextEditingController(),
     'badgeNumber': TextEditingController(), 'nationalId': TextEditingController(),
     'phone': TextEditingController(), 'email': TextEditingController(),
     'bloodType': TextEditingController(),
@@ -40,7 +52,7 @@ class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
       _category = widget.initialCategory!;
       if (widget.initialCategory == 'visitor') {
         _fields['rank']!.text = 'Civilian';
-        _fields['unit']!.text = 'Visitor Center';
+        _selectedUnit = _kUnits.last; // default visitors to Guutada Gor Gor
         final uniqueId = DateTime.now().millisecondsSinceEpoch.toString().substring(8);
         _fields['badgeNumber']!.text = 'VIS-$uniqueId';
       }
@@ -120,12 +132,16 @@ class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
     setState(() => _saving = true);
     try {
       final newPersonnel = await _api.createPersonnel({
-        'firstName': _fields['firstName']!.text, 'lastName': _fields['lastName']!.text,
-        'rank': _fields['rank']!.text, 'unit': _fields['unit']!.text,
-        'badgeNumber': _fields['badgeNumber']!.text, 'nationalId': _fields['nationalId']!.text,
+        'fullName': '${_fields['firstName']!.text} ${_fields['lastName']!.text}',
+        'militaryId': _fields['militaryId']!.text,
+        'rank': _fields['rank']!.text, 'unit': _selectedUnit,
+        if (_transferredFrom != null && _transferredFrom!.isNotEmpty) 'transferredFrom': _transferredFrom,
+        'badgeNumber': _fields['badgeNumber']!.text, 'idNumber': _fields['nationalId']!.text,
         'phone': _fields['phone']!.text, 'email': _fields['email']!.text,
         'bloodType': _fields['bloodType']!.text,
-        'category': _category, 'status': _status, 'accessLevel': _accessLevel,
+        'type': _category == 'military' ? 'Military' : _category == 'civilian' ? 'Civilian' : 'Staff',
+        'status': _status == 'active' ? 'Active' : _status == 'inactive' ? 'Inactive' : 'Suspended',
+        'authorizedZones': [_selectedZone],
         if (_base64Photo != null) 'photo': _base64Photo,
       });
       if (mounted) {
@@ -296,20 +312,62 @@ class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
           ]),
           const SizedBox(height: 16),
           _Section(label: 'MILITARY INFORMATION', children: [
+            _Field(ctrl: _fields['militaryId']!, label: 'Military ID Card', required: true,
+              hint: 'e.g. MIL-12345'),
             _Field(ctrl: _fields['rank']!, label: 'Rank', required: true,
               hint: 'e.g. Sergeant, Captain, Civilian'),
-            _Field(ctrl: _fields['unit']!, label: 'Unit / Department', required: true),
+            // Unit dropdown — official units only
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: DropdownButtonFormField<String>(
+                value: _selectedUnit,
+                dropdownColor: AppColors.surfaceVariant,
+                decoration: const InputDecoration(labelText: 'Unit *'),
+                items: _kUnits
+                    .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                    .toList(),
+                onChanged: (v) => setState(() => _selectedUnit = v!),
+                validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: DropdownButtonFormField<String?>(
+                value: _transferredFrom,
+                dropdownColor: AppColors.surfaceVariant,
+                decoration: const InputDecoration(labelText: 'Transferred From (Optional)'),
+                items: const [
+                  DropdownMenuItem(value: null, child: Text('-- None --')),
+                  DropdownMenuItem(value: '1, Wasaarada gaashan dhiga', child: Text('1, Wasaarada gaashan dhiga')),
+                  DropdownMenuItem(value: '2, Xallane', child: Text('2, Xallane')),
+                  DropdownMenuItem(value: '3, Danab', child: Text('3, Danab')),
+                ],
+                onChanged: (v) => setState(() => _transferredFrom = v),
+              ),
+            ),
             _Field(ctrl: _fields['badgeNumber']!, label: 'Badge Number', required: true,
               hint: 'e.g. MIL-001, CIV-001'),
             const SizedBox(height: 8),
             _Dropdown(label: 'Category', value: _category,
-              items: const ['military','civilian','contractor','visitor'],
+              items: const ['military'],
               onChanged: (v) => setState(() => _category = v!)),
             const SizedBox(height: 12),
             _Dropdown(label: 'Status', value: _status,
               items: const ['active','inactive','suspended','on_leave'],
               onChanged: (v) => setState(() => _status = v!)),
             const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: DropdownButtonFormField<String>(
+                value: _selectedZone,
+                dropdownColor: AppColors.surfaceVariant,
+                decoration: const InputDecoration(labelText: 'Authorized Zone *'),
+                items: ['Zone A', 'Zone B', 'Zone C', 'HQ', 'All Zones']
+                    .map((z) => DropdownMenuItem(value: z, child: Text(z)))
+                    .toList(),
+                onChanged: (v) => setState(() => _selectedZone = v!),
+              ),
+            ),
             Text('Access Level: $_accessLevel', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
             Slider(
               value: _accessLevel.toDouble(), min: 1, max: 5, divisions: 4,

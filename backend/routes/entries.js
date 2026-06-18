@@ -42,6 +42,7 @@ router.get('/', auth, async (req, res) => {
 
     const total = await EntryLog.countDocuments(query);
     const logs = await EntryLog.find(query)
+      .populate('vehicle', 'ownerName make model plateNumber category')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
@@ -85,6 +86,9 @@ router.post('/entry', auth, async (req, res) => {
           gate: req.body.gate
         });
         await alert.save();
+        // Broadcast to all connected clients in real-time
+        const io = req.app.get('io');
+        if (io) io.emit('new_alert', alert.toObject());
       } catch (alertErr) {
         console.warn('Alert creation failed (non-fatal):', alertErr.message);
       }
@@ -130,6 +134,9 @@ router.post('/exit', auth, async (req, res) => {
           gate: req.body.gate
         });
         await notification.save();
+        // Broadcast to all connected clients in real-time
+        const io = req.app.get('io');
+        if (io) io.emit('new_alert', notification.toObject());
       } catch (nErr) {
         console.warn('Exit notification failed:', nErr.message);
       }

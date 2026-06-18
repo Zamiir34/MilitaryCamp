@@ -1,7 +1,6 @@
 // lib/screens/personnel_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/api_service.dart';
 import '../models/models.dart';
@@ -114,16 +113,13 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
 
             // Info card
             _InfoCard(children: [
+              if (_p!.militaryId != null && _p!.militaryId!.isNotEmpty) _InfoRow('Military ID Card', _p!.militaryId!),
               _InfoRow('Badge Number', _p!.badgeNumber),
               _InfoRow('National ID', _p!.nationalId),
               _InfoRow('Access Level', 'Level ${_p!.accessLevel}'),
               if (_p!.phone != null) _InfoRow('Phone', _p!.phone!),
               if (_p!.bloodType != null) _InfoRow('Blood Type', _p!.bloodType!),
             ]),
-            const SizedBox(height: 24),
-
-            // QR Code Section
-            _QRCodeCard(personnel: _p!),
             const SizedBox(height: 24),
 
             // ── Registered Vehicles ──────────────────────────────
@@ -275,66 +271,6 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
 }
 
 // --- Style Section (Custom Widgets) ---
-
-class _QRCodeCard extends StatelessWidget {
-  final Personnel personnel;
-  const _QRCodeCard({required this.personnel});
-
-  @override
-  Widget build(BuildContext context) {
-    // Standardized QR data for scanning
-    final qrData = '{"id":"${personnel.id}","type":"personnel","badge":"${personnel.badgeNumber}"}';
-    
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('IDENTIFICATION QR', 
-                style: TextStyle(fontSize: 10, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w800)),
-              Icon(Icons.qr_code_2, size: 16, color: AppColors.primary.withOpacity(0.5)),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(color: AppColors.primary.withOpacity(0.1), blurRadius: 20, spreadRadius: 2),
-              ],
-            ),
-            child: QrImageView(
-              data: qrData,
-              version: QrVersions.auto,
-              size: 180.0,
-              gapless: false,
-              eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.black),
-              dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Colors.black),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(personnel.badgeNumber, 
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: 6, color: AppColors.primary)),
-          const SizedBox(height: 4),
-          Text('VALID FOR GATE ACCESS', 
-            style: TextStyle(fontSize: 9, color: AppColors.textMuted, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
-        ],
-      ),
-    );
-  }
-}
 
 class _Badge extends StatelessWidget {
   final String label; final Color color;

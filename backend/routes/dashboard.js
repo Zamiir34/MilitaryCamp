@@ -65,11 +65,13 @@ router.get('/', auth, async (req, res) => {
 
     // Recent activity
     const recentActivity = await EntryLog.find(isolationFilter)
+      .populate('vehicle', 'ownerName make model plateNumber category')
       .sort({ createdAt: -1 })
       .limit(10);
 
     // My recent activity
     const myRecentActivity = await EntryLog.find({ recordedBy: req.user._id })
+      .populate('vehicle', 'ownerName make model plateNumber category')
       .sort({ createdAt: -1 })
       .limit(5);
 

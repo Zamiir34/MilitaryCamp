@@ -1,13 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Search, Edit2, Trash2, QrCode, X, ArrowLeftRight, Camera } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Search, Edit2, Trash2, X, ArrowLeftRight, Camera } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { formatDate } from '../utils/dateUtils';
 import { useAuth } from '../context/AuthContext';
 
 const INITIAL_FORM = { 
-  fullName: '', rank: '', unit: '', phone: '', email: '', 
+  fullName: '', rank: '', militaryId: '', unit: 'Taliska 18', transferredFrom: '', phone: '', email: '', 
   type: 'Military', status: 'Active', authorizedZones: '',
   hasVehicle: false,
   vehicleDetails: { plateNumber: '', model: '', color: '' },
@@ -15,6 +14,13 @@ const INITIAL_FORM = {
   serviceHistory: '',
   photo: ''
 };
+
+const UNITS = [
+  'Taliska 18',
+  'Taliska 20',
+  'Taliska 64',
+  'Guutada Gor Gor',
+];
 
 export default function Personnel() {
   const { canAccess } = useAuth();
@@ -29,10 +35,6 @@ export default function Personnel() {
   const [form, setForm] = useState(INITIAL_FORM);
   const [transferForm, setTransferForm] = useState({ newUnit: '', newRank: '', transferReason: '', authorizedZones: '' });
   const [submitting, setSubmitting] = useState(false);
-  const [webcamActive, setWebcamActive] = useState(false);
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const streamRef = useRef(null);
 
   const fetchPersonnel = async () => {
     setLoading(true);
@@ -55,44 +57,6 @@ export default function Personnel() {
 
   useEffect(() => { fetchPersonnel(); }, [search, filterType, filterStatus]);
 
-  const startWebcam = async () => {
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 } });
-      streamRef.current = s;
-      setWebcamActive(true);
-    } catch {
-      toast.error('Camera access denied. Please upload a photo instead.');
-    }
-  };
-
-  const stopWebcam = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
-      streamRef.current = null;
-    }
-    setWebcamActive(false);
-  };
-
-  const capturePhoto = () => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0);
-    setForm(p => ({ ...p, photo: canvas.toDataURL('image/jpeg', 0.85) }));
-    stopWebcam();
-  };
-
-  useEffect(() => {
-    if (webcamActive && videoRef.current && streamRef.current) {
-      videoRef.current.srcObject = streamRef.current;
-    }
-  }, [webcamActive]);
-
-  useEffect(() => {
-    if (modal !== 'add' && modal !== 'edit') stopWebcam();
-  }, [modal]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -106,11 +70,11 @@ export default function Personnel() {
 
       if (modal === 'add') {
         const { data: newPerson } = await api.post('/personnel', payload);
-        toast.success('Personnel registered — scan QR code now');
+        toast.success('Personnel registered');
         stopWebcam();
         fetchPersonnel();
         setSelected(newPerson);
-        setModal('qr');
+        setModal(null);
       } else {
         await api.put(`/personnel/${selected._id}`, payload);
         toast.success('Personnel updated');
@@ -145,7 +109,6 @@ export default function Personnel() {
     setModal('edit'); 
   };
   const openAdd = () => { setForm(INITIAL_FORM); setModal('add'); };
-  const openQR = (p) => { setSelected(p); setModal('qr'); };
   
   const openTransfer = (p) => {
     setSelected(p);
@@ -235,12 +198,10 @@ export default function Personnel() {
                   <td><span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{formatDate(p.createdAt)}</span></td>
                   <td>
                     <div style={{ display: 'flex', gap: 4 }}>
-                      <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => openQR(p)} title="View QR Code"><QrCode size={12} /></button>
                       {canAccess(['Administrator', 'SecurityOfficer']) && (
                         <>
                           <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => openEdit(p)} title="Edit"><Edit2 size={12} /></button>
                           <button className="btn btn-ghost" style={{ padding: '4px 8px', color: 'var(--accent-primary)' }} onClick={() => openTransfer(p)} title="Transfer Unit"><ArrowLeftRight size={12} /></button>
-                          <button className="btn btn-danger" style={{ padding: '4px 8px' }} onClick={() => handleDelete(p._id)} title="Delete"><Trash2 size={12} /></button>
                         </>
                       )}
                     </div>
@@ -269,12 +230,27 @@ export default function Personnel() {
                   <input className="input" value={form.fullName} onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))} required />
                 </div>
                 <div className="form-group">
+                  <label className="form-label">Military ID Card *</label>
+                  <input className="input" value={form.militaryId} onChange={e => setForm(p => ({ ...p, militaryId: e.target.value }))} required />
+                </div>
+                <div className="form-group">
                   <label className="form-label">Rank</label>
                   <input className="input" value={form.rank} onChange={e => setForm(p => ({ ...p, rank: e.target.value }))} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Unit *</label>
-                  <input className="input" value={form.unit} onChange={e => setForm(p => ({ ...p, unit: e.target.value }))} required />
+                  <select className="input" value={form.unit} onChange={e => setForm(p => ({ ...p, unit: e.target.value }))} required>
+                    {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Transferred From</label>
+                  <select className="input" value={form.transferredFrom} onChange={e => setForm(p => ({ ...p, transferredFrom: e.target.value }))}>
+                    <option value="">-- Select (if applicable) --</option>
+                    <option value="1, Wasaarada gaashan dhiga">1, Wasaarada gaashan dhiga</option>
+                    <option value="2, Xallane">2, Xallane</option>
+                    <option value="3, Danab">3, Danab</option>
+                  </select>
                 </div>
 
                 <div className="form-group">
@@ -288,7 +264,7 @@ export default function Personnel() {
                 <div className="form-group">
                   <label className="form-label">Type</label>
                   <select className="input" value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))}>
-                    <option>Military</option><option>Civilian</option><option>Staff</option>
+                    <option>Military</option>
                   </select>
                 </div>
                 <div className="form-group">
@@ -298,8 +274,15 @@ export default function Personnel() {
                   </select>
                 </div>
                 <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                  <label className="form-label">Authorized Zones (comma separated)</label>
-                  <input className="input" value={form.authorizedZones} onChange={e => setForm(p => ({ ...p, authorizedZones: e.target.value }))} placeholder="Zone A, Zone B, HQ" />
+                  <label className="form-label">Authorized Zones</label>
+                  <select className="input" value={form.authorizedZones} onChange={e => setForm(p => ({ ...p, authorizedZones: e.target.value }))}>
+                    <option value="">-- Select Zone --</option>
+                    <option value="Zone A">Zone A</option>
+                    <option value="Zone B">Zone B</option>
+                    <option value="Zone C">Zone C</option>
+                    <option value="HQ">HQ</option>
+                    <option value="All Zones">All Zones</option>
+                  </select>
                 </div>
 
                 <div className="form-group" style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
@@ -347,11 +330,6 @@ export default function Personnel() {
                   </label>
                 </div>
 
-                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                  <label className="form-label">Service History / Remarks</label>
-                  <textarea className="input" rows={3} value={form.serviceHistory} onChange={e => setForm(p => ({ ...p, serviceHistory: e.target.value }))} placeholder="Brief history of service in this unit..." />
-                </div>
-
                 <div className="form-group" style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
                   <label className="form-label">Personnel Photo <span style={{ color: 'var(--accent-primary)' }}>*</span></label>
                   <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -362,47 +340,24 @@ export default function Personnel() {
                         : <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}><Camera size={36} /><div style={{ fontSize: 10, marginTop: 6, fontWeight: 700, letterSpacing: '0.05em' }}>NO PHOTO</div></div>
                       }
                     </div>
-                    {/* Webcam / Upload */}
+                    {/* Photo Upload */}
                     <div style={{ flex: 1, minWidth: 220 }}>
-                      {webcamActive ? (
-                        <div>
-                          <video ref={videoRef} autoPlay playsInline muted
-                            style={{ width: '100%', maxWidth: 320, borderRadius: 8, border: '2px solid var(--accent-primary)', display: 'block', marginBottom: 8 }}
-                          />
-                          <canvas ref={canvasRef} style={{ display: 'none' }} />
-                          <div style={{ display: 'flex', gap: 8 }}>
-                            <button type="button" className="btn btn-primary" onClick={capturePhoto} style={{ flex: 1 }}>
-                              <Camera size={14} /> Capture Photo
-                            </button>
-                            <button type="button" className="btn btn-ghost" onClick={stopWebcam}>Cancel</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                          <button type="button" className="btn btn-primary" onClick={startWebcam} style={{ alignSelf: 'flex-start' }}>
-                            <Camera size={14} /> Open Camera
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <input type="file" accept="image/*" onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => setForm(p => ({ ...p, photo: reader.result }));
+                            reader.readAsDataURL(file);
+                          }
+                        }} style={{ fontSize: 13 }} />
+                        {form.photo && (
+                          <button type="button" className="btn btn-ghost" style={{ fontSize: 12, alignSelf: 'flex-start', color: 'var(--accent-red)' }} onClick={() => setForm(p => ({ ...p, photo: '' }))}>
+                            Remove Photo
                           </button>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontSize: 11 }}>
-                            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-                            or upload file
-                            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-                          </div>
-                          <input type="file" accept="image/*" onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onloadend = () => setForm(p => ({ ...p, photo: reader.result }));
-                              reader.readAsDataURL(file);
-                            }
-                          }} style={{ fontSize: 13 }} />
-                          {form.photo && (
-                            <button type="button" className="btn btn-ghost" style={{ fontSize: 12, alignSelf: 'flex-start', color: 'var(--accent-red)' }} onClick={() => setForm(p => ({ ...p, photo: '' }))}>
-                              Remove Photo
-                            </button>
-                          )}
-                          <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: 0 }}>A clear facial photo is required. After registration, a QR code will be generated automatically.</p>
-                        </div>
-                      )}
+                        )}
+                        <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: 0 }}>A clear facial photo is required.</p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -417,29 +372,6 @@ export default function Personnel() {
       )}
 
 
-
-      {modal === 'qr' && selected && (
-        <div className="modal-overlay">
-          <div className="modal" style={{ maxWidth: 360, textAlign: 'center' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 16, textTransform: 'uppercase' }}>Personnel QR Code</h2>
-              <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => setModal(null)}><X size={16} /></button>
-            </div>
-            <div style={{ background: 'white', padding: '1rem', borderRadius: 8, display: 'inline-block', marginBottom: '1rem' }}>
-              <QRCodeSVG value={`${window.location.origin}/verify/${selected.personnelId}`} size={180} />
-            </div>
-            <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 800, fontSize: 18, color: 'var(--accent-primary)' }}>{selected.fullName}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{selected.rank} • {selected.unit}</div>
-            <div className="mono" style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>ID: {selected.personnelId}</div>
-            <div style={{ marginTop: '1.5rem', padding: '0.75rem', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)', textAlign: 'left' }}>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, fontWeight: 700, textTransform: 'uppercase' }}>Verification Link</div>
-              <a href={`${window.location.origin}/verify/${selected.personnelId}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: 'var(--accent-primary)', wordBreak: 'break-all', fontFamily: 'Share Tech Mono, monospace' }}>
-                {`${window.location.origin}/verify/${selected.personnelId}`}
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
 
       {modal === 'transfer' && selected && (
         <div className="modal-overlay animate-fadeIn">
@@ -466,13 +398,15 @@ export default function Personnel() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div className="form-group">
                   <label className="form-label">New Unit / Station *</label>
-                  <input 
-                    className="input" 
-                    value={transferForm.newUnit} 
-                    onChange={e => setTransferForm(p => ({ ...p, newUnit: e.target.value }))} 
-                    placeholder="Enter new unit name (e.g. 2nd Infantry Division, HQ)" 
-                    required 
-                  />
+                  <select
+                    className="input"
+                    value={transferForm.newUnit}
+                    onChange={e => setTransferForm(p => ({ ...p, newUnit: e.target.value }))}
+                    required
+                  >
+                    <option value="">-- Select Unit --</option>
+                    {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                  </select>
                 </div>
 
                 <div className="form-group">

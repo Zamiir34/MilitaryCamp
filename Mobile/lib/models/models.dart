@@ -22,11 +22,11 @@ class User {
 
 class Personnel {
   final String id, personnelId, firstName, lastName, rank, unit, badgeNumber, nationalId;
-  final String? photo, qrCode, phone, email, category, status, currentStatus, bloodType;
+  final String? photo, qrCode, phone, email, category, status, currentStatus, bloodType, militaryId;
   final int accessLevel;
   final DateTime? createdAt;
 
-  Personnel({required this.id, required this.personnelId, required this.firstName, required this.lastName, required this.rank, required this.unit, required this.badgeNumber, required this.nationalId, this.photo, this.qrCode, this.phone, this.email, this.category = 'military', this.status = 'active', this.currentStatus = 'outside', this.bloodType, this.accessLevel = 1, this.createdAt});
+  Personnel({required this.id, required this.personnelId, required this.firstName, required this.lastName, required this.rank, required this.unit, required this.badgeNumber, required this.nationalId, this.photo, this.qrCode, this.phone, this.email, this.category = 'military', this.status = 'active', this.currentStatus = 'outside', this.bloodType, this.militaryId, this.accessLevel = 1, this.createdAt});
 
   factory Personnel.fromJson(Map<String, dynamic> j) => Personnel(
     id: j['_id'] ?? '', personnelId: j['personnelId'] ?? '',
@@ -35,7 +35,7 @@ class Personnel {
     badgeNumber: j['badgeNumber'] ?? '', nationalId: j['nationalId'] ?? '',
     photo: j['photo'], qrCode: j['qrCode'], phone: j['phone'], email: j['email'],
     category: j['category'], status: j['status'], currentStatus: j['currentStatus'],
-    bloodType: j['bloodType'], accessLevel: j['accessLevel'] ?? 1,
+    bloodType: j['bloodType'], militaryId: j['militaryId'], accessLevel: j['accessLevel'] ?? 1,
     createdAt: j['createdAt'] != null ? DateTime.tryParse(j['createdAt']) : null,
   );
 

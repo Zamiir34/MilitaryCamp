@@ -212,9 +212,6 @@ export default function Visitors() {
                     <div style={{ display: 'flex', gap: 4 }}>
                       <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => { setSelected(v); setModal('qr'); }}><QrCode size={12} /></button>
                       <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => { setSelected(v); setForm({ ...v, hasVehicle: v.hasVehicle || false, vehiclePlate: v.vehiclePlate || '', vehicleModel: v.vehicleModel || '', vehicleColor: v.vehicleColor || '', visitDate: (v.visitDate || v.createdAt) ? format(new Date(v.visitDate || v.createdAt), "yyyy-MM-dd'T'HH:mm") : format(new Date(), "yyyy-MM-dd'T'HH:mm") }); setModal('edit'); }}><Edit2 size={12} /></button>
-                      {user?.role !== 'Guard' && (
-                        <button className="btn btn-danger" style={{ padding: '4px 8px' }} onClick={() => handleDelete(v._id)}><Trash2 size={12} /></button>
-                      )}
                     </div>
                   </td>
                 </tr>
@@ -255,14 +252,18 @@ export default function Visitors() {
                   </div>
                 </div>
 
-                {form.visitorType !== 'Military' && (
                   <>
-                    <div className="form-group"><label className="form-label">Full Name *</label><input className="input" value={form.fullName} onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))} required /></div>
-                    <div className="form-group"><label className="form-label">National ID *</label><input className="input" value={form.idNumber} onChange={e => setForm(p => ({ ...p, idNumber: e.target.value }))} required /></div>
-                    <div className="form-group"><label className="form-label">Phone *</label><input className="input" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} required /></div>
+                    {form.visitorType !== 'Military' && (
+                      <>
+                        <div className="form-group"><label className="form-label">Full Name *</label><input className="input" value={form.fullName} onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))} required /></div>
+                        <div className="form-group"><label className="form-label">National ID *</label><input className="input" value={form.idNumber} onChange={e => setForm(p => ({ ...p, idNumber: e.target.value }))} required /></div>
+                        <div className="form-group"><label className="form-label">Phone *</label><input className="input" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} required /></div>
+                      </>
+                    )}
                     <div className="form-group"><label className="form-label">Email</label><input className="input" type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} /></div>
-                    <div className="form-group"><label className="form-label">Organization / Rank</label><input className="input" value={form.organization} onChange={e => setForm(p => ({ ...p, organization: e.target.value }))} placeholder="e.g. Ministry of Health" /></div>
                     
+                    {form.visitorType !== 'Military' && (
+                      <>
                     <div className="form-group">
                       <label className="form-label">Military Officer to Visit *</label>
                       <input className="input" list="hosts" value={form.hostName} onChange={e => setForm(p => ({ ...p, hostName: e.target.value }))} required placeholder="Enter Officer Name" />
@@ -272,12 +273,13 @@ export default function Visitors() {
                     </div>
 
                     <div className="form-group" style={{ gridColumn: '1 / -1' }}><label className="form-label">Purpose of Visit *</label><input className="input" value={form.purposeOfVisit} onChange={e => setForm(p => ({ ...p, purposeOfVisit: e.target.value }))} required /></div>
-                    <div className="form-group"><label className="form-label">Visit Date/Time</label><input className="input" type="datetime-local" value={form.visitDate} onChange={e => setForm(p => ({ ...p, visitDate: e.target.value }))} /></div>
                     <div className="form-group"><label className="form-label">Status</label>
                       <select className="input" value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}>
                         <option>Pending</option><option>Approved</option><option>Denied</option><option>Completed</option>
                       </select>
                     </div>
+                      </>
+                    )}
                     <div className="form-group">
                       <label className="form-label">Has Vehicle?</label>
                       <select className="input" value={form.hasVehicle ? "true" : "false"} onChange={e => setForm(p => ({ ...p, hasVehicle: e.target.value === 'true', vehiclePlate: e.target.value === 'false' ? '' : p.vehiclePlate, vehicleModel: e.target.value === 'false' ? '' : p.vehicleModel, vehicleColor: e.target.value === 'false' ? '' : p.vehicleColor }))}>
@@ -292,9 +294,10 @@ export default function Visitors() {
                         <div className="form-group"><label className="form-label">Vehicle Color</label><input className="input" value={form.vehicleColor} onChange={e => setForm(p => ({ ...p, vehicleColor: e.target.value }))} placeholder="e.g. White" /></div>
                       </>
                     )}
-                    <div className="form-group" style={{ gridColumn: '1 / -1' }}><label className="form-label">Notes</label><textarea className="input" rows={2} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} /></div>
+                    {form.visitorType !== 'Military' && (
+                      <div className="form-group" style={{ gridColumn: '1 / -1' }}><label className="form-label">Notes</label><textarea className="input" rows={2} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} /></div>
+                    )}
                   </>
-                )}
 
                 <div className="form-group" style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
                   <label className="form-label">{form.visitorType === 'Military' ? 'Military ID Card Photo' : 'Visitor Photo'} <span style={{ color: 'var(--accent-primary)' }}>*</span></label>
@@ -372,12 +375,9 @@ export default function Visitors() {
               <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => setModal(null)}><X size={16} /></button>
             </div>
 
-            <div style={{ background: 'white', padding: '1rem', borderRadius: 8, display: 'inline-block', marginBottom: '1rem' }}>
+            <div style={{ background: 'white', padding: '1rem', borderRadius: 8, display: 'inline-block', marginBottom: '1.5rem' }}>
               <QRCodeSVG value={`${window.location.origin}/verify/${selected.visitorId}`} size={180} />
             </div>
-
-            <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 800, fontSize: 18, color: 'var(--accent-primary)', marginBottom: 4 }}>{selected.fullName}</div>
-            <div className="mono" style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: '1.5rem' }}>PASS ID: {selected.visitorId}</div>
 
             <div style={{ padding: '0.75rem', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)', textAlign: 'left' }}>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, fontWeight: 700, textTransform: 'uppercase' }}>QR Verification Link</div>

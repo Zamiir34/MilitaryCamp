@@ -304,13 +304,6 @@ class _UserTile extends StatelessWidget {
             ),
             _Divider(),
             _ActionBtn(icon: Icons.lock_reset, label: 'RESET PWD', color: AppColors.accent, onTap: onResetPassword),
-            _Divider(),
-            _ActionBtn(
-              icon: Icons.delete_outline,
-              label: 'DELETE',
-              color: AppColors.danger,
-              onTap: isSelf ? null : onDelete,
-            ),
           ]),
         ),
       ]),
@@ -361,6 +354,8 @@ class _UserFormSheetState extends State<_UserFormSheet> {
       _badge, _rank, _phone;
   String _role = 'guard';
   bool _loading = false;
+  List<dynamic> _personnelList = [];
+  String? _selectedPersonnelId;
 
   bool get isEdit => widget.user != null;
 
@@ -376,6 +371,18 @@ class _UserFormSheetState extends State<_UserFormSheet> {
     _rank     = TextEditingController(text: u?['rank'] ?? '');
     _phone    = TextEditingController(text: u?['phone'] ?? '');
     _role     = u?['role'] ?? 'guard';
+    if (!isEdit) _fetchPersonnel();
+  }
+
+  Future<void> _fetchPersonnel() async {
+    try {
+      final res = await widget.api.getPersonnel();
+      if (mounted) setState(() {
+        _personnelList = res['data'] ?? [];
+      });
+    } catch (e) {
+      debugPrint('Failed to fetch personnel: $e');
+    }
   }
 
   @override
@@ -449,22 +456,6 @@ class _UserFormSheetState extends State<_UserFormSheet> {
             key: _formKey,
             child: ListView(controller: ctrl, padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
               children: [
-                _FormField(ctrl: _name, label: 'Full Name *', icon: Icons.person_outline,
-                  validator: (v) => v!.isEmpty ? 'Required' : null),
-                const SizedBox(height: 14),
-                if (!isEdit) ...[
-                  _FormField(ctrl: _username, label: 'Username *', icon: Icons.alternate_email,
-                    validator: (v) => v!.isEmpty ? 'Required' : null),
-                  const SizedBox(height: 14),
-                  _FormField(ctrl: _password, label: 'Password *', icon: Icons.lock_outline,
-                    obscure: true,
-                    validator: (v) => v!.length < 6 ? 'Min 6 characters' : null),
-                  const SizedBox(height: 14),
-                ],
-                _FormField(ctrl: _email, label: 'Email *', icon: Icons.email_outlined,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (v) => !v!.contains('@') ? 'Valid email required' : null),
-                const SizedBox(height: 14),
                 // Role selector
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -490,12 +481,75 @@ class _UserFormSheetState extends State<_UserFormSheet> {
                   ),
                 ),
                 const SizedBox(height: 14),
-                _FormField(ctrl: _badge, label: 'Badge Number', icon: Icons.badge_outlined),
-                const SizedBox(height: 14),
-                _FormField(ctrl: _rank, label: 'Rank', icon: Icons.military_tech_outlined),
-                const SizedBox(height: 14),
-                _FormField(ctrl: _phone, label: 'Phone', icon: Icons.phone_outlined,
-                  keyboardType: TextInputType.phone),
+
+                if (!isEdit) ...[
+                  _FormField(ctrl: _username, label: 'Username *', icon: Icons.alternate_email,
+                    validator: (v) => v!.isEmpty ? 'Required' : null),
+                  const SizedBox(height: 14),
+                  _FormField(ctrl: _password, label: 'Password *', icon: Icons.lock_outline,
+                    obscure: true,
+                    validator: (v) => v!.length < 6 ? 'Min 6 characters' : null),
+                  const SizedBox(height: 14),
+                ],
+
+                if (!isEdit && (_role == 'guard' || _role == 'officer')) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedPersonnelId,
+                        dropdownColor: AppColors.surfaceVariant,
+                        isExpanded: true,
+                        hint: const Text('Link to Personnel Record (Optional)', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                        icon: const Icon(Icons.link, color: AppColors.primary),
+                        items: _personnelList
+                          .where((p) => p['type'] == 'Military' || p['type'] == 'Staff')
+                          .map((p) => DropdownMenuItem<String>(
+                            value: p['_id'],
+                            child: Text('${p['fullName']} (${p['rank'] ?? p['type']})', style: const TextStyle(color: AppColors.textPrimary)),
+                          )).toList(),
+                        onChanged: (val) {
+                          if (val == null) return;
+                          final p = _personnelList.firstWhere((element) => element['_id'] == val, orElse: () => null);
+                          if (p != null) {
+                            setState(() {
+                              _selectedPersonnelId = val;
+                              _username.text = p['email'] ?? _username.text;
+                              _name.text = p['fullName'] ?? _name.text;
+                              _email.text = p['email'] ?? _email.text;
+                              _rank.text = p['rank'] ?? _rank.text;
+                              _phone.text = p['phone'] ?? _phone.text;
+                              _badge.text = p['badgeNumber'] ?? p['idNumber'] ?? p['nationalId'] ?? _badge.text;
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Auto-filled from Personnel data'), backgroundColor: AppColors.success, duration: Duration(seconds: 2)));
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.only(top: 4, bottom: 14, left: 4),
+                    child: Text('Selecting a personnel automatically fills their details.', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                  ),
+                ],
+                if (_role == 'admin') ...[
+                  _FormField(ctrl: _name, label: 'Full Name *', icon: Icons.person_outline,
+                    validator: (v) => v!.isEmpty ? 'Required' : null),
+                  const SizedBox(height: 14),
+                  _FormField(ctrl: _email, label: 'Email *', icon: Icons.email_outlined,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (v) => !v!.contains('@') ? 'Valid email required' : null),
+                  const SizedBox(height: 14),
+                  _FormField(ctrl: _rank, label: 'Rank', icon: Icons.military_tech_outlined),
+                  const SizedBox(height: 14),
+                  _FormField(ctrl: _phone, label: 'Phone', icon: Icons.phone_outlined,
+                    keyboardType: TextInputType.phone),
+                ],
                 const SizedBox(height: 28),
                 SizedBox(height: 52, child: ElevatedButton(
                   onPressed: _loading ? null : _save,

@@ -59,13 +59,14 @@ app.use('/api/alerts', require('./routes/alerts'));
 app.use('/api/qrcode', require('./routes/qrcode'));
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/public', require('./routes/public'));
+app.use('/api/attendance', require('./routes/attendance'));
 
 // Socket.IO — authenticate via JWT, join personal room
 io.use((socket, next) => {
   try {
     const token = socket.handshake.auth?.token;
     if (!token) return next(new Error('Authentication required'));
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'military_secret_key_2024');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'military_secret_2024');
     socket.userId = decoded.userId;
     next();
   } catch {

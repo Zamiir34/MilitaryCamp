@@ -351,13 +351,6 @@ class _QRCodeCard extends StatelessWidget {
               dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Colors.black),
             ),
           ),
-          const SizedBox(height: 20),
-          Text(
-            visitor.visitorId,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: 6, color: AppColors.primary),
-          ),
-          const SizedBox(height: 4),
-          const Text('VALID FOR GATE ACCESS', style: TextStyle(fontSize: 9, color: AppColors.textMuted, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
         ],
       ),
     );

@@ -15,6 +15,7 @@ import 'user_management_screen.dart';
 import 'vehicle_screen.dart';
 import 'chat_screen.dart';
 import 'my_work_screen.dart';
+import 'attendance_screen.dart';
 
 class MainNavScreen extends StatefulWidget {
   const MainNavScreen({super.key});
@@ -183,6 +184,14 @@ class _MainNavScreenState extends State<MainNavScreen> {
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const MyWorkScreen()));
+                    },
+                  ),
+                  _DrawerItem(
+                    icon: Icons.access_time_outlined,
+                    label: 'My Attendance',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const AttendanceScreen()));
                     },
                   ),
                   _DrawerItem(

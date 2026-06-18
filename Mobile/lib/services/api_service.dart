@@ -257,12 +257,18 @@ class ApiService {
 
   // ─── Incidents ────────────────────────────────────────────────
   Future<Map<String, dynamic>> reportIncident(Map<String, dynamic> body) async {
-    return await _post('/incidents', body);
+    final payload = {
+      'type': body['type'],
+      'severity': body['severity'],
+      'gate': body['location'],
+      'message': body['description'],
+    };
+    return await _post('/alerts', payload);
   }
 
   Future<List<dynamic>> getIncidents() async {
-    final data = await _get('/incidents');
-    return data['incidents'] as List;
+    final data = await _get('/alerts');
+    return data['data'] as List;
   }
 
   // ─── User Management (admin only) ────────────────────────────
@@ -343,6 +349,28 @@ class ApiService {
   Future<void> deleteVisitor(String id) async => await _delete('/visitors/$id');
 
   Future<Map<String, dynamic>> getVisitorHistory(String id) async => await _get('/reports/visitor/$id');
+
+  // ─── Attendance ───────────────────────────────────────────────
+  Future<Map<String, dynamic>> checkTodayAttendance() async {
+    try {
+      return await _get('/attendance/today');
+    } catch (e) {
+      return {'checkedIn': false};
+    }
+  }
+
+  Future<Map<String, dynamic>> checkInAttendance(String notes) async {
+    return await _post('/attendance/check-in', {'notes': notes});
+  }
+
+  Future<Map<String, dynamic>> checkOutAttendance(String notes) async {
+    return await _post('/attendance/check-out', {'notes': notes});
+  }
+
+  Future<List<dynamic>> getAttendanceHistory() async {
+    final data = await _get('/attendance/history');
+    return data as List<dynamic>;
+  }
 
   // ─── Public Visitor Auth ──────────────────────────────────────
   Future<Map<String, dynamic>> requestVisitorOtp(String email) async {

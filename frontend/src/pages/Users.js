@@ -27,6 +27,16 @@ export default function Users() {
   const [form, setForm] = useState(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [showPass, setShowPass] = useState(false);
+  const [personnelList, setPersonnelList] = useState([]);
+
+  const fetchPersonnel = async () => {
+    try {
+      const { data } = await api.get('/personnel?limit=100'); // fetch enough for dropdown
+      setPersonnelList(data.data || data);
+    } catch (err) {
+      console.error('Failed to fetch personnel:', err);
+    }
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -41,6 +51,12 @@ export default function Users() {
   };
 
   useEffect(() => { fetchUsers(); }, []);
+
+  useEffect(() => {
+    if (modal) {
+      fetchPersonnel();
+    }
+  }, [modal]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -115,7 +131,6 @@ export default function Users() {
                   <td>
                     <div style={{ display: 'flex', gap: 4 }}>
                       <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => { setSelected(u); setForm({ ...u, password: '' }); setModal('edit'); }}><Edit2 size={12} /></button>
-                      <button className="btn btn-danger" style={{ padding: '4px 8px' }} onClick={() => handleDelete(u._id)}><Trash2 size={12} /></button>
                     </div>
                   </td>
                 </tr>
@@ -142,6 +157,11 @@ export default function Users() {
                 </span>
               </div>
               <div className="form-grid">
+                <div className="form-group"><label className="form-label">Role</label>
+                  <select className="input" value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}>
+                    <option>Administrator</option><option>SecurityOfficer</option><option>Guard</option>
+                  </select>
+                </div>
                 <div className="form-group"><label className="form-label">Username *</label><input className="input" value={form.username} onChange={e => setForm(p => ({ ...p, username: e.target.value }))} required /></div>
                 <div className="form-group">
                   <label className="form-label">{modal === 'add' ? 'Password *' : 'New Password (leave blank to keep)'}</label>
@@ -152,48 +172,46 @@ export default function Users() {
                     </button>
                   </div>
                 </div>
-                <div className="form-group"><label className="form-label">Full Name *</label><input className="input" value={form.fullName} onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))} required /></div>
-                <div className="form-group"><label className="form-label">Email *</label><input className="input" type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} required /></div>
-                <div className="form-group"><label className="form-label">Role</label>
-                  <select className="input" value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}>
-                    <option>Administrator</option><option>SecurityOfficer</option><option>Guard</option>
-                  </select>
-                </div>
-                <div className="form-group"><label className="form-label">Rank</label><input className="input" value={form.rank} onChange={e => setForm(p => ({ ...p, rank: e.target.value }))} /></div>
-                <div className="form-group"><label className="form-label">Phone</label><input className="input" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} /></div>
-                 <div className="form-group">
-                   <label className="form-label">Military ID (Personnel ID)</label>
-                   <input className="input" value={form.militaryId} onChange={e => setForm(p => ({ ...p, militaryId: e.target.value }))} placeholder="Leave blank to auto-generate (2026xxxx)" />
-                   <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>* If blank, a new 2026-prefix ID will be assigned.</div>
-                 </div>
-                <div className="form-group" style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 16, fontWeight: 700 }}>
-                    <input 
-                      type="checkbox" 
-                      checked={form.hasVehicle} 
-                      onChange={e => setForm(p => ({ ...p, hasVehicle: e.target.checked }))}
-                      style={{ width: 20, height: 20 }}
-                    />
-                    Do you drive a car?
-                  </label>
-                </div>
-
-                {form.hasVehicle && (
+                
+                {(form.role === 'Guard' || form.role === 'SecurityOfficer') && (
+                  <div className="form-group" style={{ gridColumn: '1 / -1', background: 'var(--bg-elevated)', padding: '1rem', borderRadius: 8, border: '1px solid var(--border)' }}>
+                    <label className="form-label">Link to Personnel Record (Optional)</label>
+                    <select className="input" onChange={e => {
+                      const selectedId = e.target.value;
+                      if (!selectedId) return;
+                      const p = personnelList.find(p => p._id === selectedId);
+                      if (p) {
+                        setForm(prev => ({
+                          ...prev,
+                          username: p.email || prev.username,
+                          fullName: p.fullName || prev.fullName,
+                          email: p.email || prev.email,
+                          rank: p.rank || prev.rank,
+                          phone: p.phone || prev.phone,
+                          militaryId: p.badgeNumber || p.idNumber || p.nationalId || prev.militaryId,
+                        }));
+                        toast.success('Auto-filled from Personnel data');
+                      }
+                    }}>
+                      <option value="">-- Select a Personnel to Auto-fill --</option>
+                      {personnelList.filter(p => p.type === 'Military' || p.type === 'Staff').map(p => (
+                        <option key={p._id} value={p._id}>{p.fullName} ({p.rank || p.type})</option>
+                      ))}
+                    </select>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>Selecting a personnel will automatically fill their name, rank, email, phone, and ID below.</div>
+                  </div>
+                )}
+                
+                {form.role === 'Administrator' && (
                   <>
-                    <div className="form-group">
-                      <label className="form-label">Plate Number *</label>
-                      <input className="input" value={form.vehicleDetails?.plateNumber || ''} onChange={e => setForm(p => ({ ...p, vehicleDetails: { ...p.vehicleDetails, plateNumber: e.target.value } }))} required={form.hasVehicle} />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Vehicle Model *</label>
-                      <input className="input" value={form.vehicleDetails?.model || ''} onChange={e => setForm(p => ({ ...p, vehicleDetails: { ...p.vehicleDetails, model: e.target.value } }))} required={form.hasVehicle} />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Color *</label>
-                      <input className="input" value={form.vehicleDetails?.color || ''} onChange={e => setForm(p => ({ ...p, vehicleDetails: { ...p.vehicleDetails, color: e.target.value } }))} required={form.hasVehicle} />
-                    </div>
+                    <div className="form-group"><label className="form-label">Full Name *</label><input className="input" value={form.fullName} onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))} required /></div>
+                    <div className="form-group"><label className="form-label">Email *</label><input className="input" type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} required /></div>
+                    <div className="form-group"><label className="form-label">Rank</label><input className="input" value={form.rank} onChange={e => setForm(p => ({ ...p, rank: e.target.value }))} /></div>
+                    <div className="form-group"><label className="form-label">Phone</label><input className="input" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} /></div>
                   </>
                 )}
+
+
 
                 <div className="form-group" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8, gridColumn: '1 / -1' }}>
                   <input type="checkbox" id="isActive" checked={form.isActive} onChange={e => setForm(p => ({ ...p, isActive: e.target.checked }))} style={{ width: 16, height: 16 }} />
