@@ -332,7 +332,7 @@ export default function Personnel() {
                 )}
 
                 <div className="form-group" style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', padding: '1rem', background: '#f8fafc', borderRadius: 8, border: '2px solid #e2e8f0' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', padding: '1rem', background: 'var(--bg-elevated)', borderRadius: 8, border: '2px solid var(--border)' }}>
                     <input 
                       type="checkbox" 
                       checked={form.serviceVerified} 

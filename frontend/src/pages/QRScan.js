@@ -96,16 +96,16 @@ export default function QRScan() {
               marginTop: '1.5rem',
               padding: '1.5rem',
               borderRadius: 12,
-              background: result.success ? 'rgba(30, 41, 59, 0.4)' : 'rgba(239, 68, 68, 0.05)',
+              background: result.success ? 'var(--bg-card)' : 'rgba(239, 68, 68, 0.05)',
               border: `2px solid ${result.success ? 'var(--accent-primary)' : 'var(--accent-red)'}`,
-              boxShadow: result.success ? '0 0 30px rgba(59, 130, 246, 0.15)' : 'none'
+              boxShadow: result.success ? 'var(--glow-secondary)' : 'none'
             }}>
               {result.success ? (
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ 
                     width: 150, height: 180, borderRadius: 12, margin: '0 auto 1.5rem',
-                    background: '#fff', border: '3px solid var(--accent-primary)',
-                    overflow: 'hidden', boxShadow: '0 10px 20px rgba(0,0,0,0.3)'
+                    background: 'var(--bg-secondary)', border: '3px solid var(--accent-primary)',
+                    overflow: 'hidden', boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
                   }}>
                     {result.photo ? (
                       <img src={result.photo} alt="Identity" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -137,11 +137,11 @@ export default function QRScan() {
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.5rem', borderRadius: 6 }}>
+                    <div style={{ background: 'var(--bg-elevated)', padding: '0.5rem', borderRadius: 6 }}>
                       <div style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 700 }}>GATE</div>
                       <div style={{ fontSize: 12, fontWeight: 700 }}>{result.log.gate}</div>
                     </div>
-                    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.5rem', borderRadius: 6 }}>
+                    <div style={{ background: 'var(--bg-elevated)', padding: '0.5rem', borderRadius: 6 }}>
                       <div style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 700 }}>TIMESTAMP</div>
                       <div style={{ fontSize: 12, fontWeight: 700 }}>{new Date().toLocaleTimeString()}</div>
                     </div>

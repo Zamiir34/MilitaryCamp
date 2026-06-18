@@ -33,21 +33,21 @@ export default function Verify() {
   }, [id]);
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: 'Rajdhani, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', fontFamily: 'Rajdhani, sans-serif' }}>
       <div style={{ textAlign: 'center' }}>
-        <Shield size={48} className="animate-pulse" style={{ color: '#3b82f6', marginBottom: '1rem' }} />
+        <Shield size={48} className="animate-pulse" style={{ color: 'var(--accent-primary)', marginBottom: '1rem' }} />
         <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '0.1em' }}>VERIFYING IDENTITY...</div>
       </div>
     </div>
   );
 
   if (error) return (
-    <div style={{ minHeight: '100vh', background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', padding: '2rem', textAlign: 'center', fontFamily: 'Rajdhani, sans-serif' }}>
-      <div className="card" style={{ maxWidth: 400, border: '2px solid #ef4444', background: 'rgba(239, 68, 68, 0.05)' }}>
-        <XCircle size={64} color="#ef4444" style={{ margin: '0 auto 1.5rem' }} />
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', padding: '2rem', textAlign: 'center', fontFamily: 'Rajdhani, sans-serif' }}>
+      <div className="card" style={{ maxWidth: 400, border: '2px solid var(--accent-red)', background: 'rgba(239, 68, 68, 0.05)' }}>
+        <XCircle size={64} color="var(--accent-red)" style={{ margin: '0 auto 1.5rem' }} />
         <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: '1rem' }}>UNAUTHORIZED</h1>
-        <p style={{ color: '#94a3b8', lineHeight: 1.6 }}>{error}</p>
-        <div style={{ marginTop: '2rem', fontSize: 12, color: '#64748b', fontFamily: 'monospace' }}>SEC_AUTH_ERR_{new Date().getTime().toString(36).toUpperCase()}</div>
+        <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>{error}</p>
+        <div style={{ marginTop: '2rem', fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace' }}>SEC_AUTH_ERR_{new Date().getTime().toString(36).toUpperCase()}</div>
       </div>
     </div>
   );

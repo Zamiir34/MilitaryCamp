@@ -23,6 +23,46 @@
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
+
+  /* Button text and hover custom properties */
+  --btn-primary-text: #ffffff;
+  --btn-primary-hover: #0f172a;
+
+  /* Active navigation states */
+  --bg-active: #eff6ff;
+  --border-active: #dbeafe;
+  --text-active: var(--accent-secondary);
+}
+
+[data-theme="dark"] {
+  --bg-primary: #0a0e1a; /* Scaffold background */
+  --bg-secondary: #111827; /* Sidebar, header */
+  --bg-card: #1a2234; /* Cards */
+  --bg-elevated: #1c2433; /* Inputs/Dropdowns */
+  --border: #1e293b; /* Standard border */
+  --border-light: #2d3f55; /* Highlight borders */
+  --accent-primary: #00d4aa; /* Military teal */
+  --accent-secondary: #3b82f6; /* Intel blue */
+  --accent-green: #22c55e;
+  --accent-green-dim: #16a34a;
+  --accent-gold: #f59e0b;
+  --accent-red: #ef4444;
+  --accent-blue: #3b82f6;
+  --accent-cyan: #06b6d4;
+  --accent-purple: #a855f7;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --glow-primary: 0 4px 12px rgba(0, 212, 170, 0.2);
+  --glow-secondary: 0 4px 12px rgba(59, 130, 246, 0.2);
+  --glow-red: 0 4px 12px rgba(239, 68, 68, 0.25);
+
+  --btn-primary-text: #0a0e1a;
+  --btn-primary-hover: #00a884; /* primaryDark in Flutter app */
+
+  --bg-active: rgba(0, 212, 170, 0.1);
+  --border-active: rgba(0, 212, 170, 0.3);
+  --text-active: var(--accent-primary);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -116,7 +156,7 @@ body {
 /* Input styles */
 .input {
   width: 100%;
-  background: #ffffff;
+  background: var(--bg-secondary);
   border: 2px solid var(--border);
   border-radius: var(--radius-md);
   padding: 12px 16px;
@@ -156,12 +196,12 @@ select.input option { background: var(--bg-secondary); }
 
 .btn-primary {
   background: var(--accent-primary);
-  color: #ffffff;
+  color: var(--btn-primary-text);
   border: none;
 }
 .btn-primary:hover { 
-  background: #0f172a; 
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+  background: var(--btn-primary-hover); 
+  box-shadow: var(--glow-primary);
   transform: translateY(-1px);
 }
 
@@ -184,7 +224,7 @@ select.input option { background: var(--bg-secondary); }
 .btn-ghost:hover { 
   border-color: var(--accent-secondary); 
   color: var(--accent-secondary); 
-  background: #f8fafc;
+  background: var(--bg-elevated);
 }
 
 .btn-gold { 
@@ -206,7 +246,7 @@ thead tr { background: var(--bg-elevated); border-bottom: 2px solid var(--border
 th { padding: 16px 14px; text-align: left; font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary); }
 td { padding: 16px 14px; border-bottom: 1px solid var(--border); color: var(--text-primary); font-weight: 500; }
 tbody tr { transition: background 0.15s; }
-tbody tr:hover { background: #f1f5f9; }
+tbody tr:hover { background: var(--bg-elevated); }
 
 /* Modal */
 .modal-overlay {

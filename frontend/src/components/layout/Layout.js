@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import {
   LayoutDashboard, Users, Car, UserCheck, ArrowLeftRight,
-  FileBarChart2, Bell, QrCode, Shield, LogOut, Menu, X, ChevronRight, MessageSquare
+  FileBarChart2, Bell, QrCode, Shield, LogOut, Menu, X, ChevronRight, MessageSquare, Sun, Moon
 } from 'lucide-react';
 import api from '../../utils/api';
 
@@ -22,6 +23,7 @@ const navItems = [
 
 export default function Layout() {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -71,7 +73,7 @@ export default function Layout() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
           }}>
-            <Shield size={20} color="#fff" />
+            <Shield size={20} color="var(--bg-secondary)" />
           </div>
           {(sidebarOpen || mobileOpen) && (
             <div style={{ overflow: 'hidden' }}>
@@ -104,9 +106,9 @@ export default function Layout() {
                 padding: '8px 10px',
                 borderRadius: 6,
                 marginBottom: 2,
-                color: isActive ? 'var(--accent-secondary)' : 'var(--text-secondary)',
-                background: isActive ? '#eff6ff' : 'transparent',
-                border: `1px solid ${isActive ? '#dbeafe' : 'transparent'}`,
+                color: isActive ? 'var(--text-active)' : 'var(--text-secondary)',
+                background: isActive ? 'var(--bg-active)' : 'transparent',
+                border: `1px solid ${isActive ? 'var(--border-active)' : 'transparent'}`,
                 textDecoration: 'none',
                 transition: 'all 0.15s',
                 fontFamily: 'Rajdhani, sans-serif',
@@ -197,9 +199,19 @@ export default function Layout() {
               {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} • {new Date().toLocaleTimeString()}
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--accent-green)', animation: 'pulse-primary 2s infinite' }} />
-            <span style={{ fontSize: 14, color: 'var(--accent-green)', fontFamily: 'Share Tech Mono, monospace', fontWeight: 800 }}>ONLINE</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
+            <button
+              onClick={toggleTheme}
+              className="btn btn-ghost"
+              style={{ padding: '8px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--accent-green)', animation: 'pulse-primary 2s infinite' }} />
+              <span style={{ fontSize: 14, color: 'var(--accent-green)', fontFamily: 'Share Tech Mono, monospace', fontWeight: 800 }}>ONLINE</span>
+            </div>
           </div>
         </header>
 

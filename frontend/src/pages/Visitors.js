@@ -17,7 +17,10 @@ const INITIAL_FORM = {
   hostName: '', 
   visitDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"), 
   expectedDuration: '', 
+  hasVehicle: false,
   vehiclePlate: '', 
+  vehicleModel: '',
+  vehicleColor: '',
   status: 'Pending', 
   notes: '',
   photo: ''
@@ -111,6 +114,10 @@ export default function Visitors() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.photo) {
+      toast.error(form.visitorType === 'Military' ? 'Military ID card photo is required.' : 'Visitor photo is required.');
+      return;
+    }
     setSubmitting(true);
     try {
       if (modal === 'add') {
@@ -184,7 +191,18 @@ export default function Visitors() {
                 <tr key={v._id}>
                   <td><span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{v.visitorId}</span></td>
                   <td><span className={`badge ${v.visitorType === 'Military' ? 'badge-blue' : 'badge-yellow'}`}>{v.visitorType}</span></td>
-                  <td><span style={{ fontWeight: 600 }}>{v.fullName}</span><br/><span className="mono" style={{ fontSize: 10, color: 'var(--text-muted)' }}>{v.idNumber}</span></td>
+                  <td>
+                    <span style={{ fontWeight: 600 }}>{v.fullName}</span>
+                    <br/>
+                    <span className="mono" style={{ fontSize: 10, color: 'var(--text-muted)' }}>{v.idNumber}</span>
+                    {v.hasVehicle && (
+                      <div style={{ marginTop: 4 }}>
+                        <span className="badge badge-gray" style={{ fontSize: 9, padding: '2px 6px' }}>
+                          🚗 {v.vehiclePlate} {v.vehicleModel ? `(${v.vehicleModel})` : ''}
+                        </span>
+                      </div>
+                    )}
+                  </td>
                   <td>{v.organization || '-'}</td>
                   <td style={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.purposeOfVisit}</td>
                   <td><span style={{ fontWeight: v.visitorType === 'Civilian' ? 600 : 400 }}>{v.hostName || '-'}</span></td>
@@ -193,7 +211,7 @@ export default function Visitors() {
                   <td>
                     <div style={{ display: 'flex', gap: 4 }}>
                       <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => { setSelected(v); setModal('qr'); }}><QrCode size={12} /></button>
-                      <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => { setSelected(v); setForm({ ...v, visitDate: (v.visitDate || v.createdAt) ? format(new Date(v.visitDate || v.createdAt), "yyyy-MM-dd'T'HH:mm") : format(new Date(), "yyyy-MM-dd'T'HH:mm") }); setModal('edit'); }}><Edit2 size={12} /></button>
+                      <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => { setSelected(v); setForm({ ...v, hasVehicle: v.hasVehicle || false, vehiclePlate: v.vehiclePlate || '', vehicleModel: v.vehicleModel || '', vehicleColor: v.vehicleColor || '', visitDate: (v.visitDate || v.createdAt) ? format(new Date(v.visitDate || v.createdAt), "yyyy-MM-dd'T'HH:mm") : format(new Date(), "yyyy-MM-dd'T'HH:mm") }); setModal('edit'); }}><Edit2 size={12} /></button>
                       {user?.role !== 'Guard' && (
                         <button className="btn btn-danger" style={{ padding: '4px 8px' }} onClick={() => handleDelete(v._id)}><Trash2 size={12} /></button>
                       )}
@@ -220,14 +238,14 @@ export default function Visitors() {
                 <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                   <label className="form-label">Visitor Category *</label>
                   <div style={{ display: 'flex', gap: '1rem' }}>
-                    <label style={{ flex: 1, padding: '12px', border: `2px solid ${form.visitorType === 'Military' ? 'var(--accent-primary)' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, background: form.visitorType === 'Military' ? 'rgba(30, 64, 175, 0.05)' : 'transparent' }}>
+                    <label style={{ flex: 1, padding: '12px', border: `2px solid ${form.visitorType === 'Military' ? 'var(--accent-primary)' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, background: form.visitorType === 'Military' ? 'var(--bg-active)' : 'transparent' }}>
                       <input type="radio" name="vtype" checked={form.visitorType === 'Military'} onChange={() => setForm(p => ({ ...p, visitorType: 'Military', purposeOfVisit: 'Facility Access / Official Visit' }))} />
                       <div>
                         <div style={{ fontWeight: 700, fontSize: 14 }}>Military Personnel</div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Visiting for official facility business</div>
                       </div>
                     </label>
-                    <label style={{ flex: 1, padding: '12px', border: `2px solid ${form.visitorType === 'Civilian' ? 'var(--accent-primary)' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, background: form.visitorType === 'Civilian' ? 'rgba(30, 64, 175, 0.05)' : 'transparent' }}>
+                    <label style={{ flex: 1, padding: '12px', border: `2px solid ${form.visitorType === 'Civilian' ? 'var(--accent-primary)' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, background: form.visitorType === 'Civilian' ? 'var(--bg-active)' : 'transparent' }}>
                       <input type="radio" name="vtype" checked={form.visitorType === 'Civilian'} onChange={() => setForm(p => ({ ...p, visitorType: 'Civilian', purposeOfVisit: 'Personal / Official Visit to Officer' }))} />
                       <div>
                         <div style={{ fontWeight: 700, fontSize: 14 }}>Civilian Visitor</div>
@@ -237,38 +255,55 @@ export default function Visitors() {
                   </div>
                 </div>
 
-                <div className="form-group"><label className="form-label">Full Name *</label><input className="input" value={form.fullName} onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))} required /></div>
-                <div className="form-group"><label className="form-label">{form.visitorType === 'Military' ? 'Military ID *' : 'National ID *'}</label><input className="input" value={form.idNumber} onChange={e => setForm(p => ({ ...p, idNumber: e.target.value }))} required /></div>
-                <div className="form-group"><label className="form-label">Phone *</label><input className="input" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} required /></div>
-                <div className="form-group"><label className="form-label">Email</label><input className="input" type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} /></div>
-                <div className="form-group"><label className="form-label">Organization / Rank</label><input className="input" value={form.organization} onChange={e => setForm(p => ({ ...p, organization: e.target.value }))} placeholder={form.visitorType === 'Military' ? 'e.g. 1st Battalion / Captain' : 'e.g. Ministry of Health'} /></div>
-                
-                <div className="form-group">
-                  <label className="form-label">{form.visitorType === 'Civilian' ? 'Military Officer to Visit *' : 'Point of Contact / Host'}</label>
-                  <input className="input" list="hosts" value={form.hostName} onChange={e => setForm(p => ({ ...p, hostName: e.target.value }))} required={form.visitorType === 'Civilian'} placeholder={form.visitorType === 'Civilian' ? 'Enter Officer Name' : 'Optional'} />
-                  <datalist id="hosts">
-                    {hostUsers.map(u => <option key={u._id} value={u.fullName}>{u.rank} {u.fullName} ({u.role})</option>)}
-                  </datalist>
-                </div>
+                {form.visitorType !== 'Military' && (
+                  <>
+                    <div className="form-group"><label className="form-label">Full Name *</label><input className="input" value={form.fullName} onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))} required /></div>
+                    <div className="form-group"><label className="form-label">National ID *</label><input className="input" value={form.idNumber} onChange={e => setForm(p => ({ ...p, idNumber: e.target.value }))} required /></div>
+                    <div className="form-group"><label className="form-label">Phone *</label><input className="input" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} required /></div>
+                    <div className="form-group"><label className="form-label">Email</label><input className="input" type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} /></div>
+                    <div className="form-group"><label className="form-label">Organization / Rank</label><input className="input" value={form.organization} onChange={e => setForm(p => ({ ...p, organization: e.target.value }))} placeholder="e.g. Ministry of Health" /></div>
+                    
+                    <div className="form-group">
+                      <label className="form-label">Military Officer to Visit *</label>
+                      <input className="input" list="hosts" value={form.hostName} onChange={e => setForm(p => ({ ...p, hostName: e.target.value }))} required placeholder="Enter Officer Name" />
+                      <datalist id="hosts">
+                        {hostUsers.map(u => <option key={u._id} value={u.fullName}>{u.rank} {u.fullName} ({u.role})</option>)}
+                      </datalist>
+                    </div>
 
-                <div className="form-group" style={{ gridColumn: '1 / -1' }}><label className="form-label">Purpose of Visit *</label><input className="input" value={form.purposeOfVisit} onChange={e => setForm(p => ({ ...p, purposeOfVisit: e.target.value }))} required /></div>
-                <div className="form-group"><label className="form-label">Visit Date/Time</label><input className="input" type="datetime-local" value={form.visitDate} onChange={e => setForm(p => ({ ...p, visitDate: e.target.value }))} /></div>
-                <div className="form-group"><label className="form-label">Vehicle Plate</label><input className="input" value={form.vehiclePlate} onChange={e => setForm(p => ({ ...p, vehiclePlate: e.target.value }))} /></div>
-                <div className="form-group"><label className="form-label">Status</label>
-                  <select className="input" value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}>
-                    <option>Pending</option><option>Approved</option><option>Denied</option><option>Completed</option>
-                  </select>
-                </div>
-                <div className="form-group" style={{ gridColumn: '1 / -1' }}><label className="form-label">Notes</label><textarea className="input" rows={2} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} /></div>
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}><label className="form-label">Purpose of Visit *</label><input className="input" value={form.purposeOfVisit} onChange={e => setForm(p => ({ ...p, purposeOfVisit: e.target.value }))} required /></div>
+                    <div className="form-group"><label className="form-label">Visit Date/Time</label><input className="input" type="datetime-local" value={form.visitDate} onChange={e => setForm(p => ({ ...p, visitDate: e.target.value }))} /></div>
+                    <div className="form-group"><label className="form-label">Status</label>
+                      <select className="input" value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}>
+                        <option>Pending</option><option>Approved</option><option>Denied</option><option>Completed</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Has Vehicle?</label>
+                      <select className="input" value={form.hasVehicle ? "true" : "false"} onChange={e => setForm(p => ({ ...p, hasVehicle: e.target.value === 'true', vehiclePlate: e.target.value === 'false' ? '' : p.vehiclePlate, vehicleModel: e.target.value === 'false' ? '' : p.vehicleModel, vehicleColor: e.target.value === 'false' ? '' : p.vehicleColor }))}>
+                        <option value="false">No</option>
+                        <option value="true">Yes</option>
+                      </select>
+                    </div>
+                    {form.hasVehicle && (
+                      <>
+                        <div className="form-group"><label className="form-label">Vehicle Plate *</label><input className="input" value={form.vehiclePlate} onChange={e => setForm(p => ({ ...p, vehiclePlate: e.target.value }))} required /></div>
+                        <div className="form-group"><label className="form-label">Vehicle Model</label><input className="input" value={form.vehicleModel} onChange={e => setForm(p => ({ ...p, vehicleModel: e.target.value }))} placeholder="e.g. Toyota Hilux" /></div>
+                        <div className="form-group"><label className="form-label">Vehicle Color</label><input className="input" value={form.vehicleColor} onChange={e => setForm(p => ({ ...p, vehicleColor: e.target.value }))} placeholder="e.g. White" /></div>
+                      </>
+                    )}
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}><label className="form-label">Notes</label><textarea className="input" rows={2} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} /></div>
+                  </>
+                )}
 
                 <div className="form-group" style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
-                  <label className="form-label">Visitor Photo <span style={{ color: 'var(--accent-primary)' }}>*</span></label>
+                  <label className="form-label">{form.visitorType === 'Military' ? 'Military ID Card Photo' : 'Visitor Photo'} <span style={{ color: 'var(--accent-primary)' }}>*</span></label>
                   <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                     {/* Photo Preview */}
                     <div style={{ width: 110, height: 140, borderRadius: 10, background: 'var(--bg-secondary)', border: `2px solid ${form.photo ? 'var(--accent-green)' : 'var(--accent-primary)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, transition: 'border-color 0.3s' }}>
                       {form.photo
                         ? <img src={form.photo} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}><Camera size={36} /><div style={{ fontSize: 10, marginTop: 6, fontWeight: 700, letterSpacing: '0.05em' }}>NO PHOTO</div></div>
+                        : <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}><Camera size={36} /><div style={{ fontSize: 10, marginTop: 6, fontWeight: 700, letterSpacing: '0.05em' }}>{form.visitorType === 'Military' ? 'NO ID UPLOAD' : 'NO PHOTO'}</div></div>
                       }
                     </div>
                     {/* Webcam / Upload */}
@@ -309,7 +344,11 @@ export default function Visitors() {
                               Remove Photo
                             </button>
                           )}
-                          <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: 0 }}>A clear facial photo is required. After registration, a QR code will be generated automatically.</p>
+                          <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: 0 }}>
+                            {form.visitorType === 'Military' 
+                              ? 'A clear photo of your Military ID card is required. No face photo is needed.' 
+                              : 'A clear facial photo is required. After registration, a QR code will be generated automatically.'}
+                          </p>
                         </div>
                       )}
                     </div>

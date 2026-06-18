@@ -13,6 +13,17 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       const { data } = await api.post('/auth/login', { username, password });
+
+      // If server requires email verification first
+      if (data.requireVerification) {
+        return {
+          success: false,
+          requireVerification: true,
+          userId: data.userId,
+          email: data.email,
+        };
+      }
+
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       setUser(data.user);
@@ -21,6 +32,30 @@ export const AuthProvider = ({ children }) => {
       return { success: false, message: err.response?.data?.message || 'Login failed' };
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const verifyEmail = useCallback(async (userId, code) => {
+    setLoading(true);
+    try {
+      const { data } = await api.post('/auth/verify-email', { userId, code });
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setUser(data.user);
+      return { success: true };
+    } catch (err) {
+      return { success: false, message: err.response?.data?.message || 'Invalid verification code' };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const resendVerification = useCallback(async (userId) => {
+    try {
+      await api.post('/auth/resend-verification', { userId });
+      return { success: true };
+    } catch (err) {
+      return { success: false, message: err.response?.data?.message || 'Failed to resend code' };
     }
   }, []);
 
@@ -49,7 +84,7 @@ export const AuthProvider = ({ children }) => {
   }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, canAccess, toggleDuty }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, canAccess, toggleDuty, verifyEmail, resendVerification }}>
       {children}
     </AuthContext.Provider>
   );

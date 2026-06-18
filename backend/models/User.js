@@ -19,7 +19,10 @@ const userSchema = new mongoose.Schema({
   },
   isActive: { type: Boolean, default: true },
   isOnDuty: { type: Boolean, default: false },
-  lastLogin: { type: Date }
+  lastLogin: { type: Date },
+  isEmailVerified: { type: Boolean, default: false },
+  emailVerificationCode: { type: String },
+  emailVerificationExpires: { type: Date }
 }, { timestamps: true });
 
 userSchema.pre('save', async function () {

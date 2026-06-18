@@ -23,11 +23,13 @@ async function seed() {
         fullName: 'System Administrator',
         email: 'admin@militarycamp.mil',
         role: 'Administrator',
-        militaryId: 'ADMIN-001'
+        militaryId: 'ADMIN-001',
+        isEmailVerified: true,
       });
       console.log('✅ Admin user created: admin / admin123');
     } else {
       existingAdmin.password = 'admin123';
+      existingAdmin.isEmailVerified = true;
       await existingAdmin.save();
       console.log('✅ Admin password reset: admin / admin123');
     }
@@ -49,11 +51,13 @@ async function seed() {
         role: 'SecurityOfficer',
         rank: 'Major',
         badgeNumber: 'SO-001',
-        militaryId: 'MIL-SO-001'
+        militaryId: 'MIL-SO-001',
+        isEmailVerified: true,
       });
       console.log('✅ Security Officer created: sec_officer / officer123');
     } else {
       existingOfficer.password = 'officer123';
+      existingOfficer.isEmailVerified = true;
       await existingOfficer.save();
       console.log('✅ Security Officer password reset');
     }
@@ -75,11 +79,13 @@ async function seed() {
         role: 'Guard',
         rank: 'Corporal',
         badgeNumber: 'G-042',
-        militaryId: 'MIL-G-042'
+        militaryId: 'MIL-G-042',
+        isEmailVerified: true,
       });
       console.log('✅ Guard created: guard1 / guard123');
     } else {
       existingGuard.password = 'guard123';
+      existingGuard.isEmailVerified = true;
       await existingGuard.save();
       console.log('✅ Guard password reset');
     }

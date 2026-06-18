@@ -103,7 +103,7 @@ export default function Dashboard() {
                   <stop offset="95%" stopColor="#059669" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="date" stroke="var(--text-muted)" tick={{ fontSize: 12, fontFamily: 'Share Tech Mono', fontWeight: 600 }} tickFormatter={v => v.slice(5)} />
               <YAxis stroke="var(--text-muted)" tick={{ fontSize: 12, fontFamily: 'Share Tech Mono', fontWeight: 600 }} />
               <Tooltip content={<CustomTooltip />} />
@@ -124,7 +124,7 @@ export default function Dashboard() {
               { name: 'Vehicles', value: stats?.vehicleEntriesToday || 0 },
               { name: 'Visitors', value: stats?.visitorEntriesToday || 0 },
             ]}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(56, 189, 248, 0.1)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="name" stroke="var(--text-muted)" tick={{ fontSize: 10, fontFamily: 'Share Tech Mono' }} />
               <YAxis stroke="var(--text-muted)" tick={{ fontSize: 10, fontFamily: 'Share Tech Mono' }} />
               <Tooltip content={<CustomTooltip />} />

@@ -3,6 +3,7 @@ const router = express.Router();
 const User = require('../models/User');
 const Personnel = require('../models/Personnel');
 const { auth, requireRole } = require('../middleware/auth');
+const { sendVerificationEmail } = require('../utils/email');
 
 // Get all users
 router.get('/', auth, requireRole('Administrator'), async (req, res) => {
@@ -17,8 +18,27 @@ router.get('/', auth, requireRole('Administrator'), async (req, res) => {
 // Create user
 router.post('/', auth, requireRole('Administrator'), async (req, res) => {
   try {
+    const { username, email } = req.body;
     let militaryId = req.body.militaryId;
     
+    // Check for existing user by username or email
+    const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+    if (existingUser) {
+      if (existingUser.username === username) {
+        return res.status(400).json({ message: 'Username is already taken.' });
+      }
+      if (existingUser.email === email) {
+        return res.status(400).json({ message: 'Email is already taken.' });
+      }
+    }
+
+    if (militaryId) {
+      const userWithMilitaryId = await User.findOne({ militaryId });
+      if (userWithMilitaryId) {
+        return res.status(400).json({ message: 'Military ID is already assigned to another user.' });
+      }
+    }
+
     if (!militaryId) {
       // Auto-generate military ID 2026
       const lastPersonnel = await Personnel.findOne({ personnelId: /^2026/ }).sort({ personnelId: -1 });
@@ -50,8 +70,20 @@ router.post('/', auth, requireRole('Administrator'), async (req, res) => {
       }
     }
 
-    const user = new User({ ...req.body, militaryId });
+    const user = new User({ ...req.body, militaryId, isEmailVerified: false });
     await user.save();
+
+    // Send initial verification email
+    try {
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      user.emailVerificationCode = code;
+      user.emailVerificationExpires = new Date(Date.now() + 15 * 60 * 1000);
+      await user.save();
+      await sendVerificationEmail(user.email, user.fullName, code);
+    } catch (emailErr) {
+      console.error('Failed to send verification email:', emailErr.message);
+    }
+
     res.status(201).json(user);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -63,6 +95,31 @@ router.put('/:id', auth, requireRole('Administrator'), async (req, res) => {
   try {
     const { password, ...updateData } = req.body;
     
+    // Check for uniqueness if fields are updated
+    if (updateData.username || updateData.email || updateData.militaryId) {
+      const orQuery = [];
+      if (updateData.username) orQuery.push({ username: updateData.username });
+      if (updateData.email) orQuery.push({ email: updateData.email });
+      if (updateData.militaryId) orQuery.push({ militaryId: updateData.militaryId });
+
+      if (orQuery.length > 0) {
+        const existingUsers = await User.find({ $or: orQuery });
+        for (const eu of existingUsers) {
+          if (eu._id.toString() !== req.params.id) {
+            if (updateData.username && eu.username === updateData.username) {
+              return res.status(400).json({ message: 'Username is already taken by another user.' });
+            }
+            if (updateData.email && eu.email === updateData.email) {
+              return res.status(400).json({ message: 'Email is already taken by another user.' });
+            }
+            if (updateData.militaryId && eu.militaryId === updateData.militaryId) {
+              return res.status(400).json({ message: 'Military ID is already assigned to another user.' });
+            }
+          }
+        }
+      }
+    }
+
     if (updateData.militaryId) {
       const personnelExists = await Personnel.findOne({ personnelId: updateData.militaryId });
       if (!personnelExists) {

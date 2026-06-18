@@ -1,0 +1,64 @@
+name: military_camp_monitor
+description: Military Camp Personnel & Vehicle Entry/Exit Monitoring System
+
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  provider: ^6.1.1
+
+  # HTTP & API
+  http: ^1.1.2
+  dio: ^5.4.0
+
+  # Storage
+  shared_preferences: ^2.2.2
+  flutter_secure_storage: ^9.0.0
+
+  # UI Components
+  cupertino_icons: ^1.0.6
+  flutter_svg: ^2.0.9
+  cached_network_image: ^3.3.1
+  shimmer: ^3.0.0
+  fl_chart: ^0.66.1
+  intl: ^0.19.0
+  timeago: ^3.6.0
+  badges: ^3.1.2
+  lottie: ^3.0.0
+  
+  # QR Code
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^3.5.5
+
+  # Utils
+  uuid: ^4.2.2
+  image_picker: ^1.0.7
+  permission_handler: ^11.2.0
+  connectivity_plus: ^5.0.2
+  image_gallery_saver: ^2.0.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+#  assets:
+#    - assets/images/
+
+#  fonts:
+#    - family: Rajdhani
+#      fonts:
+#        - asset: assets/fonts/Rajdhani-Regular.ttf
+#        - asset: assets/fonts/Rajdhani-Bold.ttf
+#          weight: 700
+#        - asset: assets/fonts/Rajdhani-SemiBold.ttf
+#          weight: 600

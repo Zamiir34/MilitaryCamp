@@ -3,6 +3,8 @@ const router = express.Router();
 const QRCode = require('qrcode');
 const Personnel = require('../models/Personnel');
 const User = require('../models/User');
+const EntryLog = require('../models/EntryLog');
+const crypto = require('crypto');
 const { auth, requireRole } = require('../middleware/auth');
 
 
@@ -87,6 +89,29 @@ router.post('/', auth, requireRole('Administrator', 'SecurityOfficer'), async (r
     const qrCode = await QRCode.toDataURL(qrData);
     const personnel = new Personnel({ ...req.body, personnelId, idNumber, qrCode, createdBy: req.user._id });
     await personnel.save();
+
+    // Automatically record an entry log for the registered person so they appear in the daily report
+    try {
+      const logId = 'LOG' + Date.now().toString(36).toUpperCase() + crypto.randomBytes(3).toString('hex').toUpperCase();
+      const entryLog = new EntryLog({
+        logId,
+        type: 'Personnel',
+        action: 'Entry',
+        personnel: personnel._id,
+        subjectName: personnel.fullName,
+        subjectId: personnel.personnelId,
+        gate: 'Main Gate',
+        entryTime: new Date(),
+        recordedBy: req.user._id,
+        recordedByName: req.user.fullName,
+        isAuthorized: true,
+        purpose: 'First Entry on Registration'
+      });
+      await entryLog.save();
+    } catch (logErr) {
+      console.error('Failed to create automatic EntryLog for registered personnel:', logErr);
+    }
+
     res.status(201).json(personnel);
   } catch (err) {
     console.error('Personnel registration error:', err);

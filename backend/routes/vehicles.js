@@ -18,6 +18,11 @@ router.get('/', auth, async (req, res) => {
     if (vehicleType) query.vehicleType = vehicleType;
     if (status) query.status = status;
 
+    // Data Isolation: Non-admins only see records created after they joined
+    if (req.user.role !== 'Administrator') {
+      query.createdAt = { $gte: req.user.createdAt };
+    }
+
     const total = await Vehicle.countDocuments(query);
     const vehicles = await Vehicle.find(query)
       .sort({ createdAt: -1 })
