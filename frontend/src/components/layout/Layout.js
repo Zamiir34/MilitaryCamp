@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import {
-  LayoutDashboard, Users, Car, UserCheck, ArrowLeftRight,
+  LayoutDashboard, Users, UserCheck, ArrowLeftRight,
   FileBarChart2, Bell, Shield, LogOut, Menu, X, ChevronRight, MessageSquare, Sun, Moon,
   CalendarCheck, AlertTriangle, Info
 } from 'lucide-react';
@@ -15,13 +15,13 @@ const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', exact: true },
   { to: '/my-work', icon: FileBarChart2, label: 'My Work Today' },
   { to: '/entry-exit', icon: ArrowLeftRight, label: 'Entry / Exit' },
-  { to: '/personnel', icon: Users, label: 'Personnel' },
+  { to: '/personnel', icon: Users, label: 'Personnel', hiddenFor: ['Guard'] },
   { to: '/visitors', icon: UserCheck, label: 'Visitors' },
   { to: '/notifications', icon: Bell, label: 'Notifications' },
   { to: '/attendance', icon: CalendarCheck, label: 'Attendance' },
   { to: '/chat', icon: MessageSquare, label: 'Chat' },
   { to: '/reports', icon: FileBarChart2, label: 'Reports' },
-  { to: '/users', icon: Shield, label: 'Users', adminOnly: true },
+  { to: '/users', icon: Shield, label: 'Users', roles: ['Administrator', 'SecurityOfficer'] },
 ];
 
 export default function Layout() {
@@ -157,7 +157,7 @@ export default function Layout() {
 
         {/* Nav */}
         <nav style={{ flex: 1, padding: '0.75rem 0.5rem', overflowY: 'auto', overflowX: 'hidden' }}>
-          {navItems.filter(item => !item.adminOnly || user?.role === 'Administrator').map(({ to, icon: Icon, label, exact }) => (
+          {navItems.filter(item => (!item.roles || item.roles.includes(user?.role)) && !(item.hiddenFor || []).includes(user?.role)).map(({ to, icon: Icon, label, exact }) => (
             <NavLink
               key={to}
               to={to}

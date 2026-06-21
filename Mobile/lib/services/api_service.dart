@@ -273,28 +273,28 @@ class ApiService {
 
   // ─── User Management (admin only) ────────────────────────────
   Future<List<dynamic>> getUsers() async {
-    final data = await _get('/auth/users');
-    return data['users'] as List;
+    final data = await _get('/users');
+    return data as List;
   }
 
   Future<Map<String, dynamic>> createUser(Map<String, dynamic> body) async {
-    return await _post('/auth/register', body);
+    return await _post('/users', body);
   }
 
   Future<Map<String, dynamic>> updateUser(String id, Map<String, dynamic> body) async {
-    return await _put('/auth/users/$id', body);
+    return await _put('/users/$id', body);
   }
 
   Future<void> deleteUser(String id) async {
-    await _delete('/auth/users/$id');
+    await _delete('/users/$id');
   }
 
   Future<Map<String, dynamic>> toggleUserStatus(String id) async {
-    return await _put('/auth/users/$id/toggle', {});
+    return await _put('/users/$id/toggle', {});
   }
 
   Future<void> resetUserPassword(String id, String newPassword) async {
-    await _put('/auth/users/$id/reset-password', {'newPassword': newPassword});
+    await _put('/users/$id/reset-password', {'newPassword': newPassword});
   }
 
   // ─── Chat ────────────────────────────────────────────────────

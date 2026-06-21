@@ -67,14 +67,15 @@ router.post('/', auth, requireRole('Administrator', 'SecurityOfficer'), async (r
       return res.status(400).json({ message: `Personnel already registered: ${existing.fullName} (${existing.personnelId})` });
     }
 
-    // Generate sequential ID starting with 2026
-    const lastPersonnel = await Personnel.findOne({ personnelId: /^2026/ }).sort({ personnelId: -1 });
+    // Generate sequential ID starting with P2601
+    const lastPersonnel = await Personnel.findOne({ personnelId: /^P/i }).sort({ personnelId: -1 });
     let newId;
     if (!lastPersonnel) {
-      newId = '20260001';
+      newId = 'P2601';
     } else {
-      const lastNum = parseInt(lastPersonnel.personnelId.replace('2026', ''));
-      newId = '2026' + (lastNum + 1).toString().padStart(4, '0');
+      const match = lastPersonnel.personnelId.match(/^P(\\d+)/i);
+      const lastNum = match ? parseInt(match[1], 10) : 2600;
+      newId = 'P' + (lastNum + 1);
     }
 
     const personnelId = newId;

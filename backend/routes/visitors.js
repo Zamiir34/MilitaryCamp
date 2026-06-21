@@ -3,6 +3,7 @@ const router = express.Router();
 const QRCode = require('qrcode');
 const Visitor = require('../models/Visitor');
 const User = require('../models/User');
+const Vehicle = require('../models/Vehicle');
 const Message = require('../models/Message');
 const EntryLog = require('../models/EntryLog');
 const crypto = require('crypto');
@@ -64,6 +65,11 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ message: 'A valid real email address is required' });
     }
 
+    const existingEmail = await Visitor.findOne({ email: new RegExp('^' + req.body.email.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&') + '$', 'i') });
+    if (existingEmail) {
+      return res.status(400).json({ message: `Email is already registered for visitor: ${existingEmail.fullName}` });
+    }
+
     const visitorData = { ...req.body };
     if (visitorData.visitorType === 'Military') {
       if (!visitorData.fullName || visitorData.fullName.trim() === '') {
@@ -81,6 +87,22 @@ router.post('/', auth, async (req, res) => {
       const existingVisitor = await Visitor.findOne({ idNumber: visitorData.idNumber });
       if (existingVisitor) {
         return res.status(400).json({ message: `ID Number is already registered for visitor: ${existingVisitor.fullName}` });
+      }
+    }
+
+    if (visitorData.hasVehicle && visitorData.vehiclePlate) {
+      const plateRegex = new RegExp('^' + visitorData.vehiclePlate.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&') + '$', 'i');
+      const existingVisitorWithPlate = await Visitor.findOne({
+        vehiclePlate: plateRegex,
+        status: { $in: ['Pending', 'Approved'] }
+      });
+      if (existingVisitorWithPlate) {
+        return res.status(400).json({ message: `Vehicle plate is already in use by active visitor: ${existingVisitorWithPlate.fullName}` });
+      }
+      
+      const existingVehicle = await Vehicle.findOne({ plateNumber: plateRegex });
+      if (existingVehicle) {
+        return res.status(400).json({ message: `Vehicle plate is already registered to a permanent vehicle.` });
       }
     }
 
@@ -187,6 +209,29 @@ router.put('/:id', auth, async (req, res) => {
       const existingVisitor = await Visitor.findOne({ idNumber: updateData.idNumber });
       if (existingVisitor && existingVisitor._id.toString() !== req.params.id) {
         return res.status(400).json({ message: `ID Number is already registered for visitor: ${existingVisitor.fullName}` });
+      }
+    }
+
+    if (updateData.email) {
+      const existingEmail = await Visitor.findOne({ email: new RegExp('^' + updateData.email.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&') + '$', 'i') });
+      if (existingEmail && existingEmail._id.toString() !== req.params.id) {
+        return res.status(400).json({ message: `Email is already registered for visitor: ${existingEmail.fullName}` });
+      }
+    }
+
+    if (updateData.hasVehicle && updateData.vehiclePlate) {
+      const plateRegex = new RegExp('^' + updateData.vehiclePlate.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&') + '$', 'i');
+      const existingVisitorWithPlate = await Visitor.findOne({
+        vehiclePlate: plateRegex,
+        status: { $in: ['Pending', 'Approved'] }
+      });
+      if (existingVisitorWithPlate && existingVisitorWithPlate._id.toString() !== req.params.id) {
+        return res.status(400).json({ message: `Vehicle plate is already in use by active visitor: ${existingVisitorWithPlate.fullName}` });
+      }
+
+      const existingVehicle = await Vehicle.findOne({ plateNumber: plateRegex });
+      if (existingVehicle) {
+        return res.status(400).json({ message: `Vehicle plate is already registered to a permanent vehicle.` });
       }
     }
 

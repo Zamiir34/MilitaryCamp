@@ -68,6 +68,16 @@ router.post('/', auth, requireRole('Administrator', 'SecurityOfficer'), async (r
 router.put('/:id', auth, async (req, res) => {
   try {
     const updateData = { ...req.body, updatedAt: new Date() };
+
+    if (updateData.plateNumber) {
+      const existing = await Vehicle.findOne({ 
+        plateNumber: { $regex: new RegExp('^' + updateData.plateNumber.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&') + '$', 'i') } 
+      });
+      if (existing && existing._id.toString() !== req.params.id) {
+        return res.status(400).json({ message: `Vehicle already registered with plate: ${updateData.plateNumber}` });
+      }
+    }
+
     if (req.user.role === 'Guard') {
       const dateStr = new Date().toLocaleString('en-US');
       const logMsg = `[Guard ${req.user.fullName} updated record on ${dateStr}]`;

@@ -218,10 +218,10 @@ class _MainNavScreenState extends State<MainNavScreen> {
                     ),
                   ],
 
-                  if (user?.isAdmin == true) ...[
+                  if (user?.isOfficer == true) ...[
                     const SizedBox(height: 8),
                     // ── ADMIN TOOLS ──────────────────────────
-                    _DrawerLabel(label: 'ADMIN TOOLS'),
+                    _DrawerLabel(label: user?.isAdmin == true ? 'ADMIN TOOLS' : 'OFFICER TOOLS'),
                     _DrawerItem(
                       icon: Icons.manage_accounts_outlined,
                       label: 'User Management',

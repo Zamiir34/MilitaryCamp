@@ -5,10 +5,24 @@ const Personnel = require('../models/Personnel');
 const { auth, requireRole } = require('../middleware/auth');
 const { sendVerificationEmail } = require('../utils/email');
 
+const resolvePersonnelForMilitaryId = async (militaryId) => {
+  const normalized = typeof militaryId === 'string' ? militaryId.trim() : militaryId;
+  if (!normalized) return null;
+
+  return Personnel.findOne({
+    $or: [
+      { personnelId: normalized },
+      { idNumber: normalized },
+      { militaryId: normalized }
+    ]
+  });
+};
+
 // Get all users
-router.get('/', auth, requireRole('Administrator'), async (req, res) => {
+router.get('/', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
-    const users = await User.find().sort({ createdAt: -1 });
+    const query = req.user.role === 'SecurityOfficer' ? { role: 'Guard' } : {};
+    const users = await User.find(query).sort({ createdAt: -1 });
     res.json(users);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -16,10 +30,14 @@ router.get('/', auth, requireRole('Administrator'), async (req, res) => {
 });
 
 // Create user
-router.post('/', auth, requireRole('Administrator'), async (req, res) => {
+router.post('/', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
-    const { username, email } = req.body;
-    let militaryId = req.body.militaryId;
+    const { username, email, role } = req.body;
+    let militaryId = typeof req.body.militaryId === 'string' ? req.body.militaryId.trim() : req.body.militaryId;
+
+    if (req.user.role === 'SecurityOfficer' && role !== 'Guard') {
+      return res.status(403).json({ message: 'Security officers can only register guard accounts.' });
+    }
     
     // Check for existing user by username or email
     const existingUser = await User.findOne({ $or: [{ username }, { email }] });
@@ -32,22 +50,20 @@ router.post('/', auth, requireRole('Administrator'), async (req, res) => {
       }
     }
 
-    if (militaryId) {
-      const userWithMilitaryId = await User.findOne({ militaryId });
-      if (userWithMilitaryId) {
-        return res.status(400).json({ message: 'Military ID is already assigned to another user.' });
-      }
-    }
-
     if (!militaryId) {
-      // Auto-generate military ID 2026
-      const lastPersonnel = await Personnel.findOne({ personnelId: /^2026/ }).sort({ personnelId: -1 });
+      let prefix = 'U';
+      if (role === 'Guard') prefix = 'G';
+      else if (role === 'SecurityOfficer') prefix = 'S';
+      else if (role === 'Administrator') prefix = 'A';
+
+      const lastUserPersonnel = await Personnel.findOne({ personnelId: new RegExp(`^${prefix}`, 'i') }).sort({ personnelId: -1 });
       let newId;
-      if (!lastPersonnel) {
-        newId = '20260001';
+      if (!lastUserPersonnel) {
+        newId = `${prefix}2601`;
       } else {
-        const lastNum = parseInt(lastPersonnel.personnelId.replace('2026', ''));
-        newId = '2026' + (lastNum + 1).toString().padStart(4, '0');
+        const match = lastUserPersonnel.personnelId.match(new RegExp(`^${prefix}(\\d+)`, 'i'));
+        const lastNum = match ? parseInt(match[1], 10) : 2600;
+        newId = prefix + (lastNum + 1);
       }
       militaryId = newId;
 
@@ -56,17 +72,25 @@ router.post('/', auth, requireRole('Administrator'), async (req, res) => {
         fullName: req.body.fullName,
         personnelId: militaryId,
         idNumber: '2026' + Math.floor(100000 + Math.random() * 899999),
-        type: 'Military',
-        rank: req.body.rank || 'Private',
-        unit: 'Unassigned',
+        type: role === 'Guard' ? 'Military' : 'Staff',
+        rank: req.body.rank || (role === 'Guard' ? 'Guard' : role),
+        unit: 'Security',
         status: 'Active',
         createdBy: req.user._id
       });
       await personnel.save();
     } else {
-      const personnelExists = await Personnel.findOne({ personnelId: militaryId });
-      if (!personnelExists) {
+      const personnel = await resolvePersonnelForMilitaryId(militaryId);
+      if (!personnel) {
         return res.status(400).json({ message: 'Invalid Military ID: No such personnel found.' });
+      }
+      militaryId = personnel.personnelId;
+    }
+
+    if (militaryId) {
+      const userWithMilitaryId = await User.findOne({ militaryId });
+      if (userWithMilitaryId) {
+        return res.status(400).json({ message: 'Military ID is already assigned to another user.' });
       }
     }
 
@@ -91,9 +115,22 @@ router.post('/', auth, requireRole('Administrator'), async (req, res) => {
 });
 
 // Update user
-router.put('/:id', auth, requireRole('Administrator'), async (req, res) => {
+router.put('/:id', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
     const { password, ...updateData } = req.body;
+    if (typeof updateData.militaryId === 'string') {
+      updateData.militaryId = updateData.militaryId.trim();
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (req.user.role === 'SecurityOfficer') {
+      if (user.role !== 'Guard' || (updateData.role && updateData.role !== 'Guard')) {
+        return res.status(403).json({ message: 'Security officers can only update guard accounts.' });
+      }
+      updateData.role = 'Guard';
+    }
     
     // Check for uniqueness if fields are updated
     if (updateData.username || updateData.email || updateData.militaryId) {
@@ -120,18 +157,33 @@ router.put('/:id', auth, requireRole('Administrator'), async (req, res) => {
       }
     }
 
-    if (updateData.militaryId) {
-      const personnelExists = await Personnel.findOne({ personnelId: updateData.militaryId });
-      if (!personnelExists) {
+    const targetRole = updateData.role || user.role;
+    if (targetRole === 'Guard') {
+      const personnel = await resolvePersonnelForMilitaryId(updateData.militaryId || user.militaryId);
+      if (!personnel) {
+        return res.status(400).json({ message: 'Select an existing personnel record before saving a guard account.' });
+      }
+      updateData.militaryId = personnel.personnelId;
+
+      const userWithMilitaryId = await User.findOne({ militaryId: updateData.militaryId });
+      if (userWithMilitaryId && userWithMilitaryId._id.toString() !== req.params.id) {
+        return res.status(400).json({ message: 'Military ID is already assigned to another user.' });
+      }
+    } else if (updateData.militaryId) {
+      const personnel = await resolvePersonnelForMilitaryId(updateData.militaryId);
+      if (!personnel) {
         return res.status(400).json({ message: 'Invalid Military ID: No such personnel found.' });
+      }
+      updateData.militaryId = personnel.personnelId;
+
+      const userWithMilitaryId = await User.findOne({ militaryId: updateData.militaryId });
+      if (userWithMilitaryId && userWithMilitaryId._id.toString() !== req.params.id) {
+        return res.status(400).json({ message: 'Military ID is already assigned to another user.' });
       }
     }
 
     if (password) updateData.password = password;
     updateData.updatedAt = new Date();
-    
-    const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
     
     Object.assign(user, updateData);
     await user.save();
@@ -153,6 +205,51 @@ router.delete('/:id', auth, requireRole('Administrator'), async (req, res) => {
     res.json({ message: 'User deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+// Toggle user active status
+router.put('/:id/toggle', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
+  try {
+    if (req.params.id === req.user._id.toString()) {
+      return res.status(400).json({ message: 'You cannot deactivate your own account.' });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (req.user.role === 'SecurityOfficer' && user.role !== 'Guard') {
+      return res.status(403).json({ message: 'Security officers can only update guard accounts.' });
+    }
+
+    user.isActive = !user.isActive;
+    await user.save();
+    res.json(user);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// Reset user password
+router.put('/:id/reset-password', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (req.user.role === 'SecurityOfficer' && user.role !== 'Guard') {
+      return res.status(403).json({ message: 'Security officers can only update guard accounts.' });
+    }
+
+    user.password = newPassword;
+    await user.save();
+    res.json({ message: 'Password reset successfully.' });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
   }
 });
 

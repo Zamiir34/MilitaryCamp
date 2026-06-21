@@ -20,6 +20,7 @@ const INITIAL_FORM = {
 
 export default function Users() {
   const { user: currentUser } = useAuth();
+  const isSecurityOfficer = currentUser?.role === 'SecurityOfficer';
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
@@ -102,7 +103,7 @@ export default function Users() {
           <h1 className="page-title">User Management</h1>
           <p className="page-subtitle">System access control</p>
         </div>
-        <button className="btn btn-primary" onClick={() => { setForm(INITIAL_FORM); setModal('add'); }}>
+        <button className="btn btn-primary" onClick={() => { setForm({ ...INITIAL_FORM, role: isSecurityOfficer ? 'Guard' : INITIAL_FORM.role }); setModal('add'); }}>
           <Plus size={14} /> Add User
         </button>
       </div>
@@ -153,13 +154,17 @@ export default function Users() {
               <div style={{ background: 'rgba(239, 68, 68, 0.06)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '0.75rem 1rem', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10, marginBottom: '1.25rem' }}>
                 <Shield size={18} color="var(--accent-red)" style={{ flexShrink: 0 }} />
                 <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.4 }}>
-                  SECURITY WARNING: Personnel access credentials (including Guard & Officer accounts) must be created and registered strictly by an authorized Camp Administrator.
+                  SECURITY WARNING: Access credentials must be created and registered strictly by an authorized Camp Administrator.
                 </span>
               </div>
               <div className="form-grid">
                 <div className="form-group"><label className="form-label">Role</label>
                   <select className="input" value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}>
-                    <option>Administrator</option><option>SecurityOfficer</option><option>Guard</option>
+                    {isSecurityOfficer ? (
+                      <option>Guard</option>
+                    ) : (
+                      <><option>Administrator</option><option>SecurityOfficer</option><option>Guard</option></>
+                    )}
                   </select>
                 </div>
                 <div className="form-group"><label className="form-label">Username *</label><input className="input" value={form.username} onChange={e => setForm(p => ({ ...p, username: e.target.value }))} required /></div>
@@ -175,8 +180,8 @@ export default function Users() {
                 
                 {(form.role === 'Guard' || form.role === 'SecurityOfficer') && (
                   <div className="form-group" style={{ gridColumn: '1 / -1', background: 'var(--bg-elevated)', padding: '1rem', borderRadius: 8, border: '1px solid var(--border)' }}>
-                    <label className="form-label">Link to Personnel Record (Optional)</label>
-                    <select className="input" onChange={e => {
+                    <label className="form-label">Personnel Record (Optional)</label>
+                    <select className="input" value={personnelList.find(p => p.personnelId === form.militaryId)?._id || ''} onChange={e => {
                       const selectedId = e.target.value;
                       if (!selectedId) return;
                       const p = personnelList.find(p => p._id === selectedId);
@@ -188,28 +193,26 @@ export default function Users() {
                           email: p.email || prev.email,
                           rank: p.rank || prev.rank,
                           phone: p.phone || prev.phone,
-                          militaryId: p.badgeNumber || p.idNumber || p.nationalId || prev.militaryId,
+                          militaryId: p.personnelId || prev.militaryId,
                         }));
                         toast.success('Auto-filled from Personnel data');
                       }
                     }}>
-                      <option value="">-- Select a Personnel to Auto-fill --</option>
+                      <option value="">-- Select Personnel --</option>
                       {personnelList.filter(p => p.type === 'Military' || p.type === 'Staff').map(p => (
-                        <option key={p._id} value={p._id}>{p.fullName} ({p.rank || p.type})</option>
+                        <option key={p._id} value={p._id}>{p.fullName} ({p.personnelId} - {p.rank || p.type})</option>
                       ))}
                     </select>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>Selecting a personnel will automatically fill their name, rank, email, phone, and ID below.</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
+                      Guard accounts must be linked to an existing personnel record. The account details below are filled from that record.
+                    </div>
                   </div>
                 )}
                 
-                {form.role === 'Administrator' && (
-                  <>
-                    <div className="form-group"><label className="form-label">Full Name *</label><input className="input" value={form.fullName} onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))} required /></div>
-                    <div className="form-group"><label className="form-label">Email *</label><input className="input" type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} required /></div>
-                    <div className="form-group"><label className="form-label">Rank</label><input className="input" value={form.rank} onChange={e => setForm(p => ({ ...p, rank: e.target.value }))} /></div>
-                    <div className="form-group"><label className="form-label">Phone</label><input className="input" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} /></div>
-                  </>
-                )}
+                <div className="form-group"><label className="form-label">Full Name *</label><input className="input" value={form.fullName} onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))} required /></div>
+                <div className="form-group"><label className="form-label">Email *</label><input className="input" type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} required /></div>
+                <div className="form-group"><label className="form-label">Rank</label><input className="input" value={form.rank} onChange={e => setForm(p => ({ ...p, rank: e.target.value }))} /></div>
+                <div className="form-group"><label className="form-label">Phone</label><input className="input" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} /></div>
 
 
 
