@@ -38,10 +38,6 @@ export default function Visitors() {
   const [form, setForm] = useState(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [hostUsers, setHostUsers] = useState([]);
-  const [webcamActive, setWebcamActive] = useState(false);
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const streamRef = useRef(null);
 
   const fetchVisitors = async () => {
     setLoading(true);
@@ -73,45 +69,6 @@ export default function Visitors() {
   useEffect(() => { fetchVisitors(); }, [search, filterStatus]);
   useEffect(() => { if (modal) fetchHosts(); }, [modal]);
 
-  const startWebcam = async () => {
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 } });
-      streamRef.current = s;
-      setWebcamActive(true);
-    } catch {
-      toast.error('Camera access denied. Please upload a photo instead.');
-    }
-  };
-
-  const stopWebcam = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
-      streamRef.current = null;
-    }
-    setWebcamActive(false);
-  };
-
-  const capturePhoto = () => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0);
-    setForm(p => ({ ...p, photo: canvas.toDataURL('image/jpeg', 0.85) }));
-    stopWebcam();
-  };
-
-  useEffect(() => {
-    if (webcamActive && videoRef.current && streamRef.current) {
-      videoRef.current.srcObject = streamRef.current;
-    }
-  }, [webcamActive]);
-
-  useEffect(() => {
-    if (modal !== 'add' && modal !== 'edit') stopWebcam();
-  }, [modal]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.photo) {
@@ -123,7 +80,6 @@ export default function Visitors() {
       if (modal === 'add') {
         const { data: newVisitor } = await api.post('/visitors', form);
         toast.success('Visitor registered — scan QR code now');
-        stopWebcam();
         fetchVisitors();
         setSelected(newVisitor);
         setModal('qr');
@@ -309,51 +265,29 @@ export default function Visitors() {
                         : <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}><Camera size={36} /><div style={{ fontSize: 10, marginTop: 6, fontWeight: 700, letterSpacing: '0.05em' }}>{form.visitorType === 'Military' ? 'NO ID UPLOAD' : 'NO PHOTO'}</div></div>
                       }
                     </div>
-                    {/* Webcam / Upload */}
+                    {/* Photo Upload */}
                     <div style={{ flex: 1, minWidth: 220 }}>
-                      {webcamActive ? (
-                        <div>
-                          <video ref={videoRef} autoPlay playsInline muted
-                            style={{ width: '100%', maxWidth: 320, borderRadius: 8, border: '2px solid var(--accent-primary)', display: 'block', marginBottom: 8 }}
-                          />
-                          <canvas ref={canvasRef} style={{ display: 'none' }} />
-                          <div style={{ display: 'flex', gap: 8 }}>
-                            <button type="button" className="btn btn-primary" onClick={capturePhoto} style={{ flex: 1 }}>
-                              <Camera size={14} /> Capture Photo
-                            </button>
-                            <button type="button" className="btn btn-ghost" onClick={stopWebcam}>Cancel</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                          <button type="button" className="btn btn-primary" onClick={startWebcam} style={{ alignSelf: 'flex-start' }}>
-                            <Camera size={14} /> Open Camera
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Upload Photo File</div>
+                        <input type="file" accept="image/*" onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => setForm(p => ({ ...p, photo: reader.result }));
+                            reader.readAsDataURL(file);
+                          }
+                        }} style={{ fontSize: 13 }} />
+                        {form.photo && (
+                          <button type="button" className="btn btn-ghost" style={{ fontSize: 12, alignSelf: 'flex-start', color: 'var(--accent-red)' }} onClick={() => setForm(p => ({ ...p, photo: '' }))}>
+                            Remove Photo
                           </button>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontSize: 11 }}>
-                            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-                            or upload file
-                            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-                          </div>
-                          <input type="file" accept="image/*" onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onloadend = () => setForm(p => ({ ...p, photo: reader.result }));
-                              reader.readAsDataURL(file);
-                            }
-                          }} style={{ fontSize: 13 }} />
-                          {form.photo && (
-                            <button type="button" className="btn btn-ghost" style={{ fontSize: 12, alignSelf: 'flex-start', color: 'var(--accent-red)' }} onClick={() => setForm(p => ({ ...p, photo: '' }))}>
-                              Remove Photo
-                            </button>
-                          )}
-                          <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: 0 }}>
-                            {form.visitorType === 'Military' 
-                              ? 'A clear photo of your Military ID card is required. No face photo is needed.' 
-                              : 'A clear facial photo is required. After registration, a QR code will be generated automatically.'}
-                          </p>
-                        </div>
-                      )}
+                        )}
+                        <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: 0 }}>
+                          {form.visitorType === 'Military' 
+                            ? 'A clear photo of your Military ID card is required. No face photo is needed.' 
+                            : 'A clear facial photo is required. After registration, a QR code will be generated automatically.'}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -375,15 +309,37 @@ export default function Visitors() {
               <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => setModal(null)}><X size={16} /></button>
             </div>
 
-            <div style={{ background: 'white', padding: '1rem', borderRadius: 8, display: 'inline-block', marginBottom: '1.5rem' }}>
+            <div style={{ background: 'white', padding: '1rem', borderRadius: 8, display: 'inline-block', marginBottom: '1rem' }}>
               <QRCodeSVG value={`${window.location.origin}/verify/${selected.visitorId}`} size={180} />
             </div>
 
-            <div style={{ padding: '0.75rem', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)', textAlign: 'left' }}>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, fontWeight: 700, textTransform: 'uppercase' }}>QR Verification Link</div>
-              <a href={`${window.location.origin}/verify/${selected.visitorId}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: 'var(--accent-primary)', wordBreak: 'break-all', fontFamily: 'Share Tech Mono, monospace' }}>
-                {`${window.location.origin}/verify/${selected.visitorId}`}
-              </a>
+            <div style={{ padding: '1rem', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)', textAlign: 'left', marginBottom: '1.5rem' }}>
+              <div style={{ marginBottom: 8 }}>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Visitor Name:</span>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{selected.fullName}</div>
+              </div>
+              <div style={{ marginBottom: 8, display: 'flex', gap: '1rem' }}>
+                <div>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>ID / Type:</span>
+                  <div style={{ fontSize: 13 }} className="mono">{selected.idNumber} ({selected.visitorType})</div>
+                </div>
+                <div>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Pass #:</span>
+                  <div style={{ fontSize: 13 }} className="mono">{selected.visitorId}</div>
+                </div>
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Vehicle Access:</span>
+                <div style={{ fontSize: 13, fontWeight: selected.hasVehicle ? 600 : 400, color: selected.hasVehicle ? 'var(--accent-primary)' : 'inherit' }}>
+                  {selected.hasVehicle ? `YES - Plate: ${selected.vehiclePlate} ${selected.vehicleModel ? `(${selected.vehicleModel})` : ''}` : 'NO VEHICLE'}
+                </div>
+              </div>
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 8, marginTop: 8 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2, fontWeight: 700, textTransform: 'uppercase' }}>QR Link</div>
+                <a href={`${window.location.origin}/verify/${selected.visitorId}`} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: 'var(--accent-primary)', wordBreak: 'break-all', fontFamily: 'Share Tech Mono, monospace' }}>
+                  {`${window.location.origin}/verify/${selected.visitorId}`}
+                </a>
+              </div>
             </div>
 
             <div style={{ marginTop: '1.5rem' }}>
