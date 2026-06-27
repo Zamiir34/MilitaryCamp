@@ -14,6 +14,14 @@ const severityConfig = {
   Info: { color: 'var(--accent-cyan)', bg: 'rgba(6,182,212,0.1)', border: 'rgba(6,182,212,0.3)', icon: 'ℹ️' },
 };
 
+const getSenderLabel = (alert) => {
+  if (alert?.reportedBy?.fullName) {
+    const rank = alert.reportedBy.rank ? `${alert.reportedBy.rank} ` : '';
+    return `${rank}${alert.reportedBy.fullName}`.trim();
+  }
+  return 'System';
+};
+
 export default function Alerts() {
   const { canAccess } = useAuth();
   const [alerts, setAlerts] = useState([]);
@@ -190,9 +198,13 @@ export default function Alerts() {
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>{alert.message}</div>
                   {alert.details && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{alert.details}</div>}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                    <span className="badge badge-gray" style={{ fontSize: 10 }}>
+                      Sent by: {getSenderLabel(alert)}
+                    </span>
+                  </div>
                   <div className="mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 6 }}>
                     {alert.alertId} • {alert.createdAt ? format(new Date(alert.createdAt), 'yyyy-MM-dd HH:mm:ss') : 'Just now'}
-                    {alert.reportedBy && ` • Reporter: ${alert.reportedBy.fullName || 'Unknown'}`}
                   </div>
                 </div>
                 {!alert.isResolved && canAccess(['Administrator', 'SecurityOfficer']) && (

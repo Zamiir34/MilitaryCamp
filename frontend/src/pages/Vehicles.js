@@ -181,7 +181,7 @@ export default function Vehicles() {
                 <div className="form-group">
                   <label className="form-label">Owner Category *</label>
                   <select className="input" value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}>
-                    <option>Military</option><option>Civilian</option><option>Visitor</option><option>Contractor</option>
+                    <option>Military</option>
                   </select>
                 </div>
                 <div className="form-group">

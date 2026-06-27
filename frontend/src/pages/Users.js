@@ -5,6 +5,8 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 
+const RANKS = ['Dable', 'Captan', 'Cornel', 'Gashaanle'];
+
 const DEMO = [
   { _id: '1', username: 'admin', fullName: 'System Administrator', role: 'Administrator', email: 'admin@camp.mil', isActive: true, lastLogin: new Date().toISOString(), createdAt: new Date().toISOString() },
   { _id: '2', username: 'sec_officer1', fullName: 'MAJ. David Clarke', role: 'SecurityOfficer', email: 'dclarke@camp.mil', rank: 'Major', isActive: true, lastLogin: new Date(Date.now() - 3600000).toISOString(), createdAt: new Date().toISOString() },
@@ -211,7 +213,13 @@ export default function Users() {
                 
                 <div className="form-group"><label className="form-label">Full Name *</label><input className="input" value={form.fullName} onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))} required /></div>
                 <div className="form-group"><label className="form-label">Email *</label><input className="input" type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} required /></div>
-                <div className="form-group"><label className="form-label">Rank</label><input className="input" value={form.rank} onChange={e => setForm(p => ({ ...p, rank: e.target.value }))} /></div>
+                <div className="form-group">
+                  <label className="form-label">Rank</label>
+                  <select className="input" value={form.rank} onChange={e => setForm(p => ({ ...p, rank: e.target.value }))}>
+                    <option value="">Select Rank</option>
+                    {RANKS.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </div>
                 <div className="form-group"><label className="form-label">Phone</label><input className="input" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} /></div>
 
 

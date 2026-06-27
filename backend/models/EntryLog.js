@@ -9,6 +9,7 @@ const entryLogSchema = new mongoose.Schema({
   visitor: { type: mongoose.Schema.Types.ObjectId, ref: 'Visitor' },
   subjectName: { type: String, required: true },
   subjectId: { type: String },
+  driverName: { type: String },
   gate: { type: String, default: 'Main Gate' },
   checkpoint: { type: String },
   entryTime: { type: Date },

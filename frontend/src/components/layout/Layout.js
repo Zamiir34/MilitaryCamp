@@ -59,8 +59,9 @@ export default function Layout() {
       // Severity-based toast
       const isCritical = alert.severity === 'Critical' || alert.severity === 'High';
       const toastFn = isCritical ? toast.error : toast;
+      const sender = alert.reportedBy?.fullName;
       toastFn(
-        `🔔 ${alert.type}: ${alert.message}`,
+        `🔔 ${alert.type}: ${alert.message}${sender ? ` — ${sender}` : ''}`,
         { duration: 5000, id: alert.alertId }
       );
     };
@@ -343,11 +344,13 @@ export default function Layout() {
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{alert.message}</div>
-                              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, display: 'flex', gap: 6 }}>
+                              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                                 <span style={{ color, fontWeight: 700, fontFamily: 'Rajdhani, sans-serif', textTransform: 'uppercase' }}>{alert.severity}</span>
                                 <span>•</span>
                                 <span>{alert.type}</span>
                                 {alert.gate && <><span>•</span><span>{alert.gate}</span></>}
+                                <span>•</span>
+                                <span>By: {alert.reportedBy?.fullName || 'System'}</span>
                               </div>
                             </div>
                           </div>

@@ -13,323 +13,68 @@ class ReportsScreen extends StatefulWidget {
 class _ReportsScreenState extends State<ReportsScreen> {
   final _api = ApiService();
   bool _loading = true;
-  Map<String, dynamic>? _data;
-  DateTime _start = DateTime.now().subtract(const Duration(days: 7));
-  DateTime _end = DateTime.now();
+  Map<String, dynamic>? _report;
 
-  // Registration filter
-  String _regFilter = 'all'; // all | military | civilian | contractor | visitor
+  late DateTime _start;
+  late DateTime _end;
+  String _type = '';
+  String _gate = '';
+  String _action = '';
+  String _isAuthorized = '';
 
   @override
   void initState() {
     super.initState();
+    final now = DateTime.now();
+    _start = DateTime(now.year, now.month, now.day);
+    _end = _start;
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
+
+  String _fmtDate(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   Future<void> _load() async {
     if (mounted) setState(() => _loading = true);
     try {
-      final res = await _api.getReport(
-        startDate: _start.toIso8601String(),
-        endDate: _end.toIso8601String(),
+      final res = await _api.getReportRange(
+        startDate: _fmtDate(_start),
+        endDate: _fmtDate(_end),
+        type: _type.isEmpty ? null : _type,
+        gate: _gate.isEmpty ? null : _gate,
+        action: _action.isEmpty ? null : _action,
+        isAuthorized: _isAuthorized.isEmpty ? null : _isAuthorized,
       );
-      if (mounted) setState(() { _data = res; _loading = false; });
+      if (mounted) setState(() { _report = res; _loading = false; });
     } catch (_) {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _report = {
+            'summary': {'total': 0, 'entries': 0, 'exits': 0, 'personnel': 0, 'vehicles': 0, 'visitors': 0, 'unauthorized': 0},
+            'logs': [],
+            'trendData': [],
+            'gateData': [],
+            'isSingleDay': true,
+          };
+        });
+      }
     }
   }
 
-  // ─── Helpers ──────────────────────────────────────────────────
-  List<Map<String, dynamic>> get _filteredPersonnel {
-    final list = (_data!['registrations']['personnel'] as List)
-        .cast<Map<String, dynamic>>();
-    if (_regFilter == 'all') return list;
-    return list.where((p) => p['category'] == _regFilter).toList();
+  void _resetFilters() {
+    final now = DateTime.now();
+    setState(() {
+      _start = DateTime(now.year, now.month, now.day);
+      _end = _start;
+      _type = '';
+      _gate = '';
+      _action = '';
+      _isAuthorized = '';
+    });
+    _load();
   }
 
-  Color _categoryColor(String? cat) {
-    switch (cat) {
-      case 'military':    return AppColors.primary;
-      case 'civilian':    return AppColors.secondary;
-      case 'contractor':  return AppColors.warning;
-      case 'visitor':     return AppColors.accent;
-      default:            return AppColors.textMuted;
-    }
-  }
-
-  // ─── Build ────────────────────────────────────────────────────
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('ACTIVITY REPORTS'),
-        actions: [
-          IconButton(icon: const Icon(Icons.calendar_month), onPressed: _selectDateRange),
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _load),
-        ],
-      ),
-      body: _loading
-        ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-        : _data == null
-          ? const Center(child: Text('Failed to load report data'))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-
-                  // ── Date period banner ────────────────────────
-                  _PeriodBanner(start: _start, end: _end),
-                  const SizedBox(height: 20),
-
-                  // ── Summary row 1: entry/exit stats ──────────
-                  _SectionTitle('ENTRY / EXIT ACTIVITY'),
-                  const SizedBox(height: 10),
-                  Row(children: [
-                    Expanded(child: _SummaryBox('TOTAL LOGS',  '${_data!['summary']['total']}',       AppColors.primary)),
-                    const SizedBox(width: 10),
-                    Expanded(child: _SummaryBox('DENIED',      '${_data!['summary']['denied']}',      AppColors.danger)),
-                    const SizedBox(width: 10),
-                    Expanded(child: _SummaryBox('FLAGGED',     '${_data!['summary']['flagged']}',     AppColors.warning)),
-                  ]),
-                  const SizedBox(height: 10),
-
-                  // ── Summary row 2: registration stats ─────────
-                  Row(children: [
-                    Expanded(child: _SummaryBox('NEW PERSONNEL', '${_data!['summary']['newPersonnel']}', AppColors.success)),
-                    const SizedBox(width: 10),
-                    Expanded(child: _SummaryBox('NEW VEHICLES',  '${_data!['summary']['newVehicles']}',  AppColors.secondary)),
-                    const SizedBox(width: 10),
-                    const Expanded(child: SizedBox()),
-                  ]),
-                  const SizedBox(height: 24),
-
-                  // ── Gate Activity Chart ───────────────────────
-                  _SectionTitle('ACTIVITY BY GATE'),
-                  const SizedBox(height: 12),
-                  _buildGateChart(),
-                  const SizedBox(height: 24),
-
-                  // ── Daily Trend Chart ─────────────────────────
-                  _SectionTitle('DAILY TREND'),
-                  const SizedBox(height: 12),
-                  _buildDailyChart(),
-                  const SizedBox(height: 28),
-
-                  // ── Recent Registrations ──────────────────────
-                  _buildRegistrationsSection(),
-                  const SizedBox(height: 40),
-                ],
-              ),
-            ),
-    );
-  }
-
-  // ─── Gate Chart ───────────────────────────────────────────────
-  Widget _buildGateChart() {
-    final list = (_data!['charts']['byGate'] as List);
-    if (list.isEmpty) return _emptyChart('No entry log data for this period');
-    return Container(
-      height: 200,
-      padding: const EdgeInsets.all(16),
-      decoration: _cardDeco(),
-      child: PieChart(PieChartData(
-        sections: list.asMap().entries.map((e) {
-          final colors = [AppColors.primary, AppColors.secondary, AppColors.success, AppColors.warning, AppColors.accent];
-          return PieChartSectionData(
-            color: colors[e.key % colors.length],
-            value: (e.value['count'] as int).toDouble(),
-            title: '${e.value['count']}',
-            radius: 50,
-            titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
-            badgeWidget: Text(e.value['_id'] ?? 'Other', style: const TextStyle(fontSize: 8, color: AppColors.textMuted)),
-            badgePositionPercentageOffset: 1.4,
-          );
-        }).toList(),
-      )),
-    );
-  }
-
-  // ─── Daily Chart ──────────────────────────────────────────────
-  Widget _buildDailyChart() {
-    final list = (_data!['charts']['daily'] as List);
-    if (list.isEmpty) return _emptyChart('No daily data for this period');
-    return Container(
-      height: 250,
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
-      decoration: _cardDeco(),
-      child: LineChart(LineChartData(
-        gridData: const FlGridData(show: false),
-        titlesData: const FlTitlesData(show: false),
-        borderData: FlBorderData(show: false),
-        lineBarsData: [
-          LineChartBarData(
-            spots: list.asMap().entries.map((e) => FlSpot(e.key.toDouble(), (e.value['entries'] as int).toDouble())).toList(),
-            isCurved: true, color: AppColors.success, barWidth: 3, dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(show: true, color: AppColors.success.withOpacity(0.1)),
-          ),
-          LineChartBarData(
-            spots: list.asMap().entries.map((e) => FlSpot(e.key.toDouble(), (e.value['exits'] as int).toDouble())).toList(),
-            isCurved: true, color: AppColors.warning, barWidth: 3, dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(show: true, color: AppColors.warning.withOpacity(0.1)),
-          ),
-        ],
-      )),
-    );
-  }
-
-  // ─── Registrations Section ────────────────────────────────────
-  Widget _buildRegistrationsSection() {
-    final total = (_data!['registrations']['personnel'] as List).length;
-    final filtered = _filteredPersonnel;
-
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      // Header
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(children: [
-            _SectionTitle('RECENT REGISTRATIONS'),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text('$total',
-                style: const TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.w700)),
-            ),
-          ]),
-        ],
-      ),
-      const SizedBox(height: 10),
-
-      // Category filter chips
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(children: [
-          for (final f in ['all', 'military', 'civilian', 'contractor', 'visitor'])
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: _FilterChip(
-                label: f.toUpperCase(),
-                selected: _regFilter == f,
-                color: f == 'all' ? AppColors.primary : _categoryColor(f),
-                onTap: () => setState(() => _regFilter = f),
-              ),
-            ),
-        ]),
-      ),
-      const SizedBox(height: 12),
-
-      // List
-      if (filtered.isEmpty)
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: _cardDeco(),
-          child: Column(children: [
-            Icon(Icons.person_search, size: 40, color: AppColors.textMuted.withOpacity(0.4)),
-            const SizedBox(height: 12),
-            const Text('No registrations in this period',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
-          ]),
-        )
-      else
-        ...filtered.asMap().entries.map((entry) {
-          final i = entry.key;
-          final p = entry.value;
-          final name = '${p['firstName']} ${p['lastName']}';
-          final cat  = p['category'] as String? ?? 'military';
-          final date = DateTime.tryParse(p['createdAt'] ?? '') ?? DateTime.now();
-          final hasVehicle = p['hasVehicle'] == true;
-
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: _cardDeco(),
-              child: Row(children: [
-                // Index number
-                SizedBox(
-                  width: 24,
-                  child: Text('${i + 1}',
-                    style: TextStyle(
-                      fontSize: 11, fontWeight: FontWeight.w700,
-                      color: AppColors.textMuted.withOpacity(0.5))),
-                ),
-                const SizedBox(width: 8),
-
-                // Avatar / initials
-                Container(
-                  width: 40, height: 40,
-                  decoration: BoxDecoration(
-                    color: _categoryColor(cat).withOpacity(0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${p['firstName']?[0] ?? '?'}${p['lastName']?[0] ?? ''}',
-                      style: TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w700,
-                        color: _categoryColor(cat)),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-
-                // Name + details
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
-                    Flexible(
-                      child: Text(name,
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                        overflow: TextOverflow.ellipsis),
-                    ),
-                    if (hasVehicle) ...[
-                      const SizedBox(width: 6),
-                      const Tooltip(
-                        message: 'Has registered vehicle',
-                        child: Icon(Icons.directions_car, size: 13, color: AppColors.primary),
-                      ),
-                    ],
-                  ]),
-                  const SizedBox(height: 2),
-                  Text('${p['rank'] ?? ''} · ${p['badgeNumber'] ?? ''}',
-                    style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-                    overflow: TextOverflow.ellipsis),
-                ])),
-
-                const SizedBox(width: 10),
-
-                // Right column: category badge + date
-                Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: _categoryColor(cat).withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: _categoryColor(cat).withOpacity(0.3)),
-                    ),
-                    child: Text(cat.toUpperCase(),
-                      style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700,
-                        color: _categoryColor(cat), letterSpacing: 0.5)),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(DateFormat('dd MMM').format(date),
-                    style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
-                  Text(DateFormat('HH:mm').format(date),
-                    style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
-                ]),
-              ]),
-            ),
-          );
-        }),
-    ]);
-  }
-
-  // ─── Date picker ──────────────────────────────────────────────
   void _selectDateRange() async {
     final picked = await showDateRangePicker(
       context: context,
@@ -349,20 +94,273 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
-  BoxDecoration _cardDeco() => BoxDecoration(
-    color: AppColors.surface,
-    borderRadius: BorderRadius.circular(12),
-    border: Border.all(color: AppColors.border),
-  );
+  @override
+  Widget build(BuildContext context) {
+    final summary = _report?['summary'] as Map<String, dynamic>?;
+    final logs = (_report?['logs'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final trendData = (_report?['trendData'] as List?) ?? [];
+    final gateData = (_report?['gateData'] as List?) ?? [];
 
-  Widget _emptyChart(String msg) => Container(
-    padding: const EdgeInsets.all(24),
-    decoration: _cardDeco(),
-    child: Center(child: Text(msg, style: const TextStyle(color: AppColors.textMuted))),
-  );
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('ACTIVITY REPORTS'),
+        actions: [
+          IconButton(icon: const Icon(Icons.calendar_month), onPressed: _selectDateRange),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _load),
+        ],
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          : RefreshIndicator(
+              onRefresh: _load,
+              color: AppColors.primary,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _PeriodBanner(start: _start, end: _end),
+                    const SizedBox(height: 16),
+                    _buildFilters(),
+                    const SizedBox(height: 16),
+                    if (summary != null) ...[
+                      _buildSummary(summary),
+                      const SizedBox(height: 20),
+                    ],
+                    if (logs.isNotEmpty) ...[
+                      if (trendData.isNotEmpty) ...[
+                        _SectionTitle('MOVEMENT TREND'),
+                        const SizedBox(height: 10),
+                        _buildTrendChart(trendData),
+                        const SizedBox(height: 20),
+                      ],
+                      if (gateData.isNotEmpty) ...[
+                        _SectionTitle('TRAFFIC BY GATE'),
+                        const SizedBox(height: 10),
+                        _buildGateChart(gateData),
+                        const SizedBox(height: 20),
+                      ],
+                    ],
+                    _SectionTitle('ACCESS MOVEMENT LEDGER (${logs.length})'),
+                    const SizedBox(height: 10),
+                    if (logs.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(32),
+                        decoration: _cardDeco(),
+                        child: const Center(
+                          child: Text('No records match the selected filters.',
+                              style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                        ),
+                      )
+                    else
+                      ...logs.map((log) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: _ReportLogCard(log: log),
+                          )),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildFilters() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: _cardDeco(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text('FILTERS', style: TextStyle(fontSize: 10, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(child: _filterDropdown('Type', _type, const ['', 'Personnel', 'Vehicle', 'Visitor'], (v) => setState(() => _type = v ?? ''))),
+            const SizedBox(width: 8),
+            Expanded(child: _filterDropdown('Action', _action, const ['', 'Entry', 'Exit'], (v) => setState(() => _action = v ?? ''))),
+          ]),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(child: _filterDropdown('Gate', _gate, ['', ...AppConstants.gates], (v) => setState(() => _gate = v ?? ''))),
+            const SizedBox(width: 8),
+            Expanded(child: _filterDropdown('Auth', _isAuthorized, const ['', 'true', 'false'], (v) => setState(() => _isAuthorized = v ?? ''), labels: const {'': 'All', 'true': 'Authorized', 'false': 'Unauthorized'})),
+          ]),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _load,
+                icon: const Icon(Icons.analytics_outlined, size: 16),
+                label: const Text('GENERATE REPORT'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            OutlinedButton(onPressed: _resetFilters, child: const Text('RESET')),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _filterDropdown(String label, String value, List<String> options, ValueChanged<String?> onChanged, {Map<String, String>? labels}) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      dropdownColor: AppColors.surfaceVariant,
+      decoration: InputDecoration(labelText: label, isDense: true),
+      items: options.map((o) => DropdownMenuItem(value: o, child: Text(labels?[o] ?? (o.isEmpty ? 'All' : o), style: const TextStyle(fontSize: 12)))).toList(),
+      onChanged: onChanged,
+    );
+  }
+
+  Widget _buildSummary(Map<String, dynamic> s) {
+    final items = [
+      ('TOTAL', s['total'], AppColors.textPrimary),
+      ('ENTRIES', s['entries'], AppColors.success),
+      ('EXITS', s['exits'], AppColors.warning),
+      ('PERSONNEL', s['personnel'], AppColors.primary),
+      ('VEHICLES', s['vehicles'], AppColors.secondary),
+      ('VISITORS', s['visitors'], AppColors.accent),
+      ('VIOLATIONS', s['unauthorized'], AppColors.danger),
+    ];
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: items.map((item) {
+        final (label, val, color) = item;
+        return SizedBox(
+          width: (MediaQuery.of(context).size.width - 48) / 3,
+          child: _SummaryBox(label, '${val ?? 0}', color),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildTrendChart(List trendData) {
+    return Container(
+      height: 200,
+      padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),
+      decoration: _cardDeco(),
+      child: LineChart(LineChartData(
+        gridData: const FlGridData(show: false),
+        titlesData: const FlTitlesData(show: false),
+        borderData: FlBorderData(show: false),
+        lineBarsData: [
+          LineChartBarData(
+            spots: trendData.asMap().entries.map((e) => FlSpot(e.key.toDouble(), (e.value['entries'] as num? ?? 0).toDouble())).toList(),
+            isCurved: true, color: AppColors.success, barWidth: 2, dotData: const FlDotData(show: false),
+          ),
+          LineChartBarData(
+            spots: trendData.asMap().entries.map((e) => FlSpot(e.key.toDouble(), (e.value['exits'] as num? ?? 0).toDouble())).toList(),
+            isCurved: true, color: AppColors.warning, barWidth: 2, dotData: const FlDotData(show: false),
+          ),
+        ],
+      )),
+    );
+  }
+
+  Widget _buildGateChart(List gateData) {
+    return Container(
+      height: 180,
+      padding: const EdgeInsets.all(16),
+      decoration: _cardDeco(),
+      child: BarChart(BarChartData(
+        gridData: const FlGridData(show: false),
+        titlesData: const FlTitlesData(show: false),
+        borderData: FlBorderData(show: false),
+        barGroups: gateData.asMap().entries.map((e) {
+          final colors = [AppColors.primary, AppColors.secondary, AppColors.success, AppColors.warning, AppColors.accent];
+          return BarChartGroupData(
+            x: e.key,
+            barRods: [BarChartRodData(toY: (e.value['count'] as num? ?? 0).toDouble(), color: colors[e.key % colors.length], width: 16, borderRadius: BorderRadius.circular(4))],
+          );
+        }).toList(),
+      )),
+    );
+  }
+
+  BoxDecoration _cardDeco() => BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      );
 }
 
-// ─── Shared widgets ───────────────────────────────────────────────────────────
+class _ReportLogCard extends StatelessWidget {
+  final Map<String, dynamic> log;
+  const _ReportLogCard({required this.log});
+
+  String _val(String? v) => (v == null || v.isEmpty || v == '--') ? '—' : v;
+
+  Color _typeColor(String? type) {
+    switch (type) {
+      case 'Personnel': return AppColors.primary;
+      case 'Vehicle': return AppColors.success;
+      case 'Visitor': return AppColors.accent;
+      default: return AppColors.textMuted;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final createdAt = log['createdAt'] != null ? DateTime.tryParse(log['createdAt']) : null;
+    final isEntry = (log['action'] ?? '').toString() == 'Entry';
+    final type = log['type']?.toString() ?? '';
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(color: _typeColor(type).withOpacity(0.12), borderRadius: BorderRadius.circular(4)),
+            child: Text(type.toUpperCase(), style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: _typeColor(type))),
+          ),
+          const SizedBox(width: 8),
+          Text(isEntry ? '▲ ENTRY' : '▼ EXIT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: isEntry ? AppColors.success : AppColors.warning)),
+          const Spacer(),
+          if (createdAt != null)
+            Text(DateFormat('yyyy-MM-dd HH:mm').format(createdAt), style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+        ]),
+        const SizedBox(height: 8),
+        Text(log['subjectName']?.toString() ?? '—', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+        const SizedBox(height: 8),
+        _detailRow('Vehicle Name', _val(log['vehicleName']?.toString())),
+        _detailRow('Owner Name', _val(log['ownerName']?.toString())),
+        _detailRow('Plate Number', _val(log['plateNumber']?.toString())),
+        _detailRow('Record ID', _val(log['recordId']?.toString())),
+        _detailRow('Driver', _val(log['driverName']?.toString())),
+        _detailRow('Gate', log['gate']?.toString() ?? '—'),
+        Row(children: [
+          const Text('Authorized: ', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+          Text(log['isAuthorized'] == false ? 'NO' : 'YES',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: log['isAuthorized'] == false ? AppColors.danger : AppColors.success)),
+        ]),
+        if (log['logId'] != null) ...[
+          const SizedBox(height: 4),
+          Text(log['logId'].toString(), style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+        ],
+      ]),
+    );
+  }
+
+  Widget _detailRow(String label, String value) => Padding(
+        padding: const EdgeInsets.only(bottom: 2),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(width: 90, child: Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textMuted))),
+            Expanded(child: Text(value, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary))),
+          ],
+        ),
+      );
+}
 
 class _PeriodBanner extends StatelessWidget {
   final DateTime start, end;
@@ -381,61 +379,36 @@ class _PeriodBanner extends StatelessWidget {
         const Icon(Icons.date_range, color: AppColors.primary, size: 16),
         const SizedBox(width: 10),
         Text('${fmt.format(start)}  →  ${fmt.format(end)}',
-          style: const TextStyle(fontSize: 12, color: AppColors.textPrimary, fontWeight: FontWeight.w500)),
+            style: const TextStyle(fontSize: 12, color: AppColors.textPrimary, fontWeight: FontWeight.w500)),
       ]),
     );
   }
 }
 
 class _SummaryBox extends StatelessWidget {
-  final String label, value; final Color color;
+  final String label, value;
+  final Color color;
   const _SummaryBox(this.label, this.value, this.color);
-  @override Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: color.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: color.withOpacity(0.3)),
-    ),
-    child: Column(children: [
-      Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
-      const SizedBox(height: 2),
-      Text(label, style: const TextStyle(fontSize: 8, color: AppColors.textMuted, letterSpacing: 1),
-        textAlign: TextAlign.center),
-    ]),
-  );
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Column(children: [
+          Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+          const SizedBox(height: 2),
+          Text(label, style: const TextStyle(fontSize: 7, color: AppColors.textMuted, letterSpacing: 0.5), textAlign: TextAlign.center),
+        ]),
+      );
 }
 
 class _SectionTitle extends StatelessWidget {
   final String title;
   const _SectionTitle(this.title);
-  @override Widget build(BuildContext context) => Text(title,
-    style: const TextStyle(fontSize: 10, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.bold));
-}
-
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final Color color;
-  final VoidCallback onTap;
-  const _FilterChip({required this.label, required this.selected, required this.color, required this.onTap});
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: AnimatedContainer(
-      duration: const Duration(milliseconds: 150),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: selected ? color.withOpacity(0.2) : AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: selected ? color : AppColors.border, width: selected ? 1.5 : 1),
-      ),
-      child: Text(label,
-        style: TextStyle(
-          fontSize: 10, fontWeight: FontWeight.w700,
-          color: selected ? color : AppColors.textMuted,
-          letterSpacing: 0.5,
-        )),
-    ),
-  );
+  Widget build(BuildContext context) => Text(title,
+      style: const TextStyle(fontSize: 10, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.bold));
 }

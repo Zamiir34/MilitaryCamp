@@ -24,6 +24,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<ChartDataPoint> _chartData = [];
   List<GuardStatus> _guards = [];
   List<dynamic> _recentAlerts = [];
+  List<dynamic> _personnelWithVehicles = [];
 
   bool _loading = true;
 
@@ -73,6 +74,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // Recent alerts
         if (fullData['recentAlerts'] is List) {
           _recentAlerts = fullData['recentAlerts'] as List;
+        }
+        // Personnel with vehicles
+        if (fullData['personnelWithVehicles'] is List) {
+          _personnelWithVehicles = fullData['personnelWithVehicles'] as List;
         }
         _loading = false;
       });
@@ -142,7 +147,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     icon: Icons.person_add,
                     color: AppColors.primary,
                     onTap: () => Navigator.push(context, MaterialPageRoute(
-                        builder: (_) => const LogEntryScreen(type: 'personnel'))).then((_) => _load()),
+                        builder: (_) => const LogEntryScreen(action: 'entry'))).then((_) => _load()),
                   )),
                   const SizedBox(width: 12),
                   Expanded(child: _QuickLogBtn(
@@ -308,6 +313,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 )),
               ],
 
+              // ── Personnel with Vehicles ─────────────────────────────────────
+              if (_personnelWithVehicles.isNotEmpty) ...[
+                SliverToBoxAdapter(child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                    const Text('DRIVERS & VEHICLES', style: TextStyle(fontSize: 11, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(color: AppColors.info.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
+                      child: Text('${_personnelWithVehicles.length}',
+                        style: const TextStyle(color: AppColors.info, fontSize: 11, fontWeight: FontWeight.w800)),
+                    ),
+                  ]),
+                )),
+                SliverList(delegate: SliverChildBuilderDelegate(
+                  (ctx, i) => Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                    child: _DriverTile(personnel: _personnelWithVehicles[i]),
+                  ),
+                  childCount: _personnelWithVehicles.length,
+                )),
+              ],
+
               const SliverToBoxAdapter(child: SizedBox(height: 24)),
             ],
           ),
@@ -378,12 +406,15 @@ class _LogTile extends StatelessWidget {
       child: Row(children: [
         Container(
           width: 36, height: 36, decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-          child: Icon(log.type == 'personnel' ? Icons.person : Icons.directions_car, color: color, size: 18),
+          child: Icon(
+            log.type == 'Vehicle' ? Icons.directions_car : (log.type == 'Visitor' ? Icons.badge : Icons.person),
+            color: color, size: 18,
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(log.subjectName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.textPrimary)),
-          Text('${log.gate} · ${log.guardName ?? 'System'}', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+          Text(log.displayName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.textPrimary)),
+          Text('${log.gate} · ${log.recordedByName ?? log.guardName ?? 'System'}', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
         ])),
         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Container(
@@ -420,6 +451,8 @@ class _AlertTile extends StatelessWidget {
     if (alert['createdAt'] != null) {
       try { timeStr = DateFormat('HH:mm').format(DateTime.parse(alert['createdAt'].toString())); } catch (_) {}
     }
+    final reporter = alert['reportedBy'];
+    final reporterName = reporter is Map ? reporter['fullName']?.toString() : null;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -427,16 +460,23 @@ class _AlertTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: color.withOpacity(0.2)),
       ),
-      child: Row(children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-          decoration: BoxDecoration(color: color.withOpacity(0.15), borderRadius: BorderRadius.circular(4)),
-          child: Text(sev.toUpperCase(), style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+            decoration: BoxDecoration(color: color.withOpacity(0.15), borderRadius: BorderRadius.circular(4)),
+            child: Text(sev.toUpperCase(), style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Text(alert['message']?.toString() ?? 'Alert',
+            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary), maxLines: 2, overflow: TextOverflow.ellipsis)),
+          Text(timeStr, style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+        ]),
+        const SizedBox(height: 6),
+        Text(
+          'Sent by: ${reporterName ?? 'System'}',
+          style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
         ),
-        const SizedBox(width: 10),
-        Expanded(child: Text(alert['message']?.toString() ?? 'Alert',
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary), maxLines: 2, overflow: TextOverflow.ellipsis)),
-        Text(timeStr, style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
       ]),
     );
   }
@@ -637,6 +677,56 @@ class _AlarmBannerState extends State<_AlarmBanner> with SingleTickerProviderSta
           ]),
         ),
       ),
+    );
+  }
+}
+
+// ─── Driver Tile ───────────────────────────────────────────────────
+class _DriverTile extends StatelessWidget {
+  final dynamic personnel;
+  const _DriverTile({required this.personnel});
+
+  @override Widget build(BuildContext context) {
+    final vehicle = personnel['vehicleDetails'] ?? {};
+    final isVisitor = personnel['isVisitor'] == true;
+    final accent = isVisitor ? AppColors.secondary : AppColors.info;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(children: [
+        Container(
+          width: 36, height: 36,
+          decoration: BoxDecoration(
+            color: accent.withOpacity(0.1),
+            shape: BoxShape.circle,
+            border: Border.all(color: accent),
+          ),
+          child: Center(child: Icon(Icons.directions_car, size: 18, color: accent)),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(personnel['fullName'] ?? 'Unknown', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          Text(
+            personnel['isVisitor'] == true
+              ? 'Visitor • ${personnel['unit'] ?? personnel['rank'] ?? 'Guest'}'
+              : '${personnel['rank'] ?? ''} ${personnel['unit'] != null ? '• ${personnel['unit']}' : ''}',
+            style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+          ),
+        ])),
+        if (vehicle['plateNumber'] != null || vehicle['model'] != null)
+          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            if (vehicle['plateNumber'] != null)
+              Text(vehicle['plateNumber'], style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+            Text(
+              [vehicle['model'], vehicle['color']].where((v) => v != null && v.toString().isNotEmpty).join(' · '),
+              style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+            ),
+          ]),
+      ]),
     );
   }
 }

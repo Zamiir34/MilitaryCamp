@@ -31,7 +31,9 @@ router.get('/', auth, async (req, res) => {
       personnelEntriesToday, vehicleEntriesToday, visitorEntriesToday,
       unresolvedAlerts,
       weeklyData,
-      allGuards
+      allGuards,
+      personnelWithVehiclesRaw,
+      visitorsWithVehiclesRaw
     ] = await Promise.all([
       Personnel.countDocuments({ status: 'Active', ...isolationFilter }),
       Vehicle.countDocuments({ status: 'Active', ...isolationFilter }),
@@ -52,8 +54,34 @@ router.get('/', auth, async (req, res) => {
         { $sort: { '_id.date': 1 } }
       ]),
       // All guards for oversight (Bypasses isolation)
-      User.find({ role: 'Guard' }).select('fullName rank phone badgeNumber lastLogin isOnDuty')
+      User.find({ role: 'Guard' }).select('fullName rank phone badgeNumber lastLogin isOnDuty'),
+      // Personnel with vehicles
+      Personnel.find({ hasVehicle: true, status: 'Active', ...isolationFilter }).select('fullName rank unit vehicleDetails phone'),
+      // Visitors with vehicles (show on registration)
+      Visitor.find({
+        hasVehicle: true,
+        vehiclePlate: { $exists: true, $ne: '' },
+        status: { $nin: ['Denied', 'Completed'] },
+        ...isolationFilter
+      }).select('fullName visitorType organization vehiclePlate vehicleModel vehicleColor status createdAt')
     ]);
+
+    const visitorsWithVehicles = visitorsWithVehiclesRaw.map((v) => ({
+      _id: v._id,
+      fullName: v.fullName,
+      rank: v.visitorType === 'Military' ? 'Military Visitor' : 'Civilian Visitor',
+      unit: v.organization || v.visitorType || 'Visitor',
+      vehicleDetails: {
+        plateNumber: v.vehiclePlate,
+        model: v.vehicleModel || '',
+        color: v.vehicleColor || ''
+      },
+      isVisitor: true,
+      status: v.status,
+      createdAt: v.createdAt
+    }));
+
+    const personnelWithVehicles = [...personnelWithVehiclesRaw, ...visitorsWithVehicles];
 
     // Process weekly data
     const weekMap = {};
@@ -77,12 +105,13 @@ router.get('/', auth, async (req, res) => {
 
     // Recent alerts
     const recentAlerts = await Alert.find({ isResolved: false, ...isolationFilter })
+      .populate('reportedBy', 'fullName rank role')
       .sort({ createdAt: -1 })
       .limit(5);
 
     res.json({
       stats: {
-        totalPersonnel, totalVehicles, totalVisitors,
+        totalPersonnel, totalVehicles: totalVehicles + personnelWithVehicles.length, totalVisitors,
         todayEntries, todayExits,
         personnelEntriesToday, vehicleEntriesToday, visitorEntriesToday,
         unresolvedAlerts
@@ -91,7 +120,8 @@ router.get('/', auth, async (req, res) => {
       recentActivity,
       myRecentActivity,
       recentAlerts,
-      allGuards
+      allGuards,
+      personnelWithVehicles
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -107,7 +137,7 @@ router.get('/my-activity', auth, async (req, res) => {
     tomorrow.setDate(tomorrow.getDate() + 1);
     const todayFilter = { createdAt: { $gte: today, $lt: tomorrow } };
 
-    const [logs, personnel, vehicles, visitors, resolvedAlerts] = await Promise.all([
+    const [logs, personnel, standaloneVehicles, visitors, resolvedAlerts] = await Promise.all([
       EntryLog.find({ ...todayFilter, recordedBy: req.user._id }).sort({ createdAt: -1 }),
       Personnel.find({ ...todayFilter, createdBy: req.user._id }).sort({ createdAt: -1 }),
       Vehicle.find({ ...todayFilter, createdBy: req.user._id }).sort({ createdAt: -1 }),
@@ -115,18 +145,43 @@ router.get('/my-activity', auth, async (req, res) => {
       Alert.find({ resolvedBy: req.user._id, resolvedAt: { $gte: today, $lt: tomorrow } }).sort({ resolvedAt: -1 })
     ]);
 
+    // Extract vehicles from personnel registered today
+    const personnelVehicles = personnel
+      .filter(p => p.hasVehicle && p.vehicleDetails && p.vehicleDetails.plateNumber)
+      .map(p => ({
+        _id: p._id + '_veh',
+        createdAt: p.createdAt,
+        plateNumber: p.vehicleDetails.plateNumber,
+        model: p.vehicleDetails.make ? `${p.vehicleDetails.make} ${p.vehicleDetails.model || ''}`.trim() : (p.vehicleDetails.model || 'Unknown'),
+        ownerName: p.fullName,
+        isFromPersonnel: true
+      }));
+
+    const visitorVehicles = visitors
+      .filter(v => v.hasVehicle && v.vehiclePlate)
+      .map(v => ({
+        _id: v._id + '_vveh',
+        createdAt: v.createdAt,
+        plateNumber: v.vehiclePlate,
+        model: v.vehicleModel || 'Visitor Vehicle',
+        ownerName: v.fullName,
+        isFromVisitor: true
+      }));
+
+    const allVehicles = [...standaloneVehicles, ...personnelVehicles, ...visitorVehicles].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
     res.json({
       summary: {
         logsCount: logs.length,
         personnelCount: personnel.length,
-        vehiclesCount: vehicles.length,
+        vehiclesCount: allVehicles.length,
         visitorsCount: visitors.length,
         resolvedAlertsCount: resolvedAlerts.length
       },
       details: {
         logs,
         personnel,
-        vehicles,
+        vehicles: allVehicles,
         visitors,
         resolvedAlerts
       }

@@ -3,14 +3,29 @@ node_modules/
 
 # Build outputs
 dist/
+build/
+.dart_tool/
+.flutter-plugins-dependencies
 
 # Environment files
 .env
+.env.local
+
+# Netlify
+.netlify/
 
 # Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.log
 
-# System files
+# OS / editor
 .DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
+
+# Mobile local config
+Mobile/android/local.properties

@@ -108,7 +108,7 @@ class _VehicleScreenState extends State<VehicleScreen> {
             ),
             const SizedBox(width: 8),
             SizedBox(height: 52, child: ElevatedButton(
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LogEntryScreen(type: 'vehicle'))).then((_) => _load()),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LogEntryScreen(action: 'entry', initialSubjectType: 'Vehicle'))).then((_) => _load()),
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 14), backgroundColor: AppColors.secondary),
               child: const Icon(Icons.add_road, color: Colors.white),
             )),

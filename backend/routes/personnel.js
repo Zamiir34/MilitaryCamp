@@ -13,12 +13,15 @@ router.get('/', auth, async (req, res) => {
   try {
     const { search, type, status, page = 1, limit = 20 } = req.query;
     const query = {};
-    if (search) query.$or = [
-      { fullName: { $regex: search, $options: 'i' } },
-      { personnelId: { $regex: search, $options: 'i' } },
-      { idNumber: { $regex: search, $options: 'i' } },
-      { unit: { $regex: search, $options: 'i' } }
-    ];
+    if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.$or = [
+        { fullName: { $regex: escapedSearch, $options: 'i' } },
+        { personnelId: { $regex: escapedSearch, $options: 'i' } },
+        { idNumber: { $regex: escapedSearch, $options: 'i' } },
+        { unit: { $regex: escapedSearch, $options: 'i' } }
+      ];
+    }
     if (type) query.type = type;
     if (status) query.status = status;
     
@@ -67,13 +70,34 @@ router.post('/', auth, requireRole('Administrator', 'SecurityOfficer'), async (r
       return res.status(400).json({ message: `Personnel already registered: ${existing.fullName} (${existing.personnelId})` });
     }
 
+    if (req.body.hasVehicle && req.body.vehicleDetails && req.body.vehicleDetails.plateNumber) {
+      const plate = req.body.vehicleDetails.plateNumber.trim();
+      if (plate) {
+        const plateRegex = new RegExp('^' + plate.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
+        const existingPersonnelWithPlate = await Personnel.findOne({
+          hasVehicle: true,
+          'vehicleDetails.plateNumber': { $regex: plateRegex }
+        });
+        if (existingPersonnelWithPlate) {
+          return res.status(400).json({ message: `Vehicle plate ${plate} is already registered to personnel: ${existingPersonnelWithPlate.fullName}` });
+        }
+
+        const existingVehicleWithPlate = await require('../models/Vehicle').findOne({
+          plateNumber: { $regex: plateRegex }
+        });
+        if (existingVehicleWithPlate) {
+          return res.status(400).json({ message: `Vehicle plate ${plate} is already registered in the vehicles database.` });
+        }
+      }
+    }
+
     // Generate sequential ID starting with P2601
     const lastPersonnel = await Personnel.findOne({ personnelId: /^P/i }).sort({ personnelId: -1 });
     let newId;
     if (!lastPersonnel) {
       newId = 'P2601';
     } else {
-      const match = lastPersonnel.personnelId.match(/^P(\\d+)/i);
+      const match = lastPersonnel.personnelId.match(/^P(\d+)/i);
       const lastNum = match ? parseInt(match[1], 10) : 2600;
       newId = 'P' + (lastNum + 1);
     }
@@ -123,6 +147,28 @@ router.post('/', auth, requireRole('Administrator', 'SecurityOfficer'), async (r
 // Update personnel
 router.put('/:id', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
+    if (req.body.hasVehicle && req.body.vehicleDetails && req.body.vehicleDetails.plateNumber) {
+      const plate = req.body.vehicleDetails.plateNumber.trim();
+      if (plate) {
+        const plateRegex = new RegExp('^' + plate.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
+        const existingPersonnelWithPlate = await Personnel.findOne({
+          _id: { $ne: req.params.id },
+          hasVehicle: true,
+          'vehicleDetails.plateNumber': { $regex: plateRegex }
+        });
+        if (existingPersonnelWithPlate) {
+          return res.status(400).json({ message: `Vehicle plate ${plate} is already registered to personnel: ${existingPersonnelWithPlate.fullName}` });
+        }
+
+        const existingVehicleWithPlate = await require('../models/Vehicle').findOne({
+          plateNumber: { $regex: plateRegex }
+        });
+        if (existingVehicleWithPlate) {
+          return res.status(400).json({ message: `Vehicle plate ${plate} is already registered in the vehicles database.` });
+        }
+      }
+    }
+
     const personnel = await Personnel.findByIdAndUpdate(
       req.params.id,
       { ...req.body, updatedAt: new Date() },

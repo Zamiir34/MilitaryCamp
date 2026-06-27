@@ -102,13 +102,13 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
   Widget _buildStatusCard() {
     final hasCheckedIn = _todayRecord != null;
-    final hasCheckedOut = hasCheckedIn && _todayRecord!['checkOut'] != null;
+    final hasCheckedOut = hasCheckedIn && _todayRecord!['checkOutTime'] != null;
 
     String shiftDuration = '--';
-    if (hasCheckedIn && _todayRecord!['checkIn'] != null) {
+    if (hasCheckedIn && _todayRecord!['checkInTime'] != null) {
       try {
-        final checkInTime = DateTime.parse(_todayRecord!['checkIn']);
-        final endTime = hasCheckedOut ? DateTime.parse(_todayRecord!['checkOut']) : DateTime.now();
+        final checkInTime = DateTime.parse(_todayRecord!['checkInTime']);
+        final endTime = hasCheckedOut ? DateTime.parse(_todayRecord!['checkOutTime']) : DateTime.now();
         final diff = endTime.difference(checkInTime);
         final hours = diff.inHours;
         final mins = diff.inMinutes.remainder(60);
@@ -137,8 +137,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                   const Text('CHECK IN', style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
                   const SizedBox(height: 4),
                   Text(
-                    hasCheckedIn && _todayRecord!['checkIn'] != null
-                        ? DateFormat('HH:mm').format(DateTime.parse(_todayRecord!['checkIn']))
+                    hasCheckedIn && _todayRecord!['checkInTime'] != null
+                        ? DateFormat('HH:mm').format(DateTime.parse(_todayRecord!['checkInTime']))
                         : '--:--',
                     style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.success),
                   ),
@@ -151,7 +151,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                   const SizedBox(height: 4),
                   Text(
                     hasCheckedOut
-                        ? DateFormat('HH:mm').format(DateTime.parse(_todayRecord!['checkOut']))
+                        ? DateFormat('HH:mm').format(DateTime.parse(_todayRecord!['checkOutTime']))
                         : '--:--',
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: hasCheckedOut ? AppColors.warning : AppColors.textMuted),
                   ),
@@ -247,11 +247,11 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     String checkOut = '--:--';
     String dateStr = record['date'] ?? 'Unknown Date';
 
-    if (record['checkIn'] != null) {
-      try { checkIn = DateFormat('HH:mm').format(DateTime.parse(record['checkIn'])); } catch (_) {}
+    if (record['checkInTime'] != null) {
+      try { checkIn = DateFormat('HH:mm').format(DateTime.parse(record['checkInTime'])); } catch (_) {}
     }
-    if (record['checkOut'] != null) {
-      try { checkOut = DateFormat('HH:mm').format(DateTime.parse(record['checkOut'])); } catch (_) {}
+    if (record['checkOutTime'] != null) {
+      try { checkOut = DateFormat('HH:mm').format(DateTime.parse(record['checkOutTime'])); } catch (_) {}
     }
 
     return Container(

@@ -16,12 +16,15 @@ router.get('/', auth, async (req, res) => {
   try {
     const { search, status, page = 1, limit = 20 } = req.query;
     const query = {};
-    if (search) query.$or = [
-      { fullName: { $regex: search, $options: 'i' } },
-      { idNumber: { $regex: search, $options: 'i' } },
-      { visitorId: { $regex: search, $options: 'i' } },
-      { organization: { $regex: search, $options: 'i' } }
-    ];
+    if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.$or = [
+        { fullName: { $regex: escapedSearch, $options: 'i' } },
+        { idNumber: { $regex: escapedSearch, $options: 'i' } },
+        { visitorId: { $regex: escapedSearch, $options: 'i' } },
+        { organization: { $regex: escapedSearch, $options: 'i' } }
+      ];
+    }
     if (status) query.status = status;
     
     // Data Isolation: Non-admins only see records created after they joined
@@ -31,6 +34,7 @@ router.get('/', auth, async (req, res) => {
 
     const total = await Visitor.countDocuments(query);
     const visitors = await Visitor.find(query)
+      .select('-photo -qrCode -otpCode -otpExpires')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
@@ -43,7 +47,7 @@ router.get('/', auth, async (req, res) => {
 
 router.get('/:id', auth, async (req, res) => {
   try {
-    const v = await Visitor.findById(req.params.id);
+    const v = await Visitor.findById(req.params.id).select('-otpCode -otpExpires');
     if (!v) return res.status(404).json({ message: 'Not found' });
     res.json(v);
   } catch (err) {
@@ -65,7 +69,7 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ message: 'A valid real email address is required' });
     }
 
-    const existingEmail = await Visitor.findOne({ email: new RegExp('^' + req.body.email.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&') + '$', 'i') });
+    const existingEmail = await Visitor.findOne({ email: new RegExp('^' + req.body.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') });
     if (existingEmail) {
       return res.status(400).json({ message: `Email is already registered for visitor: ${existingEmail.fullName}` });
     }
@@ -91,7 +95,7 @@ router.post('/', auth, async (req, res) => {
     }
 
     if (visitorData.hasVehicle && visitorData.vehiclePlate) {
-      const plateRegex = new RegExp('^' + visitorData.vehiclePlate.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&') + '$', 'i');
+      const plateRegex = new RegExp('^' + visitorData.vehiclePlate.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
       const existingVisitorWithPlate = await Visitor.findOne({
         vehiclePlate: plateRegex,
         status: { $in: ['Pending', 'Approved'] }
@@ -213,14 +217,14 @@ router.put('/:id', auth, async (req, res) => {
     }
 
     if (updateData.email) {
-      const existingEmail = await Visitor.findOne({ email: new RegExp('^' + updateData.email.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&') + '$', 'i') });
+      const existingEmail = await Visitor.findOne({ email: new RegExp('^' + updateData.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') });
       if (existingEmail && existingEmail._id.toString() !== req.params.id) {
         return res.status(400).json({ message: `Email is already registered for visitor: ${existingEmail.fullName}` });
       }
     }
 
     if (updateData.hasVehicle && updateData.vehiclePlate) {
-      const plateRegex = new RegExp('^' + updateData.vehiclePlate.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&') + '$', 'i');
+      const plateRegex = new RegExp('^' + updateData.vehiclePlate.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
       const existingVisitorWithPlate = await Visitor.findOne({
         vehiclePlate: plateRegex,
         status: { $in: ['Pending', 'Approved'] }

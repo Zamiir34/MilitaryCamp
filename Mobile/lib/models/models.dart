@@ -22,26 +22,48 @@ class User {
 
 class Personnel {
   final String id, personnelId, firstName, lastName, rank, unit, badgeNumber, nationalId;
-  final String? photo, qrCode, phone, email, category, status, currentStatus, bloodType, militaryId;
+  final String? photo, qrCode, phone, email, category, status, currentStatus, bloodType, militaryId, personnelType;
+  final bool hasVehicle;
   final int accessLevel;
   final DateTime? createdAt;
 
-  Personnel({required this.id, required this.personnelId, required this.firstName, required this.lastName, required this.rank, required this.unit, required this.badgeNumber, required this.nationalId, this.photo, this.qrCode, this.phone, this.email, this.category = 'military', this.status = 'active', this.currentStatus = 'outside', this.bloodType, this.militaryId, this.accessLevel = 1, this.createdAt});
+  Personnel({required this.id, required this.personnelId, required this.firstName, required this.lastName, required this.rank, required this.unit, required this.badgeNumber, required this.nationalId, this.photo, this.qrCode, this.phone, this.email, this.category = 'military', this.status = 'active', this.currentStatus = 'outside', this.bloodType, this.militaryId, this.personnelType, this.hasVehicle = false, this.accessLevel = 1, this.createdAt});
 
-  factory Personnel.fromJson(Map<String, dynamic> j) => Personnel(
-    id: j['_id'] ?? '', personnelId: j['personnelId'] ?? '',
-    firstName: j['firstName'] ?? '', lastName: j['lastName'] ?? '',
-    rank: j['rank'] ?? '', unit: j['unit'] ?? '',
-    badgeNumber: j['badgeNumber'] ?? '', nationalId: j['nationalId'] ?? '',
-    photo: j['photo'], qrCode: j['qrCode'], phone: j['phone'], email: j['email'],
-    category: j['category'], status: j['status'], currentStatus: j['currentStatus'],
-    bloodType: j['bloodType'], militaryId: j['militaryId'], accessLevel: j['accessLevel'] ?? 1,
-    createdAt: j['createdAt'] != null ? DateTime.tryParse(j['createdAt']) : null,
-  );
+  factory Personnel.fromJson(Map<String, dynamic> j) {
+    final full = j['fullName']?.toString() ?? '';
+    final parts = full.split(' ').where((p) => p.isNotEmpty).toList();
+    return Personnel(
+      id: j['_id'] ?? '',
+      personnelId: j['personnelId'] ?? '',
+      firstName: j['firstName']?.toString() ?? (parts.isNotEmpty ? parts.first : ''),
+      lastName: j['lastName']?.toString() ?? (parts.length > 1 ? parts.sublist(1).join(' ') : ''),
+      rank: j['rank'] ?? '',
+      unit: j['unit'] ?? '',
+      badgeNumber: j['badgeNumber'] ?? j['idNumber'] ?? '',
+      nationalId: j['nationalId'] ?? j['idNumber'] ?? '',
+      photo: j['photo'],
+      qrCode: j['qrCode'],
+      phone: j['phone'],
+      email: j['email'],
+      category: j['category'],
+      status: j['status'],
+      currentStatus: j['currentStatus'],
+      bloodType: j['bloodType'],
+      militaryId: j['militaryId'],
+      personnelType: j['type']?.toString(),
+      hasVehicle: j['hasVehicle'] == true,
+      accessLevel: j['accessLevel'] ?? 1,
+      createdAt: j['createdAt'] != null ? DateTime.tryParse(j['createdAt']) : null,
+    );
+  }
 
-  String get fullName => '$firstName $lastName';
+  String get fullName {
+    final name = '$firstName $lastName'.trim();
+    return name.isNotEmpty ? name : personnelId;
+  }
   bool get isInside   => currentStatus == 'inside';
-  bool get isActive   => status == 'active';
+  bool get isActive   => (status ?? '').toLowerCase() == 'active';
+  String get type => personnelType ?? category ?? 'Military';
 }
 
 class Vehicle {
@@ -70,28 +92,84 @@ class Vehicle {
 
 class EntryLog {
   final String id, logId, type, action, gate;
-  final String? authMethod, purpose, notes, guardName, status;
+  final String? subjectName, subjectId, authMethod, purpose, notes, guardName, status;
+  final String? driverName, vehicleName, ownerName, plateNumber, recordId, recordedByName;
+  final bool isAuthorized;
   final Map<String, dynamic>? personnelSnapshot, vehicleSnapshot;
   final DateTime timestamp;
 
-  EntryLog({required this.id, required this.logId, required this.type, required this.action, required this.gate, this.authMethod, this.purpose, this.notes, this.guardName, this.status, this.personnelSnapshot, this.vehicleSnapshot, required this.timestamp});
+  EntryLog({
+    required this.id,
+    required this.logId,
+    required this.type,
+    required this.action,
+    required this.gate,
+    this.subjectName,
+    this.subjectId,
+    this.authMethod,
+    this.purpose,
+    this.notes,
+    this.guardName,
+    this.status,
+    this.driverName,
+    this.vehicleName,
+    this.ownerName,
+    this.plateNumber,
+    this.recordId,
+    this.recordedByName,
+    this.isAuthorized = true,
+    this.personnelSnapshot,
+    this.vehicleSnapshot,
+    required this.timestamp,
+  });
 
-  factory EntryLog.fromJson(Map<String, dynamic> j) => EntryLog(
-    id: j['_id'] ?? '', logId: j['logId'] ?? '',
-    type: j['type'] ?? '', action: j['action'] ?? '', gate: j['gate'] ?? '',
-    authMethod: j['authMethod'], purpose: j['purpose'], notes: j['notes'],
-    guardName: j['guardName'], status: j['status'],
-    personnelSnapshot: j['personnelSnapshot'],
-    vehicleSnapshot: j['vehicleSnapshot'],
-    timestamp: j['timestamp'] != null ? DateTime.parse(j['timestamp']) : DateTime.now(),
-  );
+  factory EntryLog.fromJson(Map<String, dynamic> j) {
+    final vehicle = j['vehicle'];
+    String? ownerFromVehicle;
+    if (vehicle is Map) ownerFromVehicle = vehicle['ownerName']?.toString();
 
-  bool get isEntry => action == 'entry' || action == 'Entry';
-  String get subjectName {
-    if (type == 'personnel' && personnelSnapshot != null) return personnelSnapshot!['name'] ?? 'Unknown';
-    if (type == 'vehicle' && vehicleSnapshot != null) return vehicleSnapshot!['plateNumber'] ?? 'Unknown';
+    return EntryLog(
+      id: j['_id'] ?? '',
+      logId: j['logId'] ?? '',
+      type: j['type'] ?? '',
+      action: j['action'] ?? '',
+      gate: j['gate'] ?? '',
+      subjectName: j['subjectName']?.toString(),
+      subjectId: j['subjectId']?.toString(),
+      authMethod: j['authMethod']?.toString(),
+      purpose: j['purpose']?.toString(),
+      notes: j['notes']?.toString(),
+      guardName: j['guardName']?.toString() ?? j['recordedByName']?.toString(),
+      status: j['status']?.toString(),
+      driverName: j['driverName']?.toString(),
+      vehicleName: j['vehicleName']?.toString(),
+      ownerName: j['ownerName']?.toString() ?? ownerFromVehicle,
+      plateNumber: j['plateNumber']?.toString(),
+      recordId: j['recordId']?.toString(),
+      recordedByName: j['recordedByName']?.toString(),
+      isAuthorized: j['isAuthorized'] != false,
+      personnelSnapshot: j['personnelSnapshot'],
+      vehicleSnapshot: j['vehicleSnapshot'],
+      timestamp: j['createdAt'] != null
+          ? DateTime.parse(j['createdAt'])
+          : (j['timestamp'] != null ? DateTime.parse(j['timestamp']) : DateTime.now()),
+    );
+  }
+
+  bool get isEntry => action.toLowerCase() == 'entry';
+
+  String get displayName {
+    if (subjectName != null && subjectName!.isNotEmpty) return subjectName!;
+    if (type.toLowerCase() == 'personnel' && personnelSnapshot != null) {
+      return personnelSnapshot!['name']?.toString() ?? 'Unknown';
+    }
+    if (type.toLowerCase() == 'vehicle' && vehicleSnapshot != null) {
+      return vehicleSnapshot!['plateNumber']?.toString() ?? 'Unknown';
+    }
     return 'Unknown';
   }
+
+  String get displayId => subjectId ?? recordId ?? '--';
 }
 
 class Alert {
@@ -99,16 +177,46 @@ class Alert {
   final bool isRead, isResolved;
   final DateTime createdAt;
   final String? gate;
+  final String? reporterName;
+  final String? reporterRank;
 
-  Alert({required this.id, required this.type, required this.severity, required this.title, required this.message, this.isRead = false, this.isResolved = false, required this.createdAt, this.gate});
+  Alert({
+    required this.id,
+    required this.type,
+    required this.severity,
+    required this.title,
+    required this.message,
+    this.isRead = false,
+    this.isResolved = false,
+    required this.createdAt,
+    this.gate,
+    this.reporterName,
+    this.reporterRank,
+  });
 
-  factory Alert.fromJson(Map<String, dynamic> j) => Alert(
-    id: j['_id'] ?? '', type: j['type'] ?? '', severity: j['severity'] ?? 'medium',
-    title: j['title'] ?? '', message: j['message'] ?? '',
-    isRead: j['isRead'] ?? false, isResolved: j['isResolved'] ?? false,
-    createdAt: j['createdAt'] != null ? DateTime.parse(j['createdAt']) : DateTime.now(),
-    gate: j['gate'],
-  );
+  factory Alert.fromJson(Map<String, dynamic> j) {
+    final reportedBy = j['reportedBy'];
+    String? reporterName;
+    String? reporterRank;
+    if (reportedBy is Map) {
+      reporterName = reportedBy['fullName']?.toString();
+      reporterRank = reportedBy['rank']?.toString();
+    }
+
+    return Alert(
+      id: j['_id'] ?? '',
+      type: j['type'] ?? '',
+      severity: j['severity'] ?? 'medium',
+      title: j['title'] ?? j['type'] ?? '',
+      message: j['message'] ?? '',
+      isRead: j['isRead'] ?? false,
+      isResolved: j['isResolved'] ?? false,
+      createdAt: j['createdAt'] != null ? DateTime.parse(j['createdAt']) : DateTime.now(),
+      gate: j['gate'],
+      reporterName: reporterName,
+      reporterRank: reporterRank,
+    );
+  }
 }
 
 class DashboardStats {

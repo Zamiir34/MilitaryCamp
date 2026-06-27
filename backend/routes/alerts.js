@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Alert = require('../models/Alert');
 const { auth, requireRole } = require('../middleware/auth');
+const { broadcastAlert, REPORTER_FIELDS } = require('../utils/alerts');
 
 router.get('/', auth, async (req, res) => {
   try {
@@ -16,7 +17,7 @@ router.get('/', auth, async (req, res) => {
     }
 
     const total = await Alert.countDocuments(query);
-    const alerts = await Alert.find(query).populate('reportedBy', 'fullName rank role').sort({ createdAt: -1 }).skip((page - 1) * limit).limit(parseInt(limit));
+    const alerts = await Alert.find(query).populate('reportedBy', REPORTER_FIELDS).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(parseInt(limit));
     res.json({ data: alerts, total });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -28,10 +29,8 @@ router.post('/', auth, async (req, res) => {
     const alertId = 'ALT' + Date.now().toString().slice(-9);
     const alert = new Alert({ ...req.body, alertId, reportedBy: req.user._id });
     await alert.save();
-    // Broadcast to all connected clients in real-time
-    const io = req.app.get('io');
-    if (io) io.emit('new_alert', alert.toObject());
-    res.status(201).json(alert);
+    const populated = await broadcastAlert(req.app.get('io'), alert);
+    res.status(201).json(populated);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }

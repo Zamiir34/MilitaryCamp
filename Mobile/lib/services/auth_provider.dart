@@ -64,6 +64,10 @@ class AuthProvider extends ChangeNotifier {
         return false; // caller should show OTP screen
       }
 
+      // Persist token explicitly
+      if (data['token'] != null) {
+        await _api.setToken(data['token'].toString());
+      }
       _user = User.fromJson(data['user']);
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('current_user', jsonEncode(data['user']));
@@ -80,6 +84,10 @@ class AuthProvider extends ChangeNotifier {
     _loading = true; _error = null; notifyListeners();
     try {
       final data = await _api.verifyEmail(userId, code);
+      // Persist token explicitly after OTP verification
+      if (data['token'] != null) {
+        await _api.setToken(data['token'].toString());
+      }
       _user = User.fromJson(data['user']);
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('current_user', jsonEncode(data['user']));

@@ -207,7 +207,7 @@ class AppConstants {
   static const String appName = 'CAMP MONITOR';
   static const String appVersion = '1.0.0';
 
-  static const List<String> gates = ['Gate Alpha', 'Gate Bravo', 'Gate Charlie', 'Gate Delta', 'VIP Gate'];
+  static const List<String> gates = ['Main Gate', 'Vehicle Gate', 'Gate 2', 'Gate 3', 'Emergency Exit'];
   static const List<String> zones = ['Zone A - Admin', 'Zone B - Barracks', 'Zone C - Armory', 'Zone D - Motor Pool', 'Zone E - Medical'];
-  static const List<String> ranks = ['Private', 'Corporal', 'Sergeant', 'Staff Sergeant', 'Lieutenant', 'Captain', 'Major', 'Colonel', 'General', 'Civilian', 'Contractor'];
+  static const List<String> ranks = ['Dable', 'Captan', 'Cornel', 'Gashaanle'];
 }

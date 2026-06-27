@@ -38,7 +38,8 @@ export default function Dashboard() {
     recentActivity: [],
     myRecentActivity: [],
     recentAlerts: [],
-    allGuards: []
+    allGuards: [],
+    personnelWithVehicles: []
   });
   const [loading, setLoading] = useState(true);
 
@@ -58,7 +59,7 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  const { stats, chart, recentActivity, myRecentActivity, recentAlerts, allGuards } = data;
+  const { stats, chart, recentActivity, myRecentActivity, recentAlerts, allGuards, personnelWithVehicles } = data;
 
   return (
     <div>
@@ -221,8 +222,8 @@ export default function Dashboard() {
                 <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Share Tech Mono, monospace' }}>{alert.createdAt ? format(new Date(alert.createdAt), 'HH:mm') : '--:--'}</span>
               </div>
               <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{alert.message}</div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
-                {alert.reportedBy ? `Reported by: ${alert.reportedBy.fullName || 'Unknown'}` : 'System Alert'} 
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                {alert.reportedBy ? `Sent by: ${alert.reportedBy.fullName || 'Unknown'}${alert.reportedBy.rank ? ` (${alert.reportedBy.rank})` : ''}` : 'System alert'}
                 {alert.gate && ` • Location: ${alert.gate}`}
               </div>
             </div>
@@ -271,6 +272,51 @@ export default function Dashboard() {
                   background: guard.isOnDuty ? 'var(--accent-green)' : 'var(--border)', 
                   boxShadow: guard.isOnDuty ? '0 0 8px var(--accent-green)' : 'none' 
                 }} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Personnel with Vehicles */}
+        <div className="card">
+          <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 14, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Drivers & Vehicles</span>
+            <span className="badge badge-cyan">{(personnelWithVehicles || []).length}</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 300, overflowY: 'auto', paddingRight: 4 }}>
+            {(personnelWithVehicles || []).length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)', fontSize: 12 }}>No drivers or visitor vehicles</div>
+            ) : personnelWithVehicles.map((p, i) => (
+              <div key={p._id || i} style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 10, 
+                padding: '8px 12px', 
+                background: 'var(--bg-secondary)', 
+                border: '1px solid var(--border)', 
+                borderRadius: 8
+              }}>
+                <div style={{ 
+                  width: 32, height: 32, borderRadius: '50%', 
+                  background: p.isVisitor ? 'rgba(59,130,246,0.1)' : 'rgba(6,182,212,0.1)', 
+                  border: `1px solid ${p.isVisitor ? 'var(--accent-blue)' : 'var(--accent-cyan)'}`, 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                  color: p.isVisitor ? 'var(--accent-blue)' : 'var(--accent-cyan)' 
+                }}>
+                  <Car size={16} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.fullName}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Share Tech Mono, monospace' }}>
+                    {p.isVisitor ? 'Visitor' : p.rank} {p.unit ? `• ${p.unit}` : ''}
+                  </div>
+                </div>
+                {p.vehicleDetails && (
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)' }}>{p.vehicleDetails.plateNumber}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{p.vehicleDetails.color} {p.vehicleDetails.model}</div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

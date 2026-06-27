@@ -14,7 +14,7 @@ const DEMO_LOGS = [
 ];
 
 const INITIAL_FORM = {
-  type: 'Personnel', subjectName: '', subjectId: '', gate: 'Main Gate', purpose: '', isAuthorized: true, notes: '', category: ''
+  type: 'Personnel', subjectName: '', subjectId: '', driverName: '', gate: 'Main Gate', purpose: '', isAuthorized: true, notes: '', category: ''
 };
 
 export default function EntryExit() {
@@ -135,6 +135,7 @@ export default function EntryExit() {
         ...p, 
         subjectName: item.fullName, 
         subjectId: item.personnelId, 
+        driverName: item.hasVehicle ? item.fullName : '',
         isAuthorized: item.status === 'Active',
         category: item.type // This stores 'Military', 'Civilian', etc.
       }));
@@ -142,12 +143,20 @@ export default function EntryExit() {
       // make/model are optional fields — build a safe display name
       const vehicleName = [item.make, item.model].filter(Boolean).join(' ') || item.vehicleType || 'Vehicle';
       const displayName = `${vehicleName} (${item.plateNumber})`;
-      setForm(p => ({ ...p, subjectName: displayName, subjectId: item.plateNumber, isAuthorized: item.isAuthorized && item.status === 'Active' }));
+      setForm(p => ({
+        ...p,
+        subjectName: displayName,
+        subjectId: item.plateNumber,
+        driverName: item.ownerName || '',
+        vehicle: item._id,
+        isAuthorized: item.isAuthorized && item.status === 'Active',
+      }));
     } else if (form.type === 'Visitor') {
       setForm(p => ({ 
         ...p, 
         subjectName: item.fullName, 
-        subjectId: item.visitorId, 
+        subjectId: item.visitorId,
+        driverName: item.hasVehicle ? item.fullName : '',
         isAuthorized: item.status === 'Approved',
         category: item.visitorType 
       }));

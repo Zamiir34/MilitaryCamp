@@ -156,12 +156,13 @@ class ApiService {
 
   Future<Personnel> createPersonnel(Map<String, dynamic> body) async {
     final data = await _post('/personnel', body);
-    return Personnel.fromJson(data['personnel']);
+    // Backend returns the personnel object directly (not wrapped in { personnel: ... })
+    return Personnel.fromJson(data is Map<String, dynamic> ? data : data['personnel']);
   }
 
   Future<Personnel> updatePersonnel(String id, Map<String, dynamic> body) async {
     final data = await _put('/personnel/$id', body);
-    return Personnel.fromJson(data['personnel']);
+    return Personnel.fromJson(data is Map<String, dynamic> && data['personnel'] != null ? data['personnel'] : data);
   }
 
   Future<void> deletePersonnel(String id) async => await _delete('/personnel/$id');
@@ -200,32 +201,79 @@ class ApiService {
   }
 
   // ─── Entry Logs ──────────────────────────────────────────────
-  Future<Map<String, dynamic>> getEntryLogs({int page = 1, String? type, String? action, String? gate}) async {
-    var path = '/entries?page=$page&limit=30';
-    if (type != null)   path += '&type=$type';
-    if (action != null) path += '&action=$action';
-    if (gate != null)   path += '&gate=$gate';
+  Future<Map<String, dynamic>> getEntryLogs({
+    int page = 1,
+    int limit = 30,
+    String? search,
+    String? type,
+    String? action,
+    String? gate,
+    String? date,
+  }) async {
+    var path = '/entries?page=$page&limit=$limit';
+    if (search != null && search.isNotEmpty) path += '&search=${Uri.encodeComponent(search)}';
+    if (type != null && type.isNotEmpty) path += '&type=$type';
+    if (action != null && action.isNotEmpty) path += '&action=$action';
+    if (gate != null && gate.isNotEmpty) path += '&gate=${Uri.encodeComponent(gate)}';
+    if (date != null && date.isNotEmpty) path += '&date=$date';
     return await _get(path);
   }
 
+  List<EntryLog> parseEntryLogs(Map<String, dynamic> data) {
+    final raw = data['data'] ?? data['logs'] ?? [];
+    return (raw as List).map((e) => EntryLog.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
   Future<List<EntryLog>> getTodayLogs() async {
-    final data = await _get('/entries/today');
-    return (data['logs'] as List).map((e) => EntryLog.fromJson(e)).toList();
+    final now = DateTime.now();
+    final date = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final data = await getEntryLogs(date: date, limit: 200);
+    return parseEntryLogs(data);
   }
 
   Future<List<EntryLog>> getRecentLogs({int limit = 10}) async {
-    final data = await _get('/entries/recent?limit=$limit');
-    return (data['logs'] as List).map((e) => EntryLog.fromJson(e)).toList();
+    final data = await getEntryLogs(limit: limit);
+    return parseEntryLogs(data);
   }
 
+  Future<EntryLog> recordEntry(Map<String, dynamic> body) async {
+    final data = await _post('/entries/entry', body);
+    return EntryLog.fromJson(Map<String, dynamic>.from(data as Map));
+  }
+
+  Future<EntryLog> recordExit(Map<String, dynamic> body) async {
+    final data = await _post('/entries/exit', body);
+    return EntryLog.fromJson(Map<String, dynamic>.from(data as Map));
+  }
+
+  @Deprecated('Use recordEntry instead')
   Future<EntryLog> logPersonnelEntry(Map<String, dynamic> body) async {
-    final data = await _post('/entries/personnel', body);
-    return EntryLog.fromJson(data['log']);
+    return recordEntry({
+      'type': 'Personnel',
+      'subjectName': body['subjectName'] ?? body['personnelName'] ?? '',
+      'subjectId': body['personnelId'] ?? body['subjectId'] ?? '',
+      'gate': body['gate'] ?? 'Main Gate',
+      'purpose': body['purpose'],
+      'notes': body['notes'],
+      'authMethod': body['authMethod'],
+      'isAuthorized': body['isAuthorized'] ?? true,
+    });
   }
 
+  @Deprecated('Use recordEntry instead')
   Future<EntryLog> logVehicleEntry(Map<String, dynamic> body) async {
-    final data = await _post('/entries/vehicle', body);
-    return EntryLog.fromJson(data['log']);
+    return recordEntry({
+      'type': 'Vehicle',
+      'subjectName': body['subjectName'] ?? body['plateNumber'] ?? '',
+      'subjectId': body['subjectId'] ?? body['plateNumber'] ?? '',
+      'vehicle': body['vehicleId'] ?? body['vehicle'],
+      'driverName': body['driverName'],
+      'gate': body['gate'] ?? 'Main Gate',
+      'purpose': body['purpose'],
+      'notes': body['notes'],
+      'authMethod': body['authMethod'],
+      'isAuthorized': body['isAuthorized'] ?? true,
+    });
   }
 
   // ─── Alerts ──────────────────────────────────────────────────
@@ -245,6 +293,22 @@ class ApiService {
   Future<void> markAllAlertsRead() async => await _patch('/alerts/mark-all-read');
 
   // ─── Reports ─────────────────────────────────────────────────
+  Future<Map<String, dynamic>> getReportRange({
+    required String startDate,
+    required String endDate,
+    String? type,
+    String? gate,
+    String? action,
+    String? isAuthorized,
+  }) async {
+    var path = '/reports/range?startDate=$startDate&endDate=$endDate';
+    if (type != null && type.isNotEmpty) path += '&type=$type';
+    if (gate != null && gate.isNotEmpty) path += '&gate=${Uri.encodeComponent(gate)}';
+    if (action != null && action.isNotEmpty) path += '&action=$action';
+    if (isAuthorized != null && isAuthorized.isNotEmpty) path += '&isAuthorized=$isAuthorized';
+    return await _get(path);
+  }
+
   Future<Map<String, dynamic>> getReport({String? startDate, String? endDate}) async {
     var path = '/reports';
     if (startDate != null) path += '?startDate=$startDate';

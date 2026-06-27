@@ -190,7 +190,7 @@ class _VisitorScreenState extends State<VisitorScreen> {
                     label: const Text('LOG ENTRY', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                     onPressed: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const LogEntryScreen(type: 'personnel')),
+                      MaterialPageRoute(builder: (_) => const LogEntryScreen(action: 'entry', initialSubjectType: 'Visitor')),
                     ).then((_) => _load(reset: true)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.secondary,

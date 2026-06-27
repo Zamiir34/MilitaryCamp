@@ -185,6 +185,7 @@ class _OtpScreenState extends State<_OtpScreen> {
   final List<TextEditingController> _ctrls = List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
   bool _resending = false;
+  bool _submitting = false; // guard against double-submit
 
   @override
   void dispose() {
@@ -202,8 +203,11 @@ class _OtpScreenState extends State<_OtpScreen> {
         const SnackBar(content: Text('Please enter the 6-digit code'), backgroundColor: AppColors.danger));
       return;
     }
+    if (_submitting) return; // prevent double-submit
+    _submitting = true;
     final auth = context.read<AuthProvider>();
     final ok = await auth.verifyEmail(widget.userId, code);
+    _submitting = false;
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(auth.error ?? 'Invalid code'), backgroundColor: AppColors.danger));

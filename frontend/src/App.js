@@ -7,7 +7,6 @@ import Layout from './components/layout/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Personnel from './pages/Personnel';
-import Vehicles from './pages/Vehicles';
 import Visitors from './pages/Visitors';
 import EntryExit from './pages/EntryExit';
 import Reports from './pages/Reports';

@@ -2,7 +2,14 @@ const express = require('express');
 const router = express.Router();
 const EntryLog = require('../models/EntryLog');
 const { auth } = require('../middleware/auth');
+const { enrichLogsWithDrivers } = require('../utils/reportLogs');
 const ExcelJS = require('exceljs');
+
+const LOG_POPULATE = [
+  { path: 'vehicle', select: 'vehicleId ownerName make model plateNumber category vehicleType' },
+  { path: 'personnel', select: 'personnelId fullName hasVehicle vehicleDetails' },
+  { path: 'visitor', select: 'visitorId fullName hasVehicle vehiclePlate vehicleModel' },
+];
 
 // Get daily report data
 router.get('/daily', auth, async (req, res) => {
@@ -39,7 +46,10 @@ router.get('/daily', auth, async (req, res) => {
       }
     }
 
-    const logs = await EntryLog.find({ createdAt: { $gte: start, $lt: end } }).populate('vehicle', 'ownerName category').sort({ createdAt: 1 });
+    const logsRaw = await EntryLog.find({ createdAt: { $gte: start, $lt: end } })
+      .populate(LOG_POPULATE)
+      .sort({ createdAt: 1 });
+    const logs = await enrichLogsWithDrivers(logsRaw);
     const summary = {
       total: logs.length,
       entries: logs.filter(l => l.action === 'Entry').length,
@@ -116,7 +126,8 @@ router.get('/range', auth, async (req, res) => {
       }
     }
 
-    const logs = await EntryLog.find(query).populate('vehicle', 'ownerName category').sort({ createdAt: -1 });
+    const logsRaw = await EntryLog.find(query).populate(LOG_POPULATE).sort({ createdAt: -1 });
+    const logs = await enrichLogsWithDrivers(logsRaw);
 
     const summary = {
       total: logs.length,
@@ -214,7 +225,8 @@ router.get('/export/excel', auth, async (req, res) => {
       }
     }
 
-    const logs = await EntryLog.find(query).populate('vehicle', 'ownerName category').sort({ createdAt: -1 }).limit(2000);
+    const logsRaw = await EntryLog.find(query).populate(LOG_POPULATE).sort({ createdAt: -1 }).limit(2000);
+    const logs = await enrichLogsWithDrivers(logsRaw);
 
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'Military Camp System';
@@ -225,8 +237,12 @@ router.get('/export/excel', auth, async (req, res) => {
       { header: 'Date/Time', key: 'createdAt', width: 22 },
       { header: 'Type', key: 'type', width: 12 },
       { header: 'Action', key: 'action', width: 10 },
-      { header: 'Name', key: 'subjectName', width: 25 },
-      { header: 'ID/Plate', key: 'subjectId', width: 15 },
+      { header: 'Name / Subject', key: 'subjectName', width: 22 },
+      { header: 'Vehicle Name', key: 'vehicleName', width: 22 },
+      { header: 'Owner Name', key: 'ownerName', width: 22 },
+      { header: 'Plate Number', key: 'plateNumber', width: 16 },
+      { header: 'Record ID', key: 'recordId', width: 16 },
+      { header: 'Driver', key: 'driverName', width: 22 },
       { header: 'Gate', key: 'gate', width: 15 },
       { header: 'Authorized', key: 'isAuthorized', width: 12 },
       { header: 'Purpose', key: 'purpose', width: 25 },
@@ -243,8 +259,12 @@ router.get('/export/excel', auth, async (req, res) => {
         createdAt: new Date(log.createdAt).toLocaleString(),
         type: log.type,
         action: log.action,
-        subjectName: log.type === 'Vehicle' && log.vehicle ? `${log.subjectName} (${log.vehicle.ownerName} - ${log.vehicle.category || 'Military'})` : log.subjectName,
-        subjectId: log.subjectId,
+        subjectName: log.subjectName,
+        vehicleName: log.vehicleName || '--',
+        ownerName: log.ownerName || '--',
+        plateNumber: log.plateNumber || '--',
+        recordId: log.recordId || '--',
+        driverName: log.driverName || '--',
         gate: log.gate,
         isAuthorized: log.isAuthorized ? 'Yes' : 'No',
         purpose: log.purpose,

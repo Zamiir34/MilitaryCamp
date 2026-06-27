@@ -10,11 +10,14 @@ router.get('/', auth, async (req, res) => {
   try {
     const { search, vehicleType, status, page = 1, limit = 20 } = req.query;
     const query = {};
-    if (search) query.$or = [
-      { plateNumber: { $regex: search, $options: 'i' } },
-      { ownerName: { $regex: search, $options: 'i' } },
-      { vehicleId: { $regex: search, $options: 'i' } }
-    ];
+    if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.$or = [
+        { plateNumber: { $regex: escapedSearch, $options: 'i' } },
+        { ownerName: { $regex: escapedSearch, $options: 'i' } },
+        { vehicleId: { $regex: escapedSearch, $options: 'i' } }
+      ];
+    }
     if (vehicleType) query.vehicleType = vehicleType;
     if (status) query.status = status;
 
@@ -71,7 +74,7 @@ router.put('/:id', auth, async (req, res) => {
 
     if (updateData.plateNumber) {
       const existing = await Vehicle.findOne({ 
-        plateNumber: { $regex: new RegExp('^' + updateData.plateNumber.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&') + '$', 'i') } 
+        plateNumber: { $regex: new RegExp('^' + updateData.plateNumber.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') } 
       });
       if (existing && existing._id.toString() !== req.params.id) {
         return res.status(400).json({ message: `Vehicle already registered with plate: ${updateData.plateNumber}` });

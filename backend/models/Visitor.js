@@ -26,4 +26,11 @@ const visitorSchema = new mongoose.Schema({
   otpExpires: { type: Date }
 }, { timestamps: true });
 
+visitorSchema.methods.toJSON = function () {
+  const obj = this.toObject();
+  delete obj.otpCode;
+  delete obj.otpExpires;
+  return obj;
+};
+
 module.exports = mongoose.model('Visitor', visitorSchema);

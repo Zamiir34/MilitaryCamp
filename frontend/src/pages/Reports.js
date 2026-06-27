@@ -405,8 +405,12 @@ export default function Reports() {
                     <th>Date / Time</th>
                     <th>Type</th>
                     <th>Action</th>
-                    <th>Name</th>
-                    <th>ID / Plate</th>
+                    <th>Name / Subject</th>
+                    <th>Vehicle Name</th>
+                    <th>Owner Name</th>
+                    <th>Plate Number</th>
+                    <th>Record ID</th>
+                    <th>Driver</th>
                     <th>Gate Post</th>
                     <th>Authorized</th>
                     <th className="no-print">Purpose</th>
@@ -415,7 +419,7 @@ export default function Reports() {
                 <tbody>
                   {report.logs.length === 0 ? (
                     <tr>
-                      <td colSpan={9} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', fontSize: 13 }}>
+                      <td colSpan={13} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', fontSize: 13 }}>
                         No records match the selected filter query criteria.
                       </td>
                     </tr>
@@ -441,9 +445,22 @@ export default function Reports() {
                         </td>
                         <td style={{ fontWeight: 600 }}>
                           {log.subjectName}
-                          {log.type === 'Vehicle' && log.vehicle?.ownerName && <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{log.vehicle.ownerName} ({log.vehicle.category || 'Military'})</div>}
                         </td>
-                        <td className="mono" style={{ fontSize: 12 }}>{log.subjectId || '--'}</td>
+                        <td style={{ fontWeight: 600 }}>
+                          {log.vehicleName && log.vehicleName !== '--' ? log.vehicleName : '—'}
+                        </td>
+                        <td style={{ fontWeight: 600 }}>
+                          {log.ownerName && log.ownerName !== '--' ? log.ownerName : '—'}
+                        </td>
+                        <td className="mono" style={{ fontSize: 12 }}>
+                          {log.plateNumber && log.plateNumber !== '--' ? log.plateNumber : '—'}
+                        </td>
+                        <td className="mono" style={{ fontSize: 12 }}>
+                          {log.recordId && log.recordId !== '--' ? log.recordId : '—'}
+                        </td>
+                        <td style={{ fontWeight: 600 }}>
+                          {log.driverName && log.driverName !== '--' ? log.driverName : '—'}
+                        </td>
                         <td style={{ fontWeight: 600 }}>{log.gate}</td>
                         <td>
                           {log.isAuthorized ? (

@@ -27,7 +27,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
       final data = await _api.getAlerts(isRead: _showUnreadOnly ? false : null);
       if (mounted) {
         setState(() {
-          _alerts = (data['alerts'] as List).map((e) => Alert.fromJson(e)).toList();
+          final list = (data['data'] ?? data['alerts'] ?? []) as List;
+          _alerts = list.map((e) => Alert.fromJson(e as Map<String, dynamic>)).toList();
           _loading = false;
         });
       }
@@ -154,11 +155,22 @@ class _AlertTile extends StatelessWidget {
               Text(alert.gate!, style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
               const SizedBox(width: 10),
             ],
+            Icon(Icons.person_outline, size: 11, color: AppColors.textMuted),
+            const SizedBox(width: 3),
+            Text(
+              alert.reporterName != null
+                  ? 'Sent by: ${alert.reporterRank != null ? '${alert.reporterRank} ' : ''}${alert.reporterName}'
+                  : 'Sent by: System',
+              style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+            ),
+            const Spacer(),
             Icon(Icons.access_time, size: 11, color: AppColors.textMuted),
             const SizedBox(width: 3),
             Text(DateFormat('MMM d, HH:mm').format(alert.createdAt), style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
-            const Spacer(),
-            if (!alert.isRead) Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle)),
+            if (!alert.isRead) ...[
+              const SizedBox(width: 8),
+              Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle)),
+            ],
           ]),
         ])),
       ]),

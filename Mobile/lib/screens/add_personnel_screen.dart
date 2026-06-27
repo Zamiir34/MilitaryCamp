@@ -27,13 +27,13 @@ class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
   bool _saving = false;
   String _category = 'military', _status = 'active';
   String _selectedZone = 'Zone A';
+  String _selectedRank = AppConstants.ranks.first;
   String _selectedUnit = _kUnits.first; // unit dropdown selection
   String? _transferredFrom; // tracks where personnel transferred from
   int _accessLevel = 1;
   final _fields = <String, TextEditingController>{
     'firstName': TextEditingController(), 'lastName': TextEditingController(),
     'militaryId': TextEditingController(),
-    'rank': TextEditingController(),
     'badgeNumber': TextEditingController(), 'nationalId': TextEditingController(),
     'phone': TextEditingController(), 'email': TextEditingController(),
     'bloodType': TextEditingController(),
@@ -51,7 +51,6 @@ class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
     if (widget.initialCategory != null) {
       _category = widget.initialCategory!;
       if (widget.initialCategory == 'visitor') {
-        _fields['rank']!.text = 'Civilian';
         _selectedUnit = _kUnits.last; // default visitors to Guutada Gor Gor
         final uniqueId = DateTime.now().millisecondsSinceEpoch.toString().substring(8);
         _fields['badgeNumber']!.text = 'VIS-$uniqueId';
@@ -134,12 +133,12 @@ class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
       final newPersonnel = await _api.createPersonnel({
         'fullName': '${_fields['firstName']!.text} ${_fields['lastName']!.text}',
         'militaryId': _fields['militaryId']!.text,
-        'rank': _fields['rank']!.text, 'unit': _selectedUnit,
+        'rank': _selectedRank, 'unit': _selectedUnit,
         if (_transferredFrom != null && _transferredFrom!.isNotEmpty) 'transferredFrom': _transferredFrom,
         'badgeNumber': _fields['badgeNumber']!.text, 'idNumber': _fields['nationalId']!.text,
         'phone': _fields['phone']!.text, 'email': _fields['email']!.text,
         'bloodType': _fields['bloodType']!.text,
-        'type': _category == 'military' ? 'Military' : _category == 'civilian' ? 'Civilian' : 'Staff',
+        'type': 'Military',
         'status': _status == 'active' ? 'Active' : _status == 'inactive' ? 'Inactive' : 'Suspended',
         'authorizedZones': [_selectedZone],
         if (_base64Photo != null) 'photo': _base64Photo,
@@ -314,8 +313,18 @@ class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
           _Section(label: 'MILITARY INFORMATION', children: [
             _Field(ctrl: _fields['militaryId']!, label: 'Military ID Card', required: true,
               hint: 'e.g. MIL-12345'),
-            _Field(ctrl: _fields['rank']!, label: 'Rank', required: true,
-              hint: 'e.g. Sergeant, Captain, Civilian'),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: DropdownButtonFormField<String>(
+                value: _selectedRank,
+                dropdownColor: AppColors.surfaceVariant,
+                decoration: const InputDecoration(labelText: 'Rank *'),
+                items: AppConstants.ranks
+                    .map((r) => DropdownMenuItem(value: r, child: Text(r)))
+                    .toList(),
+                onChanged: (v) => setState(() => _selectedRank = v!),
+              ),
+            ),
             // Unit dropdown — official units only
             Padding(
               padding: const EdgeInsets.only(bottom: 12),

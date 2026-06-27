@@ -4,6 +4,8 @@ const { randomBytes } = require('crypto');
 const EntryLog = require('../models/EntryLog');
 const Alert = require('../models/Alert');
 const { auth } = require('../middleware/auth');
+const { broadcastAlert } = require('../utils/alerts');
+const { resolveDriverNameForEntry } = require('../utils/reportLogs');
 
 // Collision-resistant IDs: timestamp (base36) + 3 random bytes
 const generateLogId = () => 'LOG' + Date.now().toString(36).toUpperCase() + randomBytes(3).toString('hex').toUpperCase();
@@ -14,11 +16,14 @@ router.get('/', auth, async (req, res) => {
   try {
     const { search, type, action, date, gate, page = 1, limit = 30 } = req.query;
     const query = {};
-    if (search) query.$or = [
-      { subjectName: { $regex: search, $options: 'i' } },
-      { subjectId: { $regex: search, $options: 'i' } },
-      { logId: { $regex: search, $options: 'i' } }
-    ];
+    if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.$or = [
+        { subjectName: { $regex: escapedSearch, $options: 'i' } },
+        { subjectId: { $regex: escapedSearch, $options: 'i' } },
+        { logId: { $regex: escapedSearch, $options: 'i' } }
+      ];
+    }
     if (type) query.type = type;
     if (action) query.action = action;
     if (gate) query.gate = gate;
@@ -63,13 +68,21 @@ router.post('/entry', auth, async (req, res) => {
     }
 
     const logId = generateLogId();
+    const driverName = await resolveDriverNameForEntry({
+      type: req.body.type,
+      subjectId: req.body.subjectId,
+      subjectName: req.body.subjectName,
+      driverName: req.body.driverName,
+      vehicleId: req.body.vehicle,
+    });
     const log = new EntryLog({
       ...req.body,
       logId,
       action: 'Entry',
       entryTime: new Date(),
       recordedBy: req.user._id,
-      recordedByName: req.user.fullName
+      recordedByName: req.user.fullName,
+      ...(driverName ? { driverName } : {}),
     });
     await log.save();
 
@@ -83,12 +96,11 @@ router.post('/entry', auth, async (req, res) => {
           message: `Unauthorized ${req.body.type} attempted entry: ${req.body.subjectName}`,
           details: req.body.notes,
           relatedLog: log._id,
-          gate: req.body.gate
+          gate: req.body.gate,
+          reportedBy: req.user._id
         });
         await alert.save();
-        // Broadcast to all connected clients in real-time
-        const io = req.app.get('io');
-        if (io) io.emit('new_alert', alert.toObject());
+        await broadcastAlert(req.app.get('io'), alert);
       } catch (alertErr) {
         console.warn('Alert creation failed (non-fatal):', alertErr.message);
       }
@@ -111,13 +123,21 @@ router.post('/exit', auth, async (req, res) => {
     }
 
     const logId = generateLogId();
+    const driverName = await resolveDriverNameForEntry({
+      type: req.body.type,
+      subjectId: req.body.subjectId,
+      subjectName: req.body.subjectName,
+      driverName: req.body.driverName,
+      vehicleId: req.body.vehicle,
+    });
     const log = new EntryLog({
       ...req.body,
       logId,
       action: 'Exit',
       exitTime: new Date(),
       recordedBy: req.user._id,
-      recordedByName: req.user.fullName
+      recordedByName: req.user.fullName,
+      ...(driverName ? { driverName } : {}),
     });
     await log.save();
 
@@ -131,12 +151,11 @@ router.post('/exit', auth, async (req, res) => {
           message: `Military personnel exit recorded: ${req.body.subjectName}`,
           details: `Exit recorded for ${req.body.subjectName} at ${req.body.gate || 'Main Gate'}`,
           relatedLog: log._id,
-          gate: req.body.gate
+          gate: req.body.gate,
+          reportedBy: req.user._id
         });
         await notification.save();
-        // Broadcast to all connected clients in real-time
-        const io = req.app.get('io');
-        if (io) io.emit('new_alert', notification.toObject());
+        await broadcastAlert(req.app.get('io'), notification);
       } catch (nErr) {
         console.warn('Exit notification failed:', nErr.message);
       }

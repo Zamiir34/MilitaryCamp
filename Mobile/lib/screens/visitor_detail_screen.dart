@@ -135,7 +135,7 @@ class _VisitorDetailScreenState extends State<VisitorDetailScreen> {
                 tooltip: 'Log Entry/Exit',
                 onPressed: () => Navigator.push(
                   context, 
-                  MaterialPageRoute(builder: (_) => const LogEntryScreen(type: 'personnel')),
+                  MaterialPageRoute(builder: (_) => const LogEntryScreen(action: 'entry', initialSubjectType: 'Visitor')),
                 ).then((_) => _load()),
               ),
             ],

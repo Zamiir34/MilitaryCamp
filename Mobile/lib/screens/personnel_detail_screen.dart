@@ -93,7 +93,7 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
               icon: const Icon(Icons.swap_horiz),
               tooltip: 'Log Entry/Exit',
               onPressed: () => Navigator.push(context, MaterialPageRoute(
-                builder: (_) => const LogEntryScreen(type: 'personnel'))).then((_) => _load()),
+                builder: (_) => const LogEntryScreen(action: 'entry', initialSubjectType: 'Personnel'))).then((_) => _load()),
             ),
           ],
         ),

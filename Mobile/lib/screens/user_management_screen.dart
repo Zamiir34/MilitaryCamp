@@ -589,7 +589,15 @@ class _UserFormSheetState extends State<_UserFormSheet> {
                   keyboardType: TextInputType.emailAddress,
                   validator: (v) => !v!.contains('@') ? 'Valid email required' : null),
                 const SizedBox(height: 14),
-                _FormField(ctrl: _rank, label: 'Rank', icon: Icons.military_tech_outlined),
+                DropdownButtonFormField<String>(
+                  value: AppConstants.ranks.contains(_rank.text) ? _rank.text : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Rank',
+                    prefixIcon: Icon(Icons.military_tech_outlined, color: AppColors.textMuted, size: 20),
+                  ),
+                  items: AppConstants.ranks.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+                  onChanged: (v) => setState(() => _rank.text = v ?? ''),
+                ),
                 const SizedBox(height: 14),
                 _FormField(ctrl: _phone, label: 'Phone', icon: Icons.phone_outlined,
                   keyboardType: TextInputType.phone),

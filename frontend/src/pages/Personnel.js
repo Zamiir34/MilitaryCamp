@@ -5,6 +5,8 @@ import toast from 'react-hot-toast';
 import { formatDate } from '../utils/dateUtils';
 import { useAuth } from '../context/AuthContext';
 
+const RANKS = ['Dable', 'Captan', 'Cornel', 'Gashaanle'];
+
 const INITIAL_FORM = { 
   fullName: '', rank: '', militaryId: '', unit: 'Taliska 18', transferredFrom: '', phone: '', email: '', 
   type: 'Military', status: 'Active', authorizedZones: '',
@@ -71,7 +73,6 @@ export default function Personnel() {
       if (modal === 'add') {
         const { data: newPerson } = await api.post('/personnel', payload);
         toast.success('Personnel registered');
-        stopWebcam();
         fetchPersonnel();
         setSelected(newPerson);
         setModal(null);
@@ -85,17 +86,6 @@ export default function Personnel() {
       toast.error(err.response?.data?.message || 'Operation failed');
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete this personnel record?')) return;
-    try {
-      await api.delete(`/personnel/${id}`);
-      toast.success('Deleted');
-      fetchPersonnel();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Delete failed');
     }
   };
 
@@ -153,7 +143,6 @@ export default function Personnel() {
         )}
       </div>
 
-      {/* Filters */}
       <div className="card" style={{ marginBottom: '1rem', padding: '1rem' }}>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <div style={{ position: 'relative', flex: '1 1 300px' }}>
@@ -163,7 +152,7 @@ export default function Personnel() {
           <div style={{ display: 'flex', gap: '0.75rem', flex: '1 1 auto' }}>
             <select className="input" style={{ flex: 1, minWidth: 120 }} value={filterType} onChange={e => setFilterType(e.target.value)}>
               <option value="">All Types</option>
-              <option>Military</option><option>Civilian</option><option>Staff</option>
+              <option>Military</option>
             </select>
             <select className="input" style={{ flex: 1, minWidth: 120 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
               <option value="">All Status</option>
@@ -173,7 +162,6 @@ export default function Personnel() {
         </div>
       </div>
 
-      {/* Table */}
       <div className="card" style={{ padding: 0 }}>
         <div className="table-container">
           <table style={{ minWidth: 800 }}>
@@ -213,7 +201,6 @@ export default function Personnel() {
         </div>
       </div>
 
-      {/* Modal - Add/Edit */}
       {(modal === 'add' || modal === 'edit') && (
         <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: 700 }}>
@@ -235,7 +222,10 @@ export default function Personnel() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Rank</label>
-                  <input className="input" value={form.rank} onChange={e => setForm(p => ({ ...p, rank: e.target.value }))} />
+                  <select className="input" value={form.rank} onChange={e => setForm(p => ({ ...p, rank: e.target.value }))}>
+                    <option value="" disabled>Select Rank</option>
+                    {RANKS.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Unit *</label>
@@ -333,14 +323,12 @@ export default function Personnel() {
                 <div className="form-group" style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
                   <label className="form-label">Personnel Photo <span style={{ color: 'var(--accent-primary)' }}>*</span></label>
                   <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                    {/* Photo Preview */}
                     <div style={{ width: 110, height: 140, borderRadius: 10, background: 'var(--bg-secondary)', border: `2px solid ${form.photo ? 'var(--accent-green)' : 'var(--accent-primary)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, transition: 'border-color 0.3s' }}>
                       {form.photo
                         ? <img src={form.photo} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         : <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}><Camera size={36} /><div style={{ fontSize: 10, marginTop: 6, fontWeight: 700, letterSpacing: '0.05em' }}>NO PHOTO</div></div>
                       }
                     </div>
-                    {/* Photo Upload */}
                     <div style={{ flex: 1, minWidth: 220 }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         <input type="file" accept="image/*" onChange={(e) => {
@@ -370,8 +358,6 @@ export default function Personnel() {
           </div>
         </div>
       )}
-
-
 
       {modal === 'transfer' && selected && (
         <div className="modal-overlay animate-fadeIn">
@@ -411,12 +397,10 @@ export default function Personnel() {
 
                 <div className="form-group">
                   <label className="form-label">New Rank (if promoted/demoted)</label>
-                  <input 
-                    className="input" 
-                    value={transferForm.newRank} 
-                    onChange={e => setTransferForm(p => ({ ...p, newRank: e.target.value }))} 
-                    placeholder="Enter rank (leave as current if unchanged)" 
-                  />
+                  <select className="input" value={transferForm.newRank} onChange={e => setTransferForm(p => ({ ...p, newRank: e.target.value }))}>
+                    <option value="">-- No Change --</option>
+                    {RANKS.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
                 </div>
 
                 <div className="form-group">
