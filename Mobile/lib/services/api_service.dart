@@ -277,9 +277,10 @@ class ApiService {
   }
 
   // ─── Alerts ──────────────────────────────────────────────────
-  Future<Map<String, dynamic>> getAlerts({bool? isRead, String? severity}) async {
-    var path = '/alerts?page=1&limit=30';
+  Future<Map<String, dynamic>> getAlerts({bool? isRead, bool? isResolved, String? severity, int limit = 30}) async {
+    var path = '/alerts?page=1&limit=$limit';
     if (isRead != null) path += '&isRead=$isRead';
+    if (isResolved != null) path += '&isResolved=$isResolved';
     if (severity != null) path += '&severity=$severity';
     return await _get(path);
   }
@@ -319,20 +320,27 @@ class ApiService {
   Future<Map<String, dynamic>> getPersonnelHistory(String id) async => await _get('/reports/personnel/$id');
   Future<Map<String, dynamic>> getVehicleHistory(String id) async   => await _get('/reports/vehicle/$id');
 
-  // ─── Incidents ────────────────────────────────────────────────
-  Future<Map<String, dynamic>> reportIncident(Map<String, dynamic> body) async {
-    final payload = {
-      'type': body['type'],
-      'severity': body['severity'],
-      'gate': body['location'],
-      'message': body['description'],
-    };
-    return await _post('/alerts', payload);
+  Future<Map<String, dynamic>> createNotification({
+    required String type,
+    required String message,
+    String? zone,
+    String? gate,
+  }) async {
+    return await _post('/alerts', {
+      'type': type,
+      'message': message,
+      if (zone != null && zone.isNotEmpty) 'zone': zone,
+      if (gate != null && gate.isNotEmpty) 'gate': gate,
+    });
   }
 
-  Future<List<dynamic>> getIncidents() async {
-    final data = await _get('/alerts');
-    return data['data'] as List;
+  @Deprecated('Use createNotification instead')
+  Future<Map<String, dynamic>> sendGuardNotification({
+    required String message,
+    required String zone,
+    String? gate,
+  }) async {
+    return createNotification(type: 'Suspicious Activity', message: message, zone: zone, gate: gate);
   }
 
   // ─── User Management (admin only) ────────────────────────────

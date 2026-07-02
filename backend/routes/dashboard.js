@@ -43,7 +43,7 @@ router.get('/', auth, async (req, res) => {
       EntryLog.countDocuments({ ...todayFilter, action: 'Entry', type: 'Personnel' }),
       EntryLog.countDocuments({ ...todayFilter, action: 'Entry', type: 'Vehicle' }),
       EntryLog.countDocuments({ ...todayFilter, action: 'Entry', type: 'Visitor' }),
-      Alert.countDocuments({ isResolved: false, ...isolationFilter }),
+      Alert.countDocuments({ isResolved: false, type: { $nin: ['System Alert', 'Notification'] }, ...isolationFilter }),
       // Last 7 days activity
       EntryLog.aggregate([
         { $match: { createdAt: { $gte: new Date(Math.max(Date.now() - 7 * 24 * 60 * 60 * 1000, isolationDate.getTime())) } } },
@@ -104,7 +104,11 @@ router.get('/', auth, async (req, res) => {
       .limit(5);
 
     // Recent alerts
-    const recentAlerts = await Alert.find({ isResolved: false, ...isolationFilter })
+    const recentAlerts = await Alert.find({
+      isResolved: false,
+      type: { $nin: ['System Alert', 'Notification'] },
+      ...isolationFilter,
+    })
       .populate('reportedBy', 'fullName rank role')
       .sort({ createdAt: -1 })
       .limit(5);

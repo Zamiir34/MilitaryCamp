@@ -84,7 +84,7 @@ export default function Verify() {
                 <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)' }}>{data.fullName}</div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="grid-2-mobile">
                 <div>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}><Award size={10} /> Rank</label>
                   <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{data.rank || 'N/A'}</div>

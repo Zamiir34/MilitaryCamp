@@ -187,11 +187,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 )),
 
                 // Alert Banner
-                if (_stats!.unreadAlerts > 0) SliverToBoxAdapter(child: Padding(
+                if (_stats!.unresolvedAlerts > 0) SliverToBoxAdapter(child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                   child: _AlarmBanner(
-                    isCritical: _stats!.criticalAlerts > 0,
-                    count: _stats!.unreadAlerts,
+                    isCritical: false,
+                    count: _stats!.unresolvedAlerts,
                     onTap: () => Navigator.pushNamed(context, '/alerts'),
                   ),
                 )),
@@ -435,18 +435,7 @@ class _AlertTile extends StatelessWidget {
   final dynamic alert;
   const _AlertTile({required this.alert});
 
-  Color _sevColor(String sev) {
-    switch (sev.toLowerCase()) {
-      case 'critical': return AppColors.critical;
-      case 'high':     return AppColors.danger;
-      case 'medium':   return AppColors.warning;
-      default:         return AppColors.info;
-    }
-  }
-
   @override Widget build(BuildContext context) {
-    final sev = (alert['severity'] ?? 'low').toString();
-    final color = _sevColor(sev);
     String timeStr = '--:--';
     if (alert['createdAt'] != null) {
       try { timeStr = DateFormat('HH:mm').format(DateTime.parse(alert['createdAt'].toString())); } catch (_) {}
@@ -456,22 +445,26 @@ class _AlertTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: AppColors.primary.withOpacity(0.05),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-            decoration: BoxDecoration(color: color.withOpacity(0.15), borderRadius: BorderRadius.circular(4)),
-            child: Text(sev.toUpperCase(), style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
+          Expanded(
+            child: Text(alert['type']?.toString() ?? 'Notification',
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textMuted, letterSpacing: 0.5)),
           ),
-          const SizedBox(width: 10),
-          Expanded(child: Text(alert['message']?.toString() ?? 'Alert',
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary), maxLines: 2, overflow: TextOverflow.ellipsis)),
           Text(timeStr, style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
         ]),
+        const SizedBox(height: 4),
+        Text(alert['message']?.toString() ?? 'Alert',
+          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary), maxLines: 2, overflow: TextOverflow.ellipsis),
+        if (alert['zone'] != null && alert['zone'].toString().isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text('Zone: ${alert['zone']}',
+            style: const TextStyle(fontSize: 10, color: AppColors.secondary, fontWeight: FontWeight.w600)),
+        ],
         const SizedBox(height: 6),
         Text(
           'Sent by: ${reporterName ?? 'System'}',

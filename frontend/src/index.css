@@ -388,13 +388,19 @@ tbody tr:hover { background: var(--bg-elevated); }
   
   .page-header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 0.75rem;
   }
 
-  .page-header .btn {
+  .page-header-actions {
     width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .page-header-actions .btn {
+    flex: 1 1 auto;
     justify-content: center;
+    min-width: 140px;
   }
   
   .modal {
@@ -402,6 +408,10 @@ tbody tr:hover { background: var(--bg-elevated); }
     margin: 0.5rem;
     width: calc(100% - 1rem);
     max-height: 90vh;
+  }
+
+  .modal-lg {
+    max-width: calc(100% - 1rem);
   }
   
   .form-grid {
@@ -414,16 +424,310 @@ tbody tr:hover { background: var(--bg-elevated); }
   }
   
   .stat-card .stat-value {
-    font-size: 24px;
+    font-size: 28px;
   }
 
-  .page-title { font-size: 20px; }
+  .page-title { font-size: 22px; }
+  .page-subtitle { font-size: 14px; }
+
+  th, td { padding: 10px 8px; font-size: 13px; }
+  th { font-size: 11px; }
+
+  .filter-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-toolbar .filter-search {
+    width: 100%;
+    min-width: 0 !important;
+  }
+
+  .filter-toolbar .filter-controls {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .filter-toolbar .filter-controls .input,
+  .filter-toolbar .filter-select {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100%;
+  }
+
+  .live-info-bar {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .live-info-bar .live-info-meta {
+    margin-left: 0 !important;
+    width: 100%;
+  }
+
+  .notif-dropdown {
+    width: min(340px, calc(100vw - 2rem));
+    right: 0;
+    left: auto;
+  }
+
+  .chat-shell {
+    height: calc(100vh - 64px - 2rem);
+  }
+
+  .chat-shell .chat-sidebar {
+    width: 100%;
+    display: flex;
+  }
+
+  .chat-shell .chat-panel {
+    display: none;
+    width: 100%;
+  }
+
+  .chat-shell.chat-has-selection .chat-sidebar {
+    display: none;
+  }
+
+  .chat-shell.chat-has-selection .chat-panel {
+    display: flex;
+  }
+
+  .reports-filter-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .reports-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .reports-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .grid-2-mobile {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 768px) {
+  body { font-size: 15px; }
+
+  .btn {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  .card { padding: 1rem; }
+
+  .badge { font-size: 11px; padding: 3px 10px; }
+
+  .top-bar-online {
+    display: none !important;
+  }
+
+  .alert-banner-text {
+    font-size: 11px !important;
+    line-height: 1.4;
+  }
 }
 
 @media (max-width: 480px) {
-  .btn span { display: none; }
-  .btn { padding: 8px; }
-  .btn i, .btn svg { margin: 0; }
+  .page-title { font-size: 18px; }
+  .stat-card .stat-value { font-size: 24px; }
+  .modal { padding: 1rem; }
+
+  .photo-capture-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .photo-capture-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Page layout utilities */
+.page-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-toolbar {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.filter-toolbar .filter-search {
+  position: relative;
+  flex: 1 1 220px;
+  min-width: 200px;
+}
+
+.filter-toolbar .filter-controls {
+  display: flex;
+  gap: 0.75rem;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+}
+
+.filter-select {
+  flex: 1;
+  min-width: 120px;
+}
+
+.modal-lg {
+  max-width: 700px;
+}
+
+.live-info-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.live-info-bar .live-info-meta {
+  margin-left: auto;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.table-wide { min-width: 1000px; }
+.table-medium { min-width: 700px; }
+.table-compact { min-width: 560px; }
+
+.notif-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 340px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  z-index: 1000;
+  overflow: hidden;
+  animation: fadeIn 0.15s ease;
+}
+
+/* Chat layout */
+.chat-shell {
+  display: flex;
+  height: calc(100vh - 64px - 3rem);
+  gap: 0;
+  animation: fadeIn 0.3s ease;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.chat-sidebar {
+  width: 290px;
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  min-width: 0;
+}
+
+.chat-back-btn {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .chat-back-btn {
+    display: inline-flex;
+  }
+}
+
+.reports-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.reports-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.photo-capture-row {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.photo-capture-controls {
+  flex: 1;
+  min-width: 220px;
+}
+
+.photo-capture-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.grid-2-mobile {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.alert-banner-text {
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.otp-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.otp-digit {
+  width: 48px;
+  height: 56px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+  font-family: 'Share Tech Mono', monospace;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  outline: none;
+  caret-color: var(--accent-green);
+  transition: border-color 0.15s;
+}
+
+@media (max-width: 480px) {
+  .otp-digit {
+    width: 40px;
+    height: 48px;
+    font-size: 20px;
+  }
 }
 
 /* Layout Classes (to replace inline styles) */

@@ -25,7 +25,7 @@ class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
   final _form = GlobalKey<FormState>();
   final _api = ApiService();
   bool _saving = false;
-  String _category = 'military', _status = 'active';
+  String _category = 'military';
   String _selectedZone = 'Zone A';
   String _selectedRank = AppConstants.ranks.first;
   String _selectedUnit = _kUnits.first; // unit dropdown selection
@@ -139,7 +139,6 @@ class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
         'phone': _fields['phone']!.text, 'email': _fields['email']!.text,
         'bloodType': _fields['bloodType']!.text,
         'type': 'Military',
-        'status': _status == 'active' ? 'Active' : _status == 'inactive' ? 'Inactive' : 'Suspended',
         'authorizedZones': [_selectedZone],
         if (_base64Photo != null) 'photo': _base64Photo,
       });
@@ -265,7 +264,7 @@ class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
                 OutlinedButton.icon(
                   onPressed: _takePhoto,
                   icon: const Icon(Icons.photo_camera, size: 16),
-                  label: const Text('TAKE PHOTO'),
+                  label: const Text('OPEN CAMERA'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: AppColors.primary),
@@ -360,10 +359,6 @@ class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
             _Dropdown(label: 'Category', value: _category,
               items: const ['military'],
               onChanged: (v) => setState(() => _category = v!)),
-            const SizedBox(height: 12),
-            _Dropdown(label: 'Status', value: _status,
-              items: const ['active','inactive','suspended','on_leave'],
-              onChanged: (v) => setState(() => _status = v!)),
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.only(bottom: 12),

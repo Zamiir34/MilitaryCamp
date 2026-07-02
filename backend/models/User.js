@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema({
   rank: { type: String },
   badgeNumber: { type: String },
   militaryId: { type: String, unique: true, sparse: true },
+  assignedZone: { type: String },
   hasVehicle: { type: Boolean, default: false },
   vehicleDetails: {
     plateNumber: { type: String },

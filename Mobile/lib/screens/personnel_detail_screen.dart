@@ -103,8 +103,6 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             // Status row
             Row(children: [
-              _Badge(_p!.status?.toUpperCase() ?? '', _p!.isActive ? AppColors.success : AppColors.danger),
-              const SizedBox(width: 8),
               _Badge(_p!.isInside ? 'INSIDE CAMP' : 'OUTSIDE', _p!.isInside ? AppColors.primary : AppColors.textMuted),
               const SizedBox(width: 8),
               _Badge(_p!.category?.toUpperCase() ?? '', AppColors.secondary),

@@ -16,8 +16,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   bool _loading = true;
   bool _submitting = false;
   Map<String, dynamic>? _todayRecord;
-  List<dynamic> _history = [];
-  final _notesCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -27,7 +25,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
   @override
   void dispose() {
-    _notesCtrl.dispose();
     super.dispose();
   }
 
@@ -35,15 +32,13 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     setState(() => _loading = true);
     try {
       final todayData = await _api.checkTodayAttendance();
-      final historyData = await _api.getAttendanceHistory();
-      
+
       setState(() {
         if (todayData['checkedIn'] == true) {
           _todayRecord = todayData['record'];
         } else {
           _todayRecord = null;
         }
-        _history = historyData;
         _loading = false;
       });
     } catch (e) {
@@ -59,8 +54,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   Future<void> _handleCheckIn() async {
     setState(() => _submitting = true);
     try {
-      await _api.checkInAttendance(_notesCtrl.text);
-      _notesCtrl.clear();
+      await _api.checkInAttendance('');
       await _loadData();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -81,8 +75,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   Future<void> _handleCheckOut() async {
     setState(() => _submitting = true);
     try {
-      await _api.checkOutAttendance(_notesCtrl.text);
-      _notesCtrl.clear();
+      await _api.checkOutAttendance('');
       await _loadData();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -171,19 +164,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             ],
           ),
           const SizedBox(height: 24),
-          
-          if (!hasCheckedOut) ...[
-            TextField(
-              controller: _notesCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Notes (Optional)',
-                hintText: 'Any special remarks...',
-                prefixIcon: Icon(Icons.note_alt_outlined),
-              ),
-              maxLength: 100,
-            ),
-            const SizedBox(height: 16),
-          ],
 
           if (!hasCheckedIn)
             SizedBox(
@@ -192,8 +172,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               child: ElevatedButton.icon(
                 onPressed: _submitting ? null : _handleCheckIn,
                 icon: _submitting ? const SizedBox() : const Icon(Icons.login),
-                label: _submitting 
-                    ? const CircularProgressIndicator(color: Colors.white) 
+                label: _submitting
+                    ? const CircularProgressIndicator(color: Colors.white)
                     : const Text('CHECK IN NOW', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.success,
@@ -209,8 +189,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               child: ElevatedButton.icon(
                 onPressed: _submitting ? null : _handleCheckOut,
                 icon: _submitting ? const SizedBox() : const Icon(Icons.logout),
-                label: _submitting 
-                    ? const CircularProgressIndicator(color: Colors.white) 
+                label: _submitting
+                    ? const CircularProgressIndicator(color: Colors.white)
                     : const Text('CHECK OUT', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.warning,
@@ -242,73 +222,12 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     );
   }
 
-  Widget _buildHistoryItem(dynamic record) {
-    String checkIn = '--:--';
-    String checkOut = '--:--';
-    String dateStr = record['date'] ?? 'Unknown Date';
-
-    if (record['checkInTime'] != null) {
-      try { checkIn = DateFormat('HH:mm').format(DateTime.parse(record['checkInTime'])); } catch (_) {}
-    }
-    if (record['checkOutTime'] != null) {
-      try { checkOut = DateFormat('HH:mm').format(DateTime.parse(record['checkOutTime'])); } catch (_) {}
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(Icons.calendar_today, color: AppColors.primary, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(dateStr, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.login, size: 12, color: AppColors.success),
-                    const SizedBox(width: 4),
-                    Text(checkIn, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                    const SizedBox(width: 12),
-                    const Icon(Icons.logout, size: 12, color: AppColors.warning),
-                    const SizedBox(width: 4),
-                    Text(checkOut, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          if (record['notes'] != null && record['notes'].toString().isNotEmpty)
-            const Tooltip(
-              message: 'Has Notes',
-              child: Icon(Icons.notes, color: AppColors.textMuted, size: 18),
-            ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('My Attendance'),
+        title: const Text('Check In / Out'),
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
         ],
@@ -322,18 +241,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 padding: const EdgeInsets.all(20),
                 children: [
                   _buildStatusCard(),
-                  const SizedBox(height: 32),
-                  const Text('ATTENDANCE HISTORY', style: TextStyle(color: AppColors.textMuted, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-                  const SizedBox(height: 16),
-                  if (_history.isEmpty)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32.0),
-                        child: Text('No attendance history found.', style: TextStyle(color: AppColors.textMuted)),
-                      ),
-                    )
-                  else
-                    ..._history.map((record) => _buildHistoryItem(record)),
                 ],
               ),
             ),

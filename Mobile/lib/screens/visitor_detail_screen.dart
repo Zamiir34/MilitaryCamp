@@ -173,8 +173,6 @@ class _VisitorDetailScreenState extends State<VisitorDetailScreen> {
                       if (_visitor!.hostName != null && _visitor!.hostName!.isNotEmpty)
                         _InfoRow('Host / Officer', _visitor!.hostName!),
                       _InfoRow('Visit Date', DateFormat('yyyy-MM-dd HH:mm').format(_visitor!.visitDate)),
-                      if (_visitor!.notes != null && _visitor!.notes!.isNotEmpty)
-                        _InfoRow('Notes', _visitor!.notes!),
                     ],
                   ),
                   const SizedBox(height: 24),

@@ -215,7 +215,7 @@ export default function Reports() {
           <span style={{ fontFamily: 'Rajdhani', fontWeight: 800, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Audit Query Filters</span>
         </div>
 
-        <div className="form-grid" style={{ marginBottom: '1.25rem' }}>
+        <div className="form-grid reports-filter-grid" style={{ marginBottom: '1.25rem' }}>
           <div className="form-group">
             <label className="form-label">Start Date</label>
             <input className="input" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
@@ -261,8 +261,8 @@ export default function Reports() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: 10 }}>
+        <div className="reports-actions" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="reports-actions">
             <button className="btn btn-primary" onClick={fetchReport} disabled={loading}>
               <RefreshCw size={14} style={{ animation: loading ? 'spin 1.5s linear infinite' : 'none' }} />
               Generate Report
@@ -271,7 +271,7 @@ export default function Reports() {
               Reset
             </button>
           </div>
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div className="reports-actions">
             <button className="btn btn-ghost" onClick={handlePrint} disabled={!report || report.logs.length === 0}>
               <Printer size={14} /> Print Audit / PDF
             </button>
@@ -398,7 +398,7 @@ export default function Reports() {
             </div>
 
             <div className="table-container">
-              <table>
+              <table className="table-wide">
                 <thead>
                   <tr>
                     <th>Log ID</th>

@@ -6,12 +6,10 @@ import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import { getSocket } from '../utils/socket';
 
-const severityConfig = {
-  Critical: { color: 'var(--accent-red)', bg: 'rgba(244,63,94,0.1)', border: 'rgba(244,63,94,0.3)', icon: '🔴' },
-  High: { color: '#f97316', bg: 'rgba(249,115,22,0.1)', border: 'rgba(249,115,22,0.3)', icon: '🟠' },
-  Medium: { color: 'var(--accent-gold)', bg: 'rgba(251,191,36,0.1)', border: 'rgba(251,191,36,0.3)', icon: '🟡' },
-  Low: { color: 'var(--accent-blue)', bg: 'rgba(59,130,246,0.1)', border: 'rgba(59,130,246,0.3)', icon: '🔵' },
-  Info: { color: 'var(--accent-cyan)', bg: 'rgba(6,182,212,0.1)', border: 'rgba(6,182,212,0.3)', icon: 'ℹ️' },
+const cardStyle = {
+  color: 'var(--accent-primary)',
+  bg: 'rgba(59,130,246,0.08)',
+  border: 'rgba(59,130,246,0.25)',
 };
 
 const getSenderLabel = (alert) => {
@@ -22,30 +20,34 @@ const getSenderLabel = (alert) => {
   return 'System';
 };
 
+const NOTIFICATION_TYPES = [
+  'Unauthorized Access',
+  'Blacklisted Vehicle',
+  'Expired Permit',
+  'Suspicious Activity',
+  'Personnel Exit',
+];
+
 export default function Alerts() {
-  const { canAccess } = useAuth();
+  const { canAccess, user } = useAuth();
+  const isGuard = user?.role === 'Guard';
+  const canCreate = canAccess(['Administrator']) || isGuard;
   const [alerts, setAlerts] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filterResolved, setFilterResolved] = useState('false');
-  const [filterSeverity, setFilterSeverity] = useState('');
   const [modal, setModal] = useState(null);
-  const [form, setForm] = useState({ type: 'Unauthorized Access', severity: 'Medium', message: '', details: '', gate: 'Main Gate' });
+  const [form, setForm] = useState({ type: 'Unauthorized Access', message: '', gate: 'Main Gate' });
   const [submitting, setSubmitting] = useState(false);
-  const [newIds, setNewIds] = useState(new Set()); // tracks freshly received IDs for "NEW" badge
   const filterResolvedRef = useRef(filterResolved);
-  const filterSeverityRef = useRef(filterSeverity);
 
-  // Keep refs in sync so socket handler always sees latest filter values
   useEffect(() => { filterResolvedRef.current = filterResolved; }, [filterResolved]);
-  useEffect(() => { filterSeverityRef.current = filterSeverity; }, [filterSeverity]);
 
   const fetchAlerts = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (filterResolved !== '') params.set('isResolved', filterResolved);
-      if (filterSeverity) params.set('severity', filterSeverity);
       const { data } = await api.get(`/alerts?${params}`);
       setAlerts(data.data || data);
       setTotal(data.total || (data.data || data).length);
@@ -58,28 +60,28 @@ export default function Alerts() {
     }
   };
 
-  useEffect(() => { fetchAlerts(); }, [filterResolved, filterSeverity]);
+  useEffect(() => { fetchAlerts(); }, [filterResolved]);
 
-  // Real-time: subscribe to new_alert socket events
   useEffect(() => {
     const socket = getSocket();
     const handler = (alert) => {
-      // Only prepend if current filter would show it
+      if (['System Alert', 'Notification'].includes(alert.type)) return;
       const showingActive = filterResolvedRef.current === 'false';
-      const showingAll    = filterResolvedRef.current === '';
-      const severityMatch = !filterSeverityRef.current || filterSeverityRef.current === alert.severity;
-      if ((showingActive || showingAll) && severityMatch) {
+      const showingAll = filterResolvedRef.current === '';
+      if (showingActive || showingAll) {
         setAlerts(prev => [alert, ...prev]);
         setTotal(prev => prev + 1);
-        setNewIds(prev => new Set([...prev, alert.alertId]));
-        // Auto-clear "NEW" badge after 8 seconds
-        setTimeout(() => {
-          setNewIds(prev => { const s = new Set(prev); s.delete(alert.alertId); return s; });
-        }, 8000);
       }
     };
+    const handleResolved = () => {
+      fetchAlerts();
+    };
     socket.on('new_alert', handler);
-    return () => socket.off('new_alert', handler);
+    socket.on('alert_resolved', handleResolved);
+    return () => {
+      socket.off('new_alert', handler);
+      socket.off('alert_resolved', handleResolved);
+    };
   }, []);
 
   const handleResolve = async (id) => {
@@ -88,7 +90,6 @@ export default function Alerts() {
       toast.success('Notification resolved');
       fetchAlerts();
     } catch {
-      // Demo mode: toggle locally
       setAlerts(prev => prev.map(a => a._id === id ? { ...a, isResolved: true } : a));
       toast.success('Notification resolved');
     }
@@ -98,12 +99,16 @@ export default function Alerts() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await api.post('/alerts', form);
+      const payload = { ...form };
+      delete payload.zone;
+      if (isGuard) delete payload.gate;
+      await api.post('/alerts', payload);
       toast.success('Notification created');
       setModal(null);
       fetchAlerts();
-    } catch {
-      toast.error('Failed');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed';
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -118,12 +123,15 @@ export default function Alerts() {
           <h1 className="page-title">Notifications</h1>
           <p className="page-subtitle">{unresolved} pending updates</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setModal('create')}>
-          <Bell size={14} /> New Notification
-        </button>
+        {canCreate && (
+          <div className="page-header-actions">
+            <button className="btn btn-primary" onClick={() => setModal('create')}>
+              <Bell size={14} /> New Notification
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Unresolved banner */}
       {unresolved > 0 && (
         <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: 10 }}>
           <AlertTriangle size={16} color="var(--accent-red)" />
@@ -133,22 +141,14 @@ export default function Alerts() {
         </div>
       )}
 
-      {/* Filters */}
       <div className="card" style={{ marginBottom: '1rem', padding: '1rem' }}>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <select className="input" style={{ width: 160 }} value={filterResolved} onChange={e => setFilterResolved(e.target.value)}>
-            <option value="false">Active</option>
-            <option value="true">Resolved</option>
-            <option value="">All</option>
-          </select>
-          <select className="input" style={{ width: 140 }} value={filterSeverity} onChange={e => setFilterSeverity(e.target.value)}>
-            <option value="">All Severities</option>
-            <option>Critical</option><option>High</option><option>Medium</option><option>Low</option><option>Info</option>
-          </select>
-        </div>
+        <select className="input filter-select" style={{ maxWidth: 240 }} value={filterResolved} onChange={e => setFilterResolved(e.target.value)}>
+          <option value="false">Active</option>
+          <option value="true">Resolved</option>
+          <option value="">All</option>
+        </select>
       </div>
 
-      {/* Alerts list */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         {loading ? (
           <div className="card" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Loading alerts...</div>
@@ -159,20 +159,19 @@ export default function Alerts() {
             <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>No active notifications</div>
           </div>
         ) : alerts.map(alert => {
-          const cfg = severityConfig[alert.severity] || severityConfig.Low;
-          const isNew = newIds.has(alert.alertId);
+          const isNew = !alert.isResolved;
           return (
             <div
               key={alert._id || alert.alertId}
               className="animate-fadeIn"
               style={{
-                background: isNew ? `${cfg.bg}` : 'var(--bg-card)',
-                border: `1px solid ${isNew ? cfg.color : alert.isResolved ? 'var(--border)' : cfg.border}`,
+                background: isNew ? cardStyle.bg : 'var(--bg-card)',
+                border: `1px solid ${isNew ? cardStyle.color : alert.isResolved ? 'var(--border)' : cardStyle.border}`,
                 borderRadius: 8,
                 padding: '1rem 1.25rem',
                 opacity: alert.isResolved ? 0.6 : 1,
                 transition: 'all 0.4s ease',
-                boxShadow: isNew ? `0 0 12px ${cfg.color}30` : 'none'
+                boxShadow: isNew ? `0 0 12px ${cardStyle.color}30` : 'none'
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
@@ -183,21 +182,19 @@ export default function Alerts() {
                         display: 'inline-flex', alignItems: 'center', gap: 3,
                         fontSize: 9, fontWeight: 800, fontFamily: 'Rajdhani, sans-serif',
                         letterSpacing: '0.1em', textTransform: 'uppercase',
-                        color: '#fff', background: cfg.color,
+                        color: '#fff', background: cardStyle.color,
                         borderRadius: 4, padding: '1px 6px',
                         animation: 'pulse-primary 1.5s infinite'
                       }}>
                         <Zap size={8} /> LIVE
                       </span>
                     )}
-                    <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'Rajdhani, sans-serif', letterSpacing: '0.08em', textTransform: 'uppercase', color: cfg.color }}>{alert.severity}</span>
-                    <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Share Tech Mono, monospace' }}>•</span>
                     <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Rajdhani, sans-serif', fontWeight: 600 }}>{alert.type}</span>
-                    {alert.gate && <span className="badge badge-gray" style={{ fontSize: 10 }}>{alert.gate}</span>}
+                    {alert.zone && <span className="badge badge-blue" style={{ fontSize: 10 }}>Zone: {alert.zone}</span>}
+                    {alert.gate && alert.gate !== alert.zone && <span className="badge badge-gray" style={{ fontSize: 10 }}>{alert.gate}</span>}
                     {alert.isResolved && <span className="badge badge-green">RESOLVED</span>}
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>{alert.message}</div>
-                  {alert.details && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{alert.details}</div>}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
                     <span className="badge badge-gray" style={{ fontSize: 10 }}>
                       Sent by: {getSenderLabel(alert)}
@@ -218,7 +215,6 @@ export default function Alerts() {
         })}
       </div>
 
-      {/* Create Alert Modal */}
       {modal === 'create' && (
         <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: 500 }}>
@@ -229,34 +225,22 @@ export default function Alerts() {
             <form onSubmit={handleCreate}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div className="form-group"><label className="form-label">Type</label>
-                   <select className="input" value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))}>
-                    <option>Unauthorized Access</option>
-                    <option>Blacklisted Vehicle</option>
-                    <option>Expired Permit</option>
-                    <option>Suspicious Activity</option>
-                    <option>Personnel Exit</option>
-                    <option>Notification</option>
-                    <option>System Alert</option>
+                  <select className="input" value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))}>
+                    {NOTIFICATION_TYPES.map(t => <option key={t}>{t}</option>)}
                   </select>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div className="form-group"><label className="form-label">Severity</label>
-                    <select className="input" value={form.severity} onChange={e => setForm(p => ({ ...p, severity: e.target.value }))}>
-                      <option>Critical</option><option>High</option><option>Medium</option><option>Low</option><option>Info</option>
-                    </select>
-                  </div>
-                  <div className="form-group"><label className="form-label">Gate</label>
-                    <select className="input" value={form.gate} onChange={e => setForm(p => ({ ...p, gate: e.target.value }))}>
-                      <option>Main Gate</option><option>Vehicle Gate</option><option>Gate 2</option><option>Gate 3</option>
-                    </select>
-                  </div>
+                {!isGuard && (
+                <div className="form-group"><label className="form-label">Gate</label>
+                  <select className="input" value={form.gate} onChange={e => setForm(p => ({ ...p, gate: e.target.value }))}>
+                    <option>Main Gate</option><option>Vehicle Gate</option><option>Gate 2</option><option>Gate 3</option>
+                  </select>
                 </div>
+                )}
                 <div className="form-group"><label className="form-label">Message *</label><input className="input" value={form.message} onChange={e => setForm(p => ({ ...p, message: e.target.value }))} required /></div>
-                <div className="form-group"><label className="form-label">Details</label><textarea className="input" rows={3} value={form.details} onChange={e => setForm(p => ({ ...p, details: e.target.value }))} /></div>
               </div>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: '1.5rem' }}>
                 <button type="button" className="btn btn-ghost" onClick={() => setModal(null)}>Cancel</button>
-                <button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? 'Creating...' : 'Create'}</button>
+                <button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? 'Sending...' : 'Send'}</button>
               </div>
             </form>
           </div>

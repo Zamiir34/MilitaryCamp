@@ -80,19 +80,21 @@ export default function Vehicles() {
           <p className="page-subtitle">{total} vehicles registered</p>
         </div>
         {canAccess(['Administrator', 'SecurityOfficer']) && (
-          <button className="btn btn-primary" onClick={() => { setForm(INITIAL_FORM); setModal('add'); }}>
-            <Plus size={14} /> Register Vehicle
-          </button>
+          <div className="page-header-actions">
+            <button className="btn btn-primary" onClick={() => { setForm(INITIAL_FORM); setModal('add'); }}>
+              <Plus size={14} /> Register Vehicle
+            </button>
+          </div>
         )}
       </div>
 
       <div className="card" style={{ marginBottom: '1rem', padding: '1rem' }}>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+        <div className="filter-toolbar">
+          <div className="filter-search">
             <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input className="input" style={{ paddingLeft: 32 }} placeholder="Search plate, owner..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-          <select className="input" style={{ width: 140 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+          <select className="input filter-select" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
             <option value="">All Status</option>
             <option>Active</option><option>Blacklisted</option><option>Inactive</option>
           </select>
@@ -101,7 +103,7 @@ export default function Vehicles() {
 
       <div className="card" style={{ padding: 0 }}>
         <div className="table-container">
-          <table>
+          <table className="table-medium">
             <thead>
               <tr>
                 <th>Plate</th><th>Type</th><th>Make / Model</th><th>Owner</th><th>Authorized</th><th>Status</th><th>Registered</th><th>Actions</th>
@@ -139,7 +141,7 @@ export default function Vehicles() {
 
       {(modal === 'add' || modal === 'edit') && (
         <div className="modal-overlay">
-          <div className="modal" style={{ maxWidth: 700 }}>
+          <div className="modal modal-lg">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 18, textTransform: 'uppercase' }}>
                 {modal === 'add' ? 'Register Vehicle' : 'Edit Vehicle'}

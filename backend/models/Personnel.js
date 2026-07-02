@@ -11,7 +11,7 @@ const personnelSchema = new mongoose.Schema({
   photo: { type: String },
   type: { type: String, enum: ['Military', 'Civilian', 'Staff'], default: 'Military' },
   status: { type: String, enum: ['Active', 'Inactive', 'Suspended'], default: 'Active' },
-  militaryId: { type: String },
+  militaryId: { type: String, unique: true, sparse: true, trim: true },
   transferredFrom: { type: String },
   qrCode: { type: String },
   hasVehicle: { type: Boolean, default: false },

@@ -1,4 +1,5 @@
 // lib/screens/main_nav_screen.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_provider.dart';
@@ -9,13 +10,13 @@ import 'entry_log_screen.dart';
 import 'alerts_screen.dart';
 import 'reports_screen.dart';
 import 'profile_screen.dart';
-import 'report_incident_screen.dart';
 import 'visitor_screen.dart';
 import 'user_management_screen.dart';
 import 'vehicle_screen.dart';
 import 'chat_screen.dart';
 import 'my_work_screen.dart';
 import 'attendance_screen.dart';
+import '../services/api_service.dart';
 
 class MainNavScreen extends StatefulWidget {
   const MainNavScreen({super.key});
@@ -24,6 +25,9 @@ class MainNavScreen extends StatefulWidget {
 
 class _MainNavScreenState extends State<MainNavScreen> {
   int _currentIndex = 0;
+  int _unresolvedAlerts = 0;
+  final _api = ApiService();
+  Timer? _alertPoll;
 
   final _screens = const [
     DashboardScreen(),
@@ -31,6 +35,31 @@ class _MainNavScreenState extends State<MainNavScreen> {
     EntryLogScreen(),
     AlertsScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUnresolvedAlerts();
+    _alertPoll = Timer.periodic(const Duration(seconds: 30), (_) => _loadUnresolvedAlerts());
+  }
+
+  @override
+  void dispose() {
+    _alertPoll?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadUnresolvedAlerts() async {
+    try {
+      final data = await _api.getAlerts(isResolved: false, limit: 1);
+      final count = data['total'] is int
+          ? data['total'] as int
+          : ((data['data'] ?? data['alerts'] ?? []) as List)
+              .where((a) => a is Map && a['isResolved'] != true)
+              .length;
+      if (mounted) setState(() => _unresolvedAlerts = count);
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -163,16 +192,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
                     icon: Icons.notifications_outlined,
                     label: 'Notifications',
                     isSelected: _currentIndex == 3,
-                    onTap: () { setState(() => _currentIndex = 3); Navigator.pop(context); },
-                  ),
-                  _DrawerItem(
-                    icon: Icons.gpp_maybe_outlined,
-                    label: 'Report Incident',
-                    iconColor: AppColors.danger,
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportIncidentScreen()));
-                    },
+                    onTap: () { setState(() => _currentIndex = 3); Navigator.pop(context); _loadUnresolvedAlerts(); },
                   ),
 
                   const SizedBox(height: 8),
@@ -188,7 +208,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
                   ),
                   _DrawerItem(
                     icon: Icons.access_time_outlined,
-                    label: 'My Attendance',
+                    label: 'Check In / Out',
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const AttendanceScreen()));
@@ -218,10 +238,10 @@ class _MainNavScreenState extends State<MainNavScreen> {
                     ),
                   ],
 
-                  if (user?.isOfficer == true) ...[
+                  if (user?.isAdmin == true) ...[
                     const SizedBox(height: 8),
                     // ── ADMIN TOOLS ──────────────────────────
-                    _DrawerLabel(label: user?.isAdmin == true ? 'ADMIN TOOLS' : 'OFFICER TOOLS'),
+                    _DrawerLabel(label: 'ADMIN TOOLS'),
                     _DrawerItem(
                       icon: Icons.manage_accounts_outlined,
                       label: 'User Management',
@@ -276,14 +296,56 @@ class _MainNavScreenState extends State<MainNavScreen> {
           ],
         ),
       ),
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body: Column(
+        children: [
+          if (_unresolvedAlerts > 0)
+            Material(
+              color: AppColors.danger.withOpacity(0.12),
+              child: InkWell(
+                onTap: () {
+                  setState(() => _currentIndex = 3);
+                  _loadUnresolvedAlerts();
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    border: Border(bottom: BorderSide(color: AppColors.danger.withOpacity(0.35))),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          '$_unresolvedAlerts ACTIVE NOTIFICATION${_unresolvedAlerts > 1 ? 'S' : ''} — TAP TO REVIEW',
+                          style: const TextStyle(
+                            color: AppColors.danger,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 11,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, color: AppColors.danger, size: 18),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          Expanded(child: IndexedStack(index: _currentIndex, children: _screens)),
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         backgroundColor: AppColors.surface,
         selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.textMuted,
         currentIndex: _currentIndex,
-        onTap: (i) => setState(() => _currentIndex = i),
+        onTap: (i) {
+          setState(() => _currentIndex = i);
+          if (i == 3) _loadUnresolvedAlerts();
+        },
         items: const [
           BottomNavigationBarItem(backgroundColor: AppColors.surface, icon: Icon(Icons.dashboard_outlined), activeIcon: Icon(Icons.dashboard), label: 'DASHBOARD'),
           BottomNavigationBarItem(backgroundColor: AppColors.surface, icon: Icon(Icons.people_outline), activeIcon: Icon(Icons.people), label: 'PERSONNEL'),

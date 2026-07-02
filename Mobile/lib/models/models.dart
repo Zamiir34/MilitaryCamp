@@ -1,23 +1,29 @@
 // lib/models/models.dart
+import '../theme/app_theme.dart';
+
 class User {
   final String id, name, username, email, role;
-  final String? rank, badgeNumber, profileImage;
+  final String? rank, badgeNumber, profileImage, assignedZone;
   final bool isActive, isOnDuty;
   final DateTime? lastLogin;
 
-  User({required this.id, required this.name, required this.username, required this.email, required this.role, this.rank, this.badgeNumber, this.profileImage, this.isActive = true, this.isOnDuty = false, this.lastLogin});
+  User({required this.id, required this.name, required this.username, required this.email, required this.role, this.rank, this.badgeNumber, this.profileImage, this.assignedZone, this.isActive = true, this.isOnDuty = false, this.lastLogin});
 
   factory User.fromJson(Map<String, dynamic> j) => User(
     id: j['_id'] ?? '', name: j['fullName'] ?? j['name'] ?? '', username: j['username'] ?? '',
     email: j['email'] ?? '', role: j['role'] ?? 'guard',
     rank: j['rank'], badgeNumber: j['badgeNumber'], profileImage: j['profileImage'],
+    assignedZone: j['assignedZone']?.toString(),
     isActive: j['isActive'] ?? true,
     isOnDuty: j['isOnDuty'] ?? false,
     lastLogin: j['lastLogin'] != null ? DateTime.tryParse(j['lastLogin']) : null,
   );
 
+  String? get displayZone => AppConstants.normalizeZone(assignedZone);
+
   bool get isAdmin   => role == 'Administrator' || role == 'admin';
   bool get isOfficer => role == 'SecurityOfficer' || role == 'officer' || role == 'Administrator' || role == 'admin';
+  bool get isGuard   => role == 'Guard' || role == 'guard';
 }
 
 class Personnel {
@@ -177,6 +183,7 @@ class Alert {
   final bool isRead, isResolved;
   final DateTime createdAt;
   final String? gate;
+  final String? zone;
   final String? reporterName;
   final String? reporterRank;
 
@@ -190,6 +197,7 @@ class Alert {
     this.isResolved = false,
     required this.createdAt,
     this.gate,
+    this.zone,
     this.reporterName,
     this.reporterRank,
   });
@@ -213,6 +221,7 @@ class Alert {
       isResolved: j['isResolved'] ?? false,
       createdAt: j['createdAt'] != null ? DateTime.parse(j['createdAt']) : DateTime.now(),
       gate: j['gate'],
+      zone: j['zone'],
       reporterName: reporterName,
       reporterRank: reporterRank,
     );

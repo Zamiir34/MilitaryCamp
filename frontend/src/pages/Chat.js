@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
-import { Send, MessageSquare, Search, Circle, ShieldAlert, Lock } from 'lucide-react';
+import { Send, MessageSquare, Search, Circle, ShieldAlert, Lock, ArrowLeft } from 'lucide-react';
 
 const roleConfig = {
   Administrator: { color: 'var(--accent-red)', badge: 'badge-red', label: 'ADMIN' },
@@ -189,10 +189,10 @@ export default function Chat() {
   };
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 64px - 3rem)', gap: 0, animation: 'fadeIn 0.3s ease', borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1px solid var(--border)', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+    <div className={`chat-shell ${selectedUser ? 'chat-has-selection' : ''}`}>
 
       {/* LEFT SIDEBAR */}
-      <div style={{ width: 290, flexShrink: 0, background: 'var(--bg-secondary)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column' }}>
+      <div className="chat-sidebar">
         {/* Header */}
         <div style={{ padding: '1rem 1rem 0.75rem', borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
@@ -230,7 +230,7 @@ export default function Chat() {
       </div>
 
       {/* RIGHT CHAT AREA */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)', minWidth: 0 }}>
+      <div className="chat-panel">
         {!selectedUser ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, color: 'var(--text-muted)' }}>
             <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--bg-elevated)', border: '2px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -246,6 +246,15 @@ export default function Chat() {
           <>
             {/* Chat header */}
             <div style={{ padding: '0.85rem 1.25rem', borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <button
+                type="button"
+                className="btn btn-ghost chat-back-btn"
+                style={{ padding: '6px 8px', marginRight: 4 }}
+                onClick={() => setSelectedUser(null)}
+                aria-label="Back to contacts"
+              >
+                <ArrowLeft size={16} />
+              </button>
               {(() => {
                 const rc = roleConfig[selectedUser.role] || roleConfig.Guard;
                 return (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { CalendarCheck, Clock, ClipboardList, CheckCircle, XCircle, AlertCircle, Calendar, User, Shield } from 'lucide-react';
+import { CalendarCheck, Clock, CheckCircle, AlertCircle, Shield } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { format } from 'date-fns';
@@ -7,17 +7,18 @@ import { useAuth } from '../context/AuthContext';
 
 export default function Attendance() {
   const { user } = useAuth();
-  const [todayStatus, setTodayStatus] = useState(null); // { checkedIn: false } or { checkedIn: true, record: ... }
-  const [personalHistory, setPersonalHistory] = useState([]);
+  const [todayStatus, setTodayStatus] = useState(null);
   const [teamRecords, setTeamRecords] = useState([]);
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   });
   const [loading, setLoading] = useState(true);
-  const [notes, setNotes] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('personal'); // 'personal' or 'team' (Admin only)
+  const isAdmin = user?.role === 'Administrator';
+  const [activeTab, setActiveTab] = useState(() =>
+    user?.role === 'Administrator' ? 'team' : 'personal'
+  );
 
   const fetchTodayStatus = async () => {
     try {
@@ -28,17 +29,8 @@ export default function Attendance() {
     }
   };
 
-  const fetchHistory = async () => {
-    try {
-      const { data } = await api.get('/attendance/history');
-      setPersonalHistory(data);
-    } catch (err) {
-      console.error('Failed to fetch attendance history', err);
-    }
-  };
-
   const fetchTeamRecords = async (dateStr) => {
-    if (user?.role !== 'Administrator') return;
+    if (!isAdmin) return;
     try {
       const { data } = await api.get(`/attendance/all?date=${dateStr}`);
       setTeamRecords(data);
@@ -50,9 +42,8 @@ export default function Attendance() {
   const loadData = useCallback(async () => {
     setLoading(true);
     await Promise.all([
-      fetchTodayStatus(),
-      fetchHistory(),
-      user?.role === 'Administrator' ? fetchTeamRecords(selectedDate) : Promise.resolve()
+      isAdmin ? Promise.resolve() : fetchTodayStatus(),
+      isAdmin ? fetchTeamRecords(selectedDate) : Promise.resolve()
     ]);
     setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -65,9 +56,8 @@ export default function Attendance() {
   const handleCheckIn = async () => {
     setActionLoading(true);
     try {
-      const { data } = await api.post('/attendance/check-in', { notes });
+      const { data } = await api.post('/attendance/check-in', {});
       toast.success(data.message || 'Checked in successfully');
-      setNotes('');
       await loadData();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Check-in failed');
@@ -79,9 +69,8 @@ export default function Attendance() {
   const handleCheckOut = async () => {
     setActionLoading(true);
     try {
-      const { data } = await api.post('/attendance/check-out', { notes });
+      const { data } = await api.post('/attendance/check-out', {});
       toast.success(data.message || 'Checked out successfully');
-      setNotes('');
       await loadData();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Check-out failed');
@@ -112,41 +101,29 @@ export default function Attendance() {
           <p className="page-subtitle">Manage daily attendance and duty shift tracking</p>
         </div>
         
-        {user?.role === 'Administrator' && (
-          <div style={{ display: 'flex', gap: 8, background: 'var(--bg-secondary)', padding: 4, borderRadius: 8, border: '1px solid var(--border)' }}>
-            <button 
-              onClick={() => setActiveTab('personal')} 
-              className="btn" 
-              style={{ 
-                padding: '6px 12px', 
-                fontSize: 13, 
-                marginBottom: 0,
-                background: activeTab === 'personal' ? 'var(--accent-primary)' : 'transparent',
-                color: activeTab === 'personal' ? 'var(--btn-primary-text)' : 'var(--text-secondary)',
-                borderRadius: 6
-              }}
-            >
-              My Attendance
-            </button>
-            <button 
-              onClick={() => setActiveTab('team')} 
-              className="btn" 
-              style={{ 
-                padding: '6px 12px', 
-                fontSize: 13, 
-                marginBottom: 0,
-                background: activeTab === 'team' ? 'var(--accent-primary)' : 'transparent',
-                color: activeTab === 'team' ? 'var(--btn-primary-text)' : 'var(--text-secondary)',
-                borderRadius: 6
-              }}
-            >
-              Team Monitoring
-            </button>
+        {isAdmin && (
+          <div className="page-header-actions">
+            <div style={{ display: 'flex', gap: 8, background: 'var(--bg-secondary)', padding: 4, borderRadius: 8, border: '1px solid var(--border)' }}>
+              <button 
+                onClick={() => setActiveTab('team')} 
+                className="btn" 
+                style={{ 
+                  padding: '6px 12px', 
+                  fontSize: 13, 
+                  marginBottom: 0,
+                  background: 'var(--accent-primary)',
+                  color: 'var(--btn-primary-text)',
+                  borderRadius: 6
+                }}
+              >
+                Team Monitoring
+              </button>
+            </div>
           </div>
         )}
       </div>
 
-      {activeTab === 'personal' ? (
+      {!isAdmin && activeTab === 'personal' ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
           {/* Action Card */}
           <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -187,7 +164,7 @@ export default function Attendance() {
               </div>
 
               {/* Date & Time display */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: '1.5rem' }}>
+              <div className="grid-2-mobile" style={{ marginBottom: '1.5rem' }}>
                 <div style={{ background: 'var(--bg-secondary)', padding: '0.75rem', borderRadius: 8, border: '1px solid var(--border)' }}>
                   <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Current Date</div>
                   <div style={{ fontSize: 13, fontWeight: 700 }}>{format(new Date(), 'dd MMMM yyyy')}</div>
@@ -233,20 +210,6 @@ export default function Attendance() {
                 </div>
               )}
 
-              {/* Shift Notes */}
-              {!isCheckedOut && (
-                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                  <label className="form-label">Duty Shift Notes</label>
-                  <textarea 
-                    className="input" 
-                    rows={2}
-                    value={notes} 
-                    onChange={e => setNotes(e.target.value)}
-                    placeholder="Enter any notes, gate assignment, or log info..."
-                    style={{ fontSize: 13 }}
-                  />
-                </div>
-              )}
             </div>
 
             {/* Check-in / Out Buttons */}
@@ -280,55 +243,8 @@ export default function Attendance() {
               )}
             </div>
           </div>
-
-          {/* History Card */}
-          <div className="card" style={{ flex: '1.5' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '1.5rem' }}>
-              <ClipboardList size={20} color="var(--accent-secondary)" />
-              <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 800, fontSize: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>My Attendance History</h2>
-            </div>
-
-            <div className="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th>Check In</th>
-                    <th>Check Out</th>
-                    <th>Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {personalHistory.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', fontSize: 13 }}>
-                        No attendance history found.
-                      </td>
-                    </tr>
-                  ) : (
-                    personalHistory.map(h => (
-                      <tr key={h._id}>
-                        <td style={{ fontSize: 13, fontWeight: 600 }}>{h.date}</td>
-                        <td>
-                          <span className={`badge ${h.checkOutTime ? 'badge-blue' : 'badge-green'}`}>
-                            {h.checkOutTime ? 'Completed' : 'Checked In'}
-                          </span>
-                        </td>
-                        <td className="mono" style={{ fontSize: 13 }}>{format(new Date(h.checkInTime), 'HH:mm')}</td>
-                        <td className="mono" style={{ fontSize: 13 }}>{h.checkOutTime ? format(new Date(h.checkOutTime), 'HH:mm') : '--'}</td>
-                        <td style={{ fontSize: 12, color: 'var(--text-muted)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {h.notes || '--'}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
-      ) : (
+      ) : isAdmin ? (
         /* Team Attendance Monitoring (Admin only) */
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: '1.5rem' }}>
@@ -359,13 +275,12 @@ export default function Attendance() {
                   <th>Check In</th>
                   <th>Check Out</th>
                   <th>Status</th>
-                  <th>Notes</th>
                 </tr>
               </thead>
               <tbody>
                 {teamRecords.length === 0 ? (
                   <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', fontSize: 13 }}>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', fontSize: 13 }}>
                       No attendance records found for {selectedDate}.
                     </td>
                   </tr>
@@ -402,9 +317,6 @@ export default function Attendance() {
                           {rec.checkOutTime ? 'Completed' : 'On Duty'}
                         </span>
                       </td>
-                      <td style={{ fontSize: 12, color: 'var(--text-muted)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {rec.notes || '--'}
-                      </td>
                     </tr>
                   ))
                 )}
@@ -412,7 +324,7 @@ export default function Attendance() {
             </table>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

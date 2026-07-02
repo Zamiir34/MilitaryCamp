@@ -1,7 +1,9 @@
 // lib/screens/alerts_screen.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../services/api_service.dart';
+import '../services/auth_provider.dart';
 import '../models/models.dart';
 import '../theme/app_theme.dart';
 
@@ -42,8 +44,76 @@ class _AlertsScreenState extends State<AlertsScreen> {
     _load();
   }
 
+  Future<void> _sendGuardNotification() async {
+    final messageCtrl = TextEditingController();
+    String type = AppConstants.notificationTypes.first;
+
+    final sent = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: AppColors.surface,
+          title: const Text('NEW NOTIFICATION', style: TextStyle(fontSize: 14, letterSpacing: 1)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: type,
+                  dropdownColor: AppColors.surfaceVariant,
+                  decoration: const InputDecoration(labelText: 'Type *'),
+                  items: AppConstants.notificationTypes
+                      .map((t) => DropdownMenuItem(value: t, child: Text(t, style: const TextStyle(fontSize: 12))))
+                      .toList(),
+                  onChanged: (v) => setDialogState(() => type = v!),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: messageCtrl,
+                  maxLines: 3,
+                  decoration: const InputDecoration(labelText: 'Message *', hintText: 'Describe the situation...'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('CANCEL')),
+            ElevatedButton(
+              onPressed: () {
+                if (messageCtrl.text.trim().isEmpty) return;
+                Navigator.pop(ctx, true);
+              },
+              child: const Text('SEND'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (sent != true || !mounted) return;
+
+    try {
+      await _api.createNotification(
+        type: type,
+        message: messageCtrl.text.trim(),
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Notification created'), backgroundColor: AppColors.success),
+        );
+        _load();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+  }
+
   @override Widget build(BuildContext context) {
     final unread = _alerts.where((a) => !a.isRead).length;
+    final isGuard = context.watch<AuthProvider>().user?.isGuard ?? false;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -79,7 +149,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   Text(_showUnreadOnly ? 'No unread notifications' : 'No notifications', style: const TextStyle(color: AppColors.textMuted)),
                 ]))
               : ListView.separated(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
                   itemCount: _alerts.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (_, i) => _AlertTile(
@@ -90,6 +160,14 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   ),
                 ),
           ),
+      floatingActionButton: isGuard
+          ? FloatingActionButton.extended(
+              onPressed: _sendGuardNotification,
+              backgroundColor: AppColors.primary,
+              icon: const Icon(Icons.send, color: Colors.white),
+              label: const Text('SEND', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+            )
+          : null,
     );
   }
 }
@@ -98,23 +176,13 @@ class _AlertTile extends StatelessWidget {
   final Alert alert; final VoidCallback onTap;
   const _AlertTile({required this.alert, required this.onTap});
 
-  Color get _severityColor {
-    switch (alert.severity) {
-      case 'critical': return AppColors.critical;
-      case 'high':     return AppColors.danger;
-      case 'medium':   return AppColors.warning;
-      default:         return AppColors.info;
-    }
-  }
-
   IconData get _typeIcon {
-    switch (alert.type) {
-      case 'unauthorized_access': return Icons.no_accounts;
-      case 'blacklisted_vehicle': return Icons.no_crash;
-      case 'overstay':            return Icons.timer_off;
-      case 'expired_pass':        return Icons.card_membership;
-      case 'suspicious_activity': return Icons.warning_amber;
-      default:                    return Icons.info;
+    switch (alert.type.toLowerCase()) {
+      case 'unauthorized access': return Icons.no_accounts;
+      case 'blacklisted vehicle': return Icons.no_crash;
+      case 'personnel exit':        return Icons.logout;
+      case 'suspicious activity': return Icons.warning_amber;
+      default:                    return Icons.notifications_outlined;
     }
   }
 
@@ -124,32 +192,39 @@ class _AlertTile extends StatelessWidget {
       duration: const Duration(milliseconds: 200),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: alert.isRead ? AppColors.surface : _severityColor.withOpacity(0.06),
+        color: alert.isRead ? AppColors.surface : AppColors.primary.withOpacity(0.04),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: alert.isRead ? AppColors.border : _severityColor.withOpacity(0.4), width: alert.isRead ? 1 : 1.5),
+        border: Border.all(color: alert.isRead ? AppColors.border : AppColors.primary.withOpacity(0.35), width: alert.isRead ? 1 : 1.5),
       ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(
           width: 40, height: 40,
-          decoration: BoxDecoration(color: _severityColor.withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
-          child: Icon(_typeIcon, color: _severityColor, size: 20),
+          decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+          child: Icon(_typeIcon, color: AppColors.primary, size: 20),
         ),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Expanded(child: Text(alert.title,
               style: TextStyle(fontWeight: alert.isRead ? FontWeight.w500 : FontWeight.w700, fontSize: 14, color: AppColors.textPrimary))),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(color: _severityColor.withOpacity(0.15), borderRadius: BorderRadius.circular(4)),
-              child: Text(alert.severity.toUpperCase(), style: TextStyle(color: _severityColor, fontSize: 9, fontWeight: FontWeight.w700)),
-            ),
+            if (!alert.isRead)
+              Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle)),
           ]),
           const SizedBox(height: 4),
           Text(alert.message, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary), maxLines: 2, overflow: TextOverflow.ellipsis),
           const SizedBox(height: 6),
           Row(children: [
-            if (alert.gate != null) ...[
+            if (alert.zone != null && alert.zone!.isNotEmpty) ...[
+              Icon(Icons.map_outlined, size: 11, color: AppColors.secondary),
+              const SizedBox(width: 3),
+              Flexible(
+                child: Text('Zone: ${alert.zone!}',
+                  style: const TextStyle(fontSize: 10, color: AppColors.secondary, fontWeight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis),
+              ),
+              const SizedBox(width: 10),
+            ],
+            if (alert.gate != null && alert.gate != alert.zone) ...[
               Icon(Icons.door_back_door_outlined, size: 11, color: AppColors.textMuted),
               const SizedBox(width: 3),
               Text(alert.gate!, style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
@@ -157,20 +232,18 @@ class _AlertTile extends StatelessWidget {
             ],
             Icon(Icons.person_outline, size: 11, color: AppColors.textMuted),
             const SizedBox(width: 3),
-            Text(
-              alert.reporterName != null
-                  ? 'Sent by: ${alert.reporterRank != null ? '${alert.reporterRank} ' : ''}${alert.reporterName}'
-                  : 'Sent by: System',
-              style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+            Expanded(
+              child: Text(
+                alert.reporterName != null
+                    ? 'Sent by: ${alert.reporterRank != null ? '${alert.reporterRank} ' : ''}${alert.reporterName}'
+                    : 'Sent by: System',
+                style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            const Spacer(),
             Icon(Icons.access_time, size: 11, color: AppColors.textMuted),
             const SizedBox(width: 3),
             Text(DateFormat('MMM d, HH:mm').format(alert.createdAt), style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
-            if (!alert.isRead) ...[
-              const SizedBox(width: 8),
-              Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle)),
-            ],
           ]),
         ])),
       ]),

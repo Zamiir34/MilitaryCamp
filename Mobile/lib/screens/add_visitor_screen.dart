@@ -38,12 +38,6 @@ class _AddVisitorScreenState extends State<AddVisitorScreen> {
   String? _base64Photo;
 
   @override
-  void initState() {
-    super.initState();
-    _purposeCtrl.text = 'Facility Access / Official Visit';
-  }
-
-  @override
   void dispose() {
     _fullNameCtrl.dispose();
     _idNumberCtrl.dispose();
@@ -138,9 +132,7 @@ class _AddVisitorScreenState extends State<AddVisitorScreen> {
         'phone': _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
         'email': _emailCtrl.text.trim().isNotEmpty ? _emailCtrl.text.trim() : null,
         'organization': _orgCtrl.text.trim().isNotEmpty ? _orgCtrl.text.trim() : null,
-        'purposeOfVisit': _visitorType == 'Military' && _purposeCtrl.text.trim().isEmpty 
-            ? 'Facility Access / Official Visit' 
-            : _purposeCtrl.text.trim(),
+        'purposeOfVisit': _purposeCtrl.text.trim(),
         'hostName': _hostCtrl.text.trim().isNotEmpty ? _hostCtrl.text.trim() : null,
         'visitDate': _visitDate.toIso8601String(),
         'photo': _base64Photo,
@@ -270,7 +262,7 @@ class _AddVisitorScreenState extends State<AddVisitorScreen> {
                 OutlinedButton.icon(
                   onPressed: _takePhoto,
                   icon: const Icon(Icons.photo_camera, size: 16),
-                  label: const Text('TAKE PHOTO'),
+                  label: const Text('OPEN CAMERA'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: AppColors.primary),
@@ -325,7 +317,7 @@ class _AddVisitorScreenState extends State<AddVisitorScreen> {
                         onTap: () {
                           setState(() {
                             _visitorType = 'Military';
-                            _purposeCtrl.text = 'Facility Access / Official Visit';
+                            _purposeCtrl.clear();
                           });
                         },
                         child: Container(
@@ -355,7 +347,7 @@ class _AddVisitorScreenState extends State<AddVisitorScreen> {
                         onTap: () {
                           setState(() {
                             _visitorType = 'Civilian';
-                            _purposeCtrl.text = 'Personal / Official Visit to Officer';
+                            _purposeCtrl.clear();
                           });
                         },
                         child: Container(
@@ -407,7 +399,7 @@ class _AddVisitorScreenState extends State<AddVisitorScreen> {
                     required: true,
                     hint: 'Enter officer\'s full name',
                   ),
-                  _Field(ctrl: _purposeCtrl, label: 'Purpose of Visit', required: true),
+                  _Field(ctrl: _purposeCtrl, label: 'Purpose of Visit', required: true, hint: 'e.g. Personal / official visit to officer'),
                   ],
                 ],
               ),

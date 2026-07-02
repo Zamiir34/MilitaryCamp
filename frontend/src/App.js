@@ -55,9 +55,9 @@ function App() {
               <Route path="personnel" element={<Personnel />} />
               <Route path="visitors" element={<Visitors />} />
               <Route path="entry-exit" element={<EntryExit />} />
-              <Route path="reports" element={<Reports />} />
+              <Route path="reports" element={<PrivateRoute roles={['Administrator', 'SecurityOfficer']}><Reports /></PrivateRoute>} />
               <Route path="notifications" element={<Alerts />} />
-              <Route path="users" element={<PrivateRoute roles={['Administrator', 'SecurityOfficer']}><Users /></PrivateRoute>} />
+              <Route path="users" element={<PrivateRoute roles={['Administrator']}><Users /></PrivateRoute>} />
               <Route path="attendance" element={<Attendance />} />
               <Route path="chat" element={<Chat />} />
             </Route>

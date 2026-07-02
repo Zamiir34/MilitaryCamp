@@ -92,9 +92,7 @@ router.post('/entry', auth, async (req, res) => {
         const alert = new Alert({
           alertId: generateAlertId(),
           type: 'Unauthorized Access',
-          severity: 'High',
           message: `Unauthorized ${req.body.type} attempted entry: ${req.body.subjectName}`,
-          details: req.body.notes,
           relatedLog: log._id,
           gate: req.body.gate,
           reportedBy: req.user._id
@@ -147,9 +145,7 @@ router.post('/exit', auth, async (req, res) => {
         const notification = new Alert({
           alertId: generateAlertId(),
           type: 'Personnel Exit',
-          severity: 'Info',
           message: `Military personnel exit recorded: ${req.body.subjectName}`,
-          details: `Exit recorded for ${req.body.subjectName} at ${req.body.gate || 'Main Gate'}`,
           relatedLog: log._id,
           gate: req.body.gate,
           reportedBy: req.user._id

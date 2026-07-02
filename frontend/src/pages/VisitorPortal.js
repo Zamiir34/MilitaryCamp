@@ -197,7 +197,7 @@ export default function VisitorPortal() {
               </p>
             </div>
 
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: '2rem' }}>
+            <div className="otp-row" style={{ marginBottom: '2rem' }}>
               {otp.map((digit, i) => (
                 <input
                   key={i}
@@ -209,11 +209,11 @@ export default function VisitorPortal() {
                   onKeyDown={e => handleKeyDown(i, e)}
                   onPaste={handlePaste}
                   disabled={loading}
+                  className="otp-digit"
                   style={{
-                    width: 48, height: 56, textAlign: 'center', fontSize: 24, fontWeight: 800,
-                    background: 'var(--bg-primary)', color: 'var(--text-primary)',
-                    border: `2px solid ${digit ? 'var(--accent-cyan)' : 'var(--border)'}`,
-                    borderRadius: 8, outline: 'none', transition: 'all 0.2s'
+                    fontWeight: 800,
+                    background: 'var(--bg-primary)',
+                    borderColor: digit ? 'var(--accent-cyan)' : undefined,
                   }}
                 />
               ))}

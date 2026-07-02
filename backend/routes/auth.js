@@ -4,10 +4,23 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 const { sendVerificationEmail } = require('../utils/email');
+const { resolveGuardZone, syncGuardZone } = require('../utils/guardZone');
 
 /** Generate a secure 6-digit OTP */
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+async function userPayload(user) {
+  if (user.role === 'Guard') {
+    await syncGuardZone(user);
+  }
+  const payload = user.toJSON();
+  if (user.role === 'Guard') {
+    const zone = await resolveGuardZone(user);
+    if (zone) payload.assignedZone = zone;
+  }
+  return payload;
 }
 
 // ─── Login ───────────────────────────────────────────────────────────────────
@@ -45,7 +58,7 @@ router.post('/login', async (req, res) => {
       { expiresIn: '8h' }
     );
 
-    res.json({ token, user });
+    res.json({ token, user: await userPayload(user) });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -85,7 +98,7 @@ router.post('/verify-email', async (req, res) => {
       { expiresIn: '8h' }
     );
 
-    res.json({ token, user });
+    res.json({ token, user: await userPayload(user) });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -115,7 +128,7 @@ router.post('/resend-verification', async (req, res) => {
 
 // ─── Get current user ────────────────────────────────────────────────────────
 router.get('/me', auth, async (req, res) => {
-  res.json(req.user);
+  res.json(await userPayload(req.user));
 });
 
 // ─── Toggle duty status ──────────────────────────────────────────────────────

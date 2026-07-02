@@ -105,14 +105,16 @@ export default function Users() {
           <h1 className="page-title">User Management</h1>
           <p className="page-subtitle">System access control</p>
         </div>
-        <button className="btn btn-primary" onClick={() => { setForm({ ...INITIAL_FORM, role: isSecurityOfficer ? 'Guard' : INITIAL_FORM.role }); setModal('add'); }}>
-          <Plus size={14} /> Add User
-        </button>
+        <div className="page-header-actions">
+          <button className="btn btn-primary" onClick={() => { setForm({ ...INITIAL_FORM, role: isSecurityOfficer ? 'Guard' : INITIAL_FORM.role }); setModal('add'); }}>
+            <Plus size={14} /> Add User
+          </button>
+        </div>
       </div>
 
       <div className="card" style={{ padding: 0 }}>
         <div className="table-container">
-          <table>
+          <table className="table-wide">
             <thead>
               <tr>
                 <th>Username</th><th>Full Name</th><th>Role</th><th>Email</th><th>Rank</th><th>Military ID</th><th>Status</th><th>Last Login</th><th>Actions</th>

@@ -68,9 +68,11 @@ export default function Dashboard() {
           <h1 className="page-title">Dashboard</h1>
           <p className="page-subtitle">Real-time camp activity overview • {format(new Date(), 'PPP')}</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 20 }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-green)', animation: 'pulse-green 2s infinite' }} />
-          <span style={{ fontSize: 11, color: 'var(--accent-green)', fontFamily: 'Share Tech Mono, monospace' }}>LIVE</span>
+        <div className="page-header-actions">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 20 }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-green)', animation: 'pulse-green 2s infinite' }} />
+            <span style={{ fontSize: 11, color: 'var(--accent-green)', fontFamily: 'Share Tech Mono, monospace' }}>LIVE</span>
+          </div>
         </div>
       </div>
 
@@ -218,13 +220,15 @@ export default function Dashboard() {
           {(recentAlerts || []).map((alert, i) => (
             <div key={alert._id || i} style={{ padding: '8px 10px', borderRadius: 6, marginBottom: 6, background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-                <span style={{ fontSize: 11, fontFamily: 'Rajdhani, sans-serif', fontWeight: 600 }} className={`severity-${alert.severity}`}>{alert.severity}</span>
+                <span style={{ fontSize: 11, fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, color: 'var(--text-muted)' }}>{alert.type}</span>
                 <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Share Tech Mono, monospace' }}>{alert.createdAt ? format(new Date(alert.createdAt), 'HH:mm') : '--:--'}</span>
               </div>
               <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{alert.message}</div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                {alert.zone && <span style={{ color: 'var(--accent-blue)', fontWeight: 600 }}>Zone: {alert.zone}</span>}
+                {alert.zone && alert.gate && alert.gate !== alert.zone && ' • '}
                 {alert.reportedBy ? `Sent by: ${alert.reportedBy.fullName || 'Unknown'}${alert.reportedBy.rank ? ` (${alert.reportedBy.rank})` : ''}` : 'System alert'}
-                {alert.gate && ` • Location: ${alert.gate}`}
+                {alert.gate && ` • Gate: ${alert.gate}`}
               </div>
             </div>
           ))}

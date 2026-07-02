@@ -15,4 +15,13 @@ async function broadcastAlert(io, alertDoc) {
   return populated;
 }
 
-module.exports = { populateAlert, broadcastAlert, REPORTER_FIELDS };
+async function broadcastAlertResolved(io, alertDoc) {
+  if (!io || !alertDoc) return;
+  io.emit('alert_resolved', {
+    _id: alertDoc._id?.toString(),
+    alertId: alertDoc.alertId,
+    isResolved: true,
+  });
+}
+
+module.exports = { populateAlert, broadcastAlert, broadcastAlertResolved, REPORTER_FIELDS };

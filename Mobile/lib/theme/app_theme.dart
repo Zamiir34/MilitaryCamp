@@ -207,7 +207,29 @@ class AppConstants {
   static const String appName = 'CAMP MONITOR';
   static const String appVersion = '1.0.0';
 
+  static const List<String> notificationTypes = [
+    'Unauthorized Access',
+    'Blacklisted Vehicle',
+    'Expired Permit',
+    'Suspicious Activity',
+    'Personnel Exit',
+  ];
+
   static const List<String> gates = ['Main Gate', 'Vehicle Gate', 'Gate 2', 'Gate 3', 'Emergency Exit'];
   static const List<String> zones = ['Zone A - Admin', 'Zone B - Barracks', 'Zone C - Armory', 'Zone D - Motor Pool', 'Zone E - Medical'];
   static const List<String> ranks = ['Dable', 'Captan', 'Cornel', 'Gashaanle'];
+
+  static String? normalizeZone(String? zone) {
+    if (zone == null || zone.trim().isEmpty) return null;
+    const labels = {
+      'Zone A': 'Zone A - Admin',
+      'Zone B': 'Zone B - Barracks',
+      'Zone C': 'Zone C - Armory',
+      'Zone D': 'Zone D - Motor Pool',
+      'Zone E': 'Zone E - Medical',
+      'HQ': 'Zone A - Admin',
+      'All Zones': 'Zone A - Admin',
+    };
+    return labels[zone.trim()] ?? zone.trim();
+  }
 }

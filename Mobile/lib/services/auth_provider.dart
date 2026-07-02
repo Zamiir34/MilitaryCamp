@@ -123,6 +123,16 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> refreshUser() async {
+    if (_status != AuthStatus.authenticated) return;
+    try {
+      _user = await _api.getMe();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('current_user', jsonEncode(_userToJson(_user!)));
+      notifyListeners();
+    } catch (_) {}
+  }
+
   /// Toggle on-duty / off-duty status
   Future<({bool success, String message})> toggleDuty() async {
     try {
@@ -153,5 +163,6 @@ class AuthProvider extends ChangeNotifier {
     'isActive': u.isActive,
     'isOnDuty': u.isOnDuty,
     'lastLogin': u.lastLogin?.toIso8601String(),
+    if (u.assignedZone != null) 'assignedZone': u.assignedZone,
   };
 }

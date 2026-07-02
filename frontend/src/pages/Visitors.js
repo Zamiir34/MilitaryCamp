@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Search, Edit2, Trash2, QrCode, X, Camera } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Search, Edit2, Trash2, QrCode, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
+import PhotoCaptureField from '../components/PhotoCaptureField';
 
 const INITIAL_FORM = { 
   fullName: '', 
@@ -22,7 +23,6 @@ const INITIAL_FORM = {
   vehicleModel: '',
   vehicleColor: '',
   status: 'Pending', 
-  notes: '',
   photo: ''
 };
 
@@ -114,18 +114,20 @@ export default function Visitors() {
           <h1 className="page-title">Visitor Registry</h1>
           <p className="page-subtitle">{total} visitor records</p>
         </div>
-        <button className="btn btn-primary" onClick={() => { setForm(INITIAL_FORM); setModal('add'); }}>
-          <Plus size={14} /> Register Visitor
-        </button>
+        <div className="page-header-actions">
+          <button className="btn btn-primary" onClick={() => { setForm(INITIAL_FORM); setModal('add'); }}>
+            <Plus size={14} /> Register Visitor
+          </button>
+        </div>
       </div>
 
       <div className="card" style={{ marginBottom: '1rem', padding: '1rem' }}>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+        <div className="filter-toolbar">
+          <div className="filter-search">
             <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input className="input" style={{ paddingLeft: 32 }} placeholder="Search visitor..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-          <select className="input" style={{ width: 140 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+          <select className="input filter-select" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
             <option value="">All Status</option>
             <option>Pending</option><option>Approved</option><option>Denied</option><option>Completed</option>
           </select>
@@ -134,7 +136,7 @@ export default function Visitors() {
 
       <div className="card" style={{ padding: 0 }}>
         <div className="table-container">
-          <table>
+          <table className="table-wide">
             <thead>
                <tr>
                 <th>Visitor ID</th><th>Category</th><th>Name</th><th>Organization</th><th>Purpose</th><th>Host Officer</th><th>Visit Date</th><th>Status</th><th>Actions</th>
@@ -179,7 +181,7 @@ export default function Visitors() {
 
       {(modal === 'add' || modal === 'edit') && (
         <div className="modal-overlay">
-          <div className="modal" style={{ maxWidth: 700 }}>
+          <div className="modal modal-lg">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 18, textTransform: 'uppercase' }}>
                 {modal === 'add' ? 'Register Visitor' : 'Edit Visitor'}
@@ -190,16 +192,16 @@ export default function Visitors() {
               <div className="form-grid">
                 <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                   <label className="form-label">Visitor Category *</label>
-                  <div style={{ display: 'flex', gap: '1rem' }}>
+                  <div className="grid-2-mobile">
                     <label style={{ flex: 1, padding: '12px', border: `2px solid ${form.visitorType === 'Military' ? 'var(--accent-primary)' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, background: form.visitorType === 'Military' ? 'var(--bg-active)' : 'transparent' }}>
-                      <input type="radio" name="vtype" checked={form.visitorType === 'Military'} onChange={() => setForm(p => ({ ...p, visitorType: 'Military', purposeOfVisit: 'Facility Access / Official Visit' }))} />
+                      <input type="radio" name="vtype" checked={form.visitorType === 'Military'} onChange={() => setForm(p => ({ ...p, visitorType: 'Military', purposeOfVisit: '' }))} />
                       <div>
                         <div style={{ fontWeight: 700, fontSize: 14 }}>Military Personnel</div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Visiting for official facility business</div>
                       </div>
                     </label>
                     <label style={{ flex: 1, padding: '12px', border: `2px solid ${form.visitorType === 'Civilian' ? 'var(--accent-primary)' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, background: form.visitorType === 'Civilian' ? 'var(--bg-active)' : 'transparent' }}>
-                      <input type="radio" name="vtype" checked={form.visitorType === 'Civilian'} onChange={() => setForm(p => ({ ...p, visitorType: 'Civilian', purposeOfVisit: 'Personal / Official Visit to Officer' }))} />
+                      <input type="radio" name="vtype" checked={form.visitorType === 'Civilian'} onChange={() => setForm(p => ({ ...p, visitorType: 'Civilian', purposeOfVisit: '' }))} />
                       <div>
                         <div style={{ fontWeight: 700, fontSize: 14 }}>Civilian Visitor</div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Visiting a specific military officer</div>
@@ -228,7 +230,7 @@ export default function Visitors() {
                       </datalist>
                     </div>
 
-                    <div className="form-group" style={{ gridColumn: '1 / -1' }}><label className="form-label">Purpose of Visit *</label><input className="input" value={form.purposeOfVisit} onChange={e => setForm(p => ({ ...p, purposeOfVisit: e.target.value }))} required /></div>
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}><label className="form-label">Purpose of Visit *</label><input className="input" value={form.purposeOfVisit} onChange={e => setForm(p => ({ ...p, purposeOfVisit: e.target.value }))} required placeholder="e.g. Personal / official visit to officer" /></div>
                     <div className="form-group"><label className="form-label">Status</label>
                       <select className="input" value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}>
                         <option>Pending</option><option>Approved</option><option>Denied</option><option>Completed</option>
@@ -250,47 +252,26 @@ export default function Visitors() {
                         <div className="form-group"><label className="form-label">Vehicle Color</label><input className="input" value={form.vehicleColor} onChange={e => setForm(p => ({ ...p, vehicleColor: e.target.value }))} placeholder="e.g. White" /></div>
                       </>
                     )}
-                    {form.visitorType !== 'Military' && (
-                      <div className="form-group" style={{ gridColumn: '1 / -1' }}><label className="form-label">Notes</label><textarea className="input" rows={2} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} /></div>
-                    )}
                   </>
 
-                <div className="form-group" style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
-                  <label className="form-label">{form.visitorType === 'Military' ? 'Military ID Card Photo' : 'Visitor Photo'} <span style={{ color: 'var(--accent-primary)' }}>*</span></label>
-                  <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                    {/* Photo Preview */}
-                    <div style={{ width: 110, height: 140, borderRadius: 10, background: 'var(--bg-secondary)', border: `2px solid ${form.photo ? 'var(--accent-green)' : 'var(--accent-primary)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, transition: 'border-color 0.3s' }}>
-                      {form.photo
-                        ? <img src={form.photo} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}><Camera size={36} /><div style={{ fontSize: 10, marginTop: 6, fontWeight: 700, letterSpacing: '0.05em' }}>{form.visitorType === 'Military' ? 'NO ID UPLOAD' : 'NO PHOTO'}</div></div>
-                      }
-                    </div>
-                    {/* Photo Upload */}
-                    <div style={{ flex: 1, minWidth: 220 }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Upload Photo File</div>
-                        <input type="file" accept="image/*" onChange={(e) => {
-                          const file = e.target.files[0];
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onloadend = () => setForm(p => ({ ...p, photo: reader.result }));
-                            reader.readAsDataURL(file);
-                          }
-                        }} style={{ fontSize: 13 }} />
-                        {form.photo && (
-                          <button type="button" className="btn btn-ghost" style={{ fontSize: 12, alignSelf: 'flex-start', color: 'var(--accent-red)' }} onClick={() => setForm(p => ({ ...p, photo: '' }))}>
-                            Remove Photo
-                          </button>
-                        )}
-                        <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: 0 }}>
-                          {form.visitorType === 'Military' 
-                            ? 'A clear photo of your Military ID card is required. No face photo is needed.' 
-                            : 'A clear facial photo is required. After registration, a QR code will be generated automatically.'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <PhotoCaptureField
+                  photo={form.photo}
+                  onPhotoChange={(photo) => setForm(p => ({ ...p, photo }))}
+                  label={
+                    <>
+                      {form.visitorType === 'Military' ? 'Military ID Card Photo' : 'Visitor Photo'}
+                      {' '}
+                      <span style={{ color: 'var(--accent-primary)' }}>*</span>
+                    </>
+                  }
+                  emptyLabel={form.visitorType === 'Military' ? 'NO ID UPLOAD' : 'NO PHOTO'}
+                  hint={
+                    form.visitorType === 'Military'
+                      ? 'A clear photo of the Military ID card is required. No face photo is needed.'
+                      : 'A clear facial photo is required. After registration, a QR code will be generated automatically.'
+                  }
+                  cameraFacing={form.visitorType === 'Military' ? 'environment' : 'user'}
+                />
               </div>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: '1.5rem' }}>
                 <button type="button" className="btn btn-ghost" onClick={() => setModal(null)}>Cancel</button>

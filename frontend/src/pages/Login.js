@@ -156,7 +156,7 @@ export default function Login() {
 
             <form onSubmit={handleVerify}>
               {/* OTP Inputs */}
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: '1.5rem' }}>
+              <div className="otp-row" style={{ marginBottom: '1.5rem' }}>
                 {otp.map((digit, i) => (
                   <input
                     key={i}
@@ -168,18 +168,9 @@ export default function Login() {
                     onChange={e => handleOtpChange(i, e.target.value)}
                     onKeyDown={e => handleOtpKeyDown(i, e)}
                     onPaste={i === 0 ? handleOtpPaste : undefined}
+                    className="otp-digit"
                     style={{
-                      width: 48, height: 56,
-                      textAlign: 'center',
-                      fontSize: 24, fontWeight: 700,
-                      fontFamily: 'Share Tech Mono, monospace',
-                      background: 'var(--bg-card)',
-                      border: `2px solid ${digit ? 'var(--accent-green)' : 'var(--border)'}`,
-                      borderRadius: 8,
-                      color: 'var(--text-primary)',
-                      outline: 'none',
-                      caretColor: 'var(--accent-green)',
-                      transition: 'border-color 0.15s',
+                      borderColor: digit ? 'var(--accent-green)' : undefined,
                     }}
                   />
                 ))}

@@ -44,7 +44,7 @@ export default function MyWork() {
           <h1 className="page-title">My Work Today</h1>
           <p className="page-subtitle">Personal activity summary for {format(new Date(), 'MMMM dd, yyyy')}</p>
         </div>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <div className="page-header-actions">
            <button 
               onClick={handleToggleDuty}
               className={`btn ${user?.isOnDuty ? 'btn-danger' : 'btn-primary'}`}
@@ -103,7 +103,7 @@ export default function MyWork() {
         <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: 18, marginBottom: '1rem', textTransform: 'uppercase' }}>Recent Activity</h2>
         <div className="card" style={{ padding: 0 }}>
           <div className="table-container">
-            <table style={{ minWidth: 600 }}>
+            <table className="table-compact">
               <thead>
                 <tr>
                   <th>Time</th><th>Type</th><th>Action / Name</th><th>Details</th>

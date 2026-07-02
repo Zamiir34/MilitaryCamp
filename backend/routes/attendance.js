@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Attendance = require('../models/Attendance');
 const User = require('../models/User');
-const { auth } = require('../middleware/auth');
+const { auth, requireRole } = require('../middleware/auth');
 
 // Helper to get today's date in YYYY-MM-DD format based on local time
 const getTodayDateStr = () => {
@@ -45,8 +45,7 @@ router.post('/check-in', auth, async (req, res) => {
       user: req.user._id,
       date: todayStr,
       checkInTime: new Date(),
-      status: 'Present',
-      notes: req.body.notes || ''
+      status: 'Present'
     });
     
     await record.save();
@@ -77,9 +76,6 @@ router.post('/check-out', auth, async (req, res) => {
     }
     
     record.checkOutTime = new Date();
-    if (req.body.notes) {
-      record.notes = record.notes ? `${record.notes} | ${req.body.notes}` : req.body.notes;
-    }
     
     await record.save();
     
@@ -93,13 +89,24 @@ router.post('/check-out', auth, async (req, res) => {
 });
 
 // @route   GET /api/attendance/history
-// @desc    Get logged-in user's personal attendance history
-// @access  Private
-router.get('/history', auth, async (req, res) => {
+// @desc    Get attendance history (Administrator only)
+// @access  Private (Administrator)
+router.get('/history', auth, requireRole('Administrator'), async (req, res) => {
   try {
-    const history = await Attendance.find({ user: req.user._id })
+    const { userId, limit = 30 } = req.query;
+    if (!userId) {
+      return res.json([]);
+    }
+
+    const targetUser = await User.findById(userId).select('role');
+    if (!targetUser || targetUser.role === 'Administrator') {
+      return res.json([]);
+    }
+
+    const history = await Attendance.find({ user: userId })
+      .populate('user', 'fullName username role rank badgeNumber')
       .sort({ createdAt: -1 })
-      .limit(30);
+      .limit(parseInt(limit, 10));
     res.json(history);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -107,14 +114,10 @@ router.get('/history', auth, async (req, res) => {
 });
 
 // @route   GET /api/attendance/all
-// @desc    Get all users' attendance records (Admin only)
-// @access  Private (Admin)
-router.get('/all', auth, async (req, res) => {
+// @desc    Get all users' attendance records (Administrator only)
+// @access  Private (Administrator)
+router.get('/all', auth, requireRole('Administrator'), async (req, res) => {
   try {
-    if (req.user.role !== 'Administrator') {
-      return res.status(403).json({ message: 'Access denied: Admin only' });
-    }
-    
     const { date } = req.query;
     const query = {};
     if (date) {
@@ -124,8 +127,8 @@ router.get('/all', auth, async (req, res) => {
     const records = await Attendance.find(query)
       .populate('user', 'fullName username role rank badgeNumber')
       .sort({ createdAt: -1 });
-      
-    res.json(records);
+
+    res.json(records.filter(rec => rec.user?.role !== 'Administrator'));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

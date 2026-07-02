@@ -173,7 +173,7 @@ export default function EntryExit() {
           <h1 className="page-title">Entry / Exit Log</h1>
           <p className="page-subtitle">{total} records • Live tracking</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="page-header-actions">
           <button className="btn btn-primary" onClick={() => { setForm({ ...INITIAL_FORM }); setModal('entry'); }}>
             <ArrowUpRight size={14} /> Record Entry
           </button>
@@ -184,7 +184,7 @@ export default function EntryExit() {
       </div>
 
       {/* Live clock */}
-      <div className="card" style={{ marginBottom: '1rem', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      <div className="card live-info-bar" style={{ marginBottom: '1rem', padding: '0.75rem 1rem' }}>
         <Clock size={16} color="var(--accent-green)" />
         <span className="mono" style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent-green)', letterSpacing: '0.1em' }}>
           {formatTime(now)}
@@ -192,26 +192,26 @@ export default function EntryExit() {
         <span className="mono" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
           {format(now, 'EEEE, MMMM d, yyyy')}
         </span>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 12 }}>
+        <div className="live-info-meta">
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Gate Officer: <strong style={{ color: 'var(--text-primary)' }}>{user?.fullName}</strong></span>
         </div>
       </div>
 
       {/* Filters */}
       <div className="card" style={{ marginBottom: '1rem', padding: '1rem' }}>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', flex: '1 1 200px' }}>
+        <div className="filter-toolbar">
+          <div className="filter-search">
             <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input className="input" style={{ paddingLeft: 32 }} placeholder="Search records..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-          <div style={{ display: 'flex', gap: '0.75rem', flex: '1 1 auto', flexWrap: 'wrap' }}>
-            <select className="input" style={{ flex: 1, minWidth: 120 }} value={filterType} onChange={e => setFilterType(e.target.value)}>
+          <div className="filter-controls">
+            <select className="input filter-select" value={filterType} onChange={e => setFilterType(e.target.value)}>
               <option value="">All Types</option><option>Personnel</option><option>Vehicle</option><option>Visitor</option>
             </select>
-            <select className="input" style={{ flex: 1, minWidth: 120 }} value={filterAction} onChange={e => setFilterAction(e.target.value)}>
+            <select className="input filter-select" value={filterAction} onChange={e => setFilterAction(e.target.value)}>
               <option value="">Entry & Exit</option><option value="Entry">Entry Only</option><option value="Exit">Exit Only</option>
             </select>
-            <input className="input" style={{ flex: 1, minWidth: 120 }} type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} />
+            <input className="input filter-select" type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} />
           </div>
         </div>
       </div>
@@ -219,7 +219,7 @@ export default function EntryExit() {
       {/* Log table */}
       <div className="card" style={{ padding: 0 }}>
         <div className="table-container">
-          <table style={{ minWidth: 1000 }}>
+          <table className="table-wide">
             <thead>
               <tr>
                 <th>Log ID</th><th>Date / Time</th><th>Action</th><th>Type</th><th>Name</th><th>ID / Plate</th><th>Gate</th><th>Auth</th><th>Officer</th>

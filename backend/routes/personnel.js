@@ -3,6 +3,13 @@ const router = express.Router();
 const QRCode = require('qrcode');
 const Personnel = require('../models/Personnel');
 const User = require('../models/User');
+const { zoneFromPersonnel, syncLinkedGuardZone } = require('../utils/guardZone');
+const {
+  findGuardAccountForPersonnel,
+  issueGuardAccountForPersonnel,
+  resetGuardPasswordForPersonnel,
+} = require('../utils/guardAccount');
+const { assertMilitaryIdAvailable } = require('../utils/militaryId');
 const EntryLog = require('../models/EntryLog');
 const crypto = require('crypto');
 const { auth, requireRole } = require('../middleware/auth');
@@ -42,6 +49,46 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+// Get linked guard account for personnel
+router.get('/:id/guard-account', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
+  try {
+    const personnel = await Personnel.findById(req.params.id);
+    if (!personnel) return res.status(404).json({ message: 'Personnel not found' });
+
+    const user = await findGuardAccountForPersonnel(personnel);
+    if (!user) return res.json({ hasAccount: false });
+    res.json({ hasAccount: true, user });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Issue guard login credentials for personnel
+router.post('/:id/guard-account', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
+  try {
+    const personnel = await Personnel.findById(req.params.id);
+    if (!personnel) return res.status(404).json({ message: 'Personnel not found' });
+
+    const user = await issueGuardAccountForPersonnel(personnel, req.body);
+    res.status(201).json({ hasAccount: true, user, message: 'Guard account issued successfully.' });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// Reset guard password for personnel
+router.put('/:id/guard-account/password', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
+  try {
+    const personnel = await Personnel.findById(req.params.id);
+    if (!personnel) return res.status(404).json({ message: 'Personnel not found' });
+
+    const user = await resetGuardPasswordForPersonnel(personnel, req.body.password);
+    res.json({ message: 'Guard password updated successfully.', user });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
 // Get single personnel
 router.get('/:id', auth, async (req, res) => {
   try {
@@ -68,6 +115,12 @@ router.post('/', auth, requireRole('Administrator', 'SecurityOfficer'), async (r
 
     if (existing) {
       return res.status(400).json({ message: `Personnel already registered: ${existing.fullName} (${existing.personnelId})` });
+    }
+
+    try {
+      req.body.militaryId = await assertMilitaryIdAvailable(req.body.militaryId);
+    } catch (err) {
+      return res.status(400).json({ message: err.message });
     }
 
     if (req.body.hasVehicle && req.body.vehicleDetails && req.body.vehicleDetails.plateNumber) {
@@ -140,6 +193,9 @@ router.post('/', auth, requireRole('Administrator', 'SecurityOfficer'), async (r
     res.status(201).json(personnel);
   } catch (err) {
     console.error('Personnel registration error:', err);
+    if (err.code === 11000 && err.keyPattern?.militaryId) {
+      return res.status(400).json({ message: 'This Military ID has already been issued and cannot be used again.' });
+    }
     res.status(400).json({ message: err.message });
   }
 });
@@ -147,6 +203,16 @@ router.post('/', auth, requireRole('Administrator', 'SecurityOfficer'), async (r
 // Update personnel
 router.put('/:id', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
+    if (req.body.militaryId !== undefined) {
+      try {
+        req.body.militaryId = await assertMilitaryIdAvailable(req.body.militaryId, {
+          excludePersonnelId: req.params.id,
+        });
+      } catch (err) {
+        return res.status(400).json({ message: err.message });
+      }
+    }
+
     if (req.body.hasVehicle && req.body.vehicleDetails && req.body.vehicleDetails.plateNumber) {
       const plate = req.body.vehicleDetails.plateNumber.trim();
       if (plate) {
@@ -175,8 +241,12 @@ router.put('/:id', auth, requireRole('Administrator', 'SecurityOfficer'), async 
       { new: true }
     );
     if (!personnel) return res.status(404).json({ message: 'Not found' });
+    await syncLinkedGuardZone(personnel);
     res.json(personnel);
   } catch (err) {
+    if (err.code === 11000 && err.keyPattern?.militaryId) {
+      return res.status(400).json({ message: 'This Military ID has already been issued and cannot be used again.' });
+    }
     res.status(400).json({ message: err.message });
   }
 });
@@ -235,6 +305,7 @@ router.post('/:id/transfer', auth, requireRole('Administrator', 'SecurityOfficer
 
     personnel.updatedAt = new Date();
     await personnel.save();
+    await syncLinkedGuardZone(personnel);
 
     res.json(personnel);
   } catch (err) {

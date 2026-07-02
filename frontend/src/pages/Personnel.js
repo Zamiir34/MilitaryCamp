@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, X, ArrowLeftRight, Camera } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, ArrowLeftRight, Shield, Eye, EyeOff } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { formatDate } from '../utils/dateUtils';
 import { useAuth } from '../context/AuthContext';
+import PhotoCaptureField from '../components/PhotoCaptureField';
 
 const RANKS = ['Dable', 'Captan', 'Cornel', 'Gashaanle'];
 
 const INITIAL_FORM = { 
   fullName: '', rank: '', militaryId: '', unit: 'Taliska 18', transferredFrom: '', phone: '', email: '', 
-  type: 'Military', status: 'Active', authorizedZones: '',
+  type: 'Military', authorizedZones: '',
   hasVehicle: false,
   vehicleDetails: { plateNumber: '', model: '', color: '' },
-  serviceVerified: false,
   serviceHistory: '',
   photo: ''
 };
@@ -31,12 +31,16 @@ export default function Personnel() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
   const [modal, setModal] = useState(null); // 'add' | 'edit' | 'qr' | 'transfer'
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState(INITIAL_FORM);
   const [transferForm, setTransferForm] = useState({ newUnit: '', newRank: '', transferReason: '', authorizedZones: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [guardAccount, setGuardAccount] = useState(null);
+  const [guardForm, setGuardForm] = useState({ username: '', password: '', email: '' });
+  const [showGuardPass, setShowGuardPass] = useState(false);
+  const [guardSubmitting, setGuardSubmitting] = useState(false);
+  const canManageGuardAccess = canAccess(['Administrator', 'SecurityOfficer']);
 
   const fetchPersonnel = async () => {
     setLoading(true);
@@ -44,7 +48,6 @@ export default function Personnel() {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
       if (filterType) params.set('type', filterType);
-      if (filterStatus) params.set('status', filterStatus);
       const { data } = await api.get(`/personnel?${params}`);
       setPersonnel(data.data || data);
       setTotal(data.total || (data.data || data).length);
@@ -57,7 +60,7 @@ export default function Personnel() {
     }
   };
 
-  useEffect(() => { fetchPersonnel(); }, [search, filterType, filterStatus]);
+  useEffect(() => { fetchPersonnel(); }, [search, filterType]);
 
 
   const handleSubmit = async (e) => {
@@ -69,6 +72,7 @@ export default function Personnel() {
         : form.authorizedZones;
         
       const payload = { ...form, authorizedZones: zonesArray };
+      delete payload.status;
 
       if (modal === 'add') {
         const { data: newPerson } = await api.post('/personnel', payload);
@@ -89,6 +93,55 @@ export default function Personnel() {
     }
   };
 
+  const loadGuardAccount = async (personnelId, email = '') => {
+    if (!canManageGuardAccess) return;
+    try {
+      const { data } = await api.get(`/personnel/${personnelId}/guard-account`);
+      setGuardAccount(data);
+      if (data.hasAccount && data.user) {
+        setGuardForm({ username: data.user.username, password: '', email: data.user.email });
+      } else {
+        setGuardForm({ username: '', password: '', email: email || '' });
+      }
+    } catch {
+      setGuardAccount({ hasAccount: false });
+      setGuardForm({ username: '', password: '', email: email || '' });
+    }
+  };
+
+  const handleIssueGuardAccount = async () => {
+    if (!selected?._id) return;
+    if (!form.authorizedZones) {
+      toast.error('Set an authorized zone on this personnel record before issuing guard credentials.');
+      return;
+    }
+    setGuardSubmitting(true);
+    try {
+      const { data } = await api.post(`/personnel/${selected._id}/guard-account`, guardForm);
+      toast.success(data.message || 'Guard account issued');
+      await loadGuardAccount(selected._id, guardForm.email);
+      setGuardForm(prev => ({ ...prev, password: '' }));
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to issue guard account');
+    } finally {
+      setGuardSubmitting(false);
+    }
+  };
+
+  const handleResetGuardPassword = async () => {
+    if (!selected?._id) return;
+    setGuardSubmitting(true);
+    try {
+      const { data } = await api.put(`/personnel/${selected._id}/guard-account/password`, { password: guardForm.password });
+      toast.success(data.message || 'Password updated');
+      setGuardForm(prev => ({ ...prev, password: '' }));
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to reset password');
+    } finally {
+      setGuardSubmitting(false);
+    }
+  };
+
   const openEdit = (p) => { 
     setSelected(p); 
     setForm({ 
@@ -96,7 +149,11 @@ export default function Personnel() {
       authorizedZones: (p.authorizedZones || []).join(', '),
       vehicleDetails: p.vehicleDetails || { plateNumber: '', model: '', color: '' }
     }); 
-    setModal('edit'); 
+    setShowGuardPass(false);
+    setGuardAccount(null);
+    setGuardForm({ username: '', password: '', email: p.email || '' });
+    setModal('edit');
+    loadGuardAccount(p._id, p.email || '');
   };
   const openAdd = () => { setForm(INITIAL_FORM); setModal('add'); };
   
@@ -126,7 +183,6 @@ export default function Personnel() {
     }
   };
 
-  const statusBadge = { Active: 'badge-green', Inactive: 'badge-gray', Suspended: 'badge-red' };
   const typeBadge = { Military: 'badge-blue', Civilian: 'badge-yellow', Staff: 'badge-gray' };
 
   return (
@@ -137,26 +193,24 @@ export default function Personnel() {
           <p className="page-subtitle">{total} records total</p>
         </div>
         {canAccess(['Administrator', 'SecurityOfficer']) && (
-          <button className="btn btn-primary" onClick={openAdd}>
-            <Plus size={14} /> Register Personnel
-          </button>
+          <div className="page-header-actions">
+            <button className="btn btn-primary" onClick={openAdd}>
+              <Plus size={14} /> Register Personnel
+            </button>
+          </div>
         )}
       </div>
 
       <div className="card" style={{ marginBottom: '1rem', padding: '1rem' }}>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <div style={{ position: 'relative', flex: '1 1 300px' }}>
+        <div className="filter-toolbar">
+          <div className="filter-search">
             <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input className="input" style={{ paddingLeft: 32 }} placeholder="Search by name, ID, unit..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-          <div style={{ display: 'flex', gap: '0.75rem', flex: '1 1 auto' }}>
-            <select className="input" style={{ flex: 1, minWidth: 120 }} value={filterType} onChange={e => setFilterType(e.target.value)}>
+          <div className="filter-controls">
+            <select className="input filter-select" value={filterType} onChange={e => setFilterType(e.target.value)}>
               <option value="">All Types</option>
               <option>Military</option>
-            </select>
-            <select className="input" style={{ flex: 1, minWidth: 120 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-              <option value="">All Status</option>
-              <option>Active</option><option>Inactive</option><option>Suspended</option>
             </select>
           </div>
         </div>
@@ -164,17 +218,17 @@ export default function Personnel() {
 
       <div className="card" style={{ padding: 0 }}>
         <div className="table-container">
-          <table style={{ minWidth: 800 }}>
+          <table className="table-medium">
             <thead>
               <tr>
-                <th>ID</th><th>Name</th><th>Rank</th><th>Unit</th><th>Type</th><th>Status</th><th>Registered</th><th>Actions</th>
+                <th>ID</th><th>Name</th><th>Rank</th><th>Unit</th><th>Type</th><th>Registered</th><th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Loading...</td></tr>
+                <tr><td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Loading...</td></tr>
               ) : personnel.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No records found</td></tr>
+                <tr><td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No records found</td></tr>
               ) : personnel.map(p => (
                 <tr key={p._id} className="animate-fadeIn">
                   <td><span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.personnelId}</span></td>
@@ -182,7 +236,6 @@ export default function Personnel() {
                   <td>{p.rank}</td>
                   <td>{p.unit}</td>
                   <td><span className={`badge ${typeBadge[p.type] || 'badge-gray'}`}>{p.type}</span></td>
-                  <td><span className={`badge ${statusBadge[p.status] || 'badge-gray'}`}>{p.status}</span></td>
                   <td><span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{formatDate(p.createdAt)}</span></td>
                   <td>
                     <div style={{ display: 'flex', gap: 4 }}>
@@ -203,7 +256,7 @@ export default function Personnel() {
 
       {(modal === 'add' || modal === 'edit') && (
         <div className="modal-overlay">
-          <div className="modal" style={{ maxWidth: 700 }}>
+          <div className="modal modal-lg">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 18, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                 {modal === 'add' ? 'Register New Personnel' : 'Edit Personnel'}
@@ -257,12 +310,6 @@ export default function Personnel() {
                     <option>Military</option>
                   </select>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Status</label>
-                  <select className="input" value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}>
-                    <option>Active</option><option>Inactive</option><option>Suspended</option>
-                  </select>
-                </div>
                 <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                   <label className="form-label">Authorized Zones</label>
                   <select className="input" value={form.authorizedZones} onChange={e => setForm(p => ({ ...p, authorizedZones: e.target.value }))}>
@@ -274,6 +321,95 @@ export default function Personnel() {
                     <option value="All Zones">All Zones</option>
                   </select>
                 </div>
+
+                {modal === 'edit' && canManageGuardAccess && (
+                  <div className="form-group" style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1rem' }}>
+                      <Shield size={16} color="var(--accent-primary)" />
+                      <span style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 15, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                        Guard System Access
+                      </span>
+                    </div>
+
+                    {guardAccount?.hasAccount ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, padding: '1rem' }}>
+                          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Issued username</div>
+                          <div style={{ fontFamily: 'Share Tech Mono, monospace', fontWeight: 700, color: 'var(--accent-green)' }}>{guardAccount.user?.username}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>
+                            Email: {guardAccount.user?.email} • {guardAccount.user?.isActive ? 'Active' : 'Inactive'}
+                            {guardAccount.user?.isEmailVerified ? ' • Verified' : ' • Pending email verification'}
+                          </div>
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">New Password</label>
+                          <div style={{ position: 'relative' }}>
+                            <input
+                              className="input"
+                              style={{ paddingRight: 36 }}
+                              type={showGuardPass ? 'text' : 'password'}
+                              value={guardForm.password}
+                              onChange={e => setGuardForm(p => ({ ...p, password: e.target.value }))}
+                              placeholder="Enter new password (min 6 characters)"
+                            />
+                            <button type="button" className="btn btn-ghost" style={{ position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)', padding: 4 }} onClick={() => setShowGuardPass(v => !v)}>
+                              {showGuardPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                            </button>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          style={{ alignSelf: 'flex-start' }}
+                          disabled={guardSubmitting || guardForm.password.length < 6}
+                          onClick={handleResetGuardPassword}
+                        >
+                          {guardSubmitting ? 'Updating...' : 'Reset Guard Password'}
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+                        <div className="form-group">
+                          <label className="form-label">Guard Username *</label>
+                          <input className="input" value={guardForm.username} onChange={e => setGuardForm(p => ({ ...p, username: e.target.value }))} placeholder="e.g. guard_ali" />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Guard Password *</label>
+                          <div style={{ position: 'relative' }}>
+                            <input
+                              className="input"
+                              style={{ paddingRight: 36 }}
+                              type={showGuardPass ? 'text' : 'password'}
+                              value={guardForm.password}
+                              onChange={e => setGuardForm(p => ({ ...p, password: e.target.value }))}
+                              placeholder="Min 6 characters"
+                            />
+                            <button type="button" className="btn btn-ghost" style={{ position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)', padding: 4 }} onClick={() => setShowGuardPass(v => !v)}>
+                              {showGuardPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                            </button>
+                          </div>
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Login Email *</label>
+                          <input className="input" type="email" value={guardForm.email} onChange={e => setGuardForm(p => ({ ...p, email: e.target.value }))} placeholder="guard@camp.mil" />
+                        </div>
+                        <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                          <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 0.75rem' }}>
+                            Issue guard login credentials linked to this personnel record. The guard&apos;s zone is taken from the authorized zone above.
+                          </p>
+                          <button
+                            type="button"
+                            className="btn btn-primary"
+                            disabled={guardSubmitting || !guardForm.username || guardForm.password.length < 6 || !guardForm.email}
+                            onClick={handleIssueGuardAccount}
+                          >
+                            {guardSubmitting ? 'Issuing...' : 'Issue Guard Credentials'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="form-group" style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 16, fontWeight: 700 }}>
@@ -304,51 +440,13 @@ export default function Personnel() {
                   </>
                 )}
 
-                <div className="form-group" style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', padding: '1rem', background: 'var(--bg-elevated)', borderRadius: 8, border: '2px solid var(--border)' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={form.serviceVerified} 
-                      onChange={e => setForm(p => ({ ...p, serviceVerified: e.target.checked }))}
-                      required
-                      style={{ width: 24, height: 24 }}
-                    />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)' }}>Unit Service Verification *</div>
-                      <div style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>I confirm that this individual is a verified soldier of the specified unit.</div>
-                    </div>
-                  </label>
-                </div>
-
-                <div className="form-group" style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
-                  <label className="form-label">Personnel Photo <span style={{ color: 'var(--accent-primary)' }}>*</span></label>
-                  <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                    <div style={{ width: 110, height: 140, borderRadius: 10, background: 'var(--bg-secondary)', border: `2px solid ${form.photo ? 'var(--accent-green)' : 'var(--accent-primary)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, transition: 'border-color 0.3s' }}>
-                      {form.photo
-                        ? <img src={form.photo} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}><Camera size={36} /><div style={{ fontSize: 10, marginTop: 6, fontWeight: 700, letterSpacing: '0.05em' }}>NO PHOTO</div></div>
-                      }
-                    </div>
-                    <div style={{ flex: 1, minWidth: 220 }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        <input type="file" accept="image/*" onChange={(e) => {
-                          const file = e.target.files[0];
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onloadend = () => setForm(p => ({ ...p, photo: reader.result }));
-                            reader.readAsDataURL(file);
-                          }
-                        }} style={{ fontSize: 13 }} />
-                        {form.photo && (
-                          <button type="button" className="btn btn-ghost" style={{ fontSize: 12, alignSelf: 'flex-start', color: 'var(--accent-red)' }} onClick={() => setForm(p => ({ ...p, photo: '' }))}>
-                            Remove Photo
-                          </button>
-                        )}
-                        <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: 0 }}>A clear facial photo is required.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <PhotoCaptureField
+                  photo={form.photo}
+                  onPhotoChange={(photo) => setForm(p => ({ ...p, photo }))}
+                  label={<>Personnel Photo <span style={{ color: 'var(--accent-primary)' }}>*</span></>}
+                  hint="A clear facial photo is required."
+                  cameraFacing="user"
+                />
               </div>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: '1.5rem' }}>
                 <button type="button" className="btn btn-ghost" onClick={() => setModal(null)}>Cancel</button>

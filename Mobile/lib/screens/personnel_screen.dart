@@ -22,7 +22,6 @@ class _PersonnelScreenState extends State<PersonnelScreen> {
   List<Personnel> _list = [];
   bool _loading = true;
   int _page = 1, _total = 0;
-  String? _statusFilter;
 
   @override 
   void initState() { 
@@ -34,7 +33,7 @@ class _PersonnelScreenState extends State<PersonnelScreen> {
     if (reset) { _page = 1; _list = []; }
     if (mounted) setState(() => _loading = true);
     try {
-      final data = await _api.getPersonnel(page: _page, search: _searchCtrl.text.trim(), status: _statusFilter);
+      final data = await _api.getPersonnel(page: _page, search: _searchCtrl.text.trim());
       final items = (data['personnel'] as List).map((e) => Personnel.fromJson(e)).toList();
       if (mounted) {
         setState(() { _list = reset ? items : [..._list, ...items]; _total = data['total'] ?? 0; _loading = false; });
@@ -118,31 +117,7 @@ class _PersonnelScreenState extends State<PersonnelScreen> {
                 padding: const EdgeInsets.all(12),
               ),
             ),
-            const SizedBox(width: 8),
-            PopupMenuButton<String?>(
-              color: AppColors.surfaceVariant,
-              icon: Icon(Icons.filter_list, color: _statusFilter != null ? AppColors.primary : AppColors.textMuted),
-              onSelected: (v) { _statusFilter = v; _load(reset: true); },
-              itemBuilder: (_) => <PopupMenuEntry<String?>>[
-                const PopupMenuItem(value: null, child: Text('All')),
-                const PopupMenuItem(value: 'active', child: Text('Active')),
-                const PopupMenuItem(value: 'inactive', child: Text('Inactive')),
-                const PopupMenuItem(value: 'suspended', child: Text('Suspended')),
-              ],
-            ),
           ]),
-        ),
-        // Filter chips
-        if (_statusFilter != null) Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          child: Align(alignment: Alignment.centerLeft, child: ActionChip(
-            label: Text(_statusFilter!.toUpperCase()),
-            backgroundColor: AppColors.primary.withOpacity(0.1),
-            side: const BorderSide(color: AppColors.primary),
-            labelStyle: const TextStyle(color: AppColors.primary, fontSize: 11),
-            onPressed: () { _statusFilter = null; _load(reset: true); },
-            avatar: const Icon(Icons.close, size: 14, color: AppColors.primary),
-          )),
         ),
         // List
         Expanded(child: _loading && _list.isEmpty
@@ -171,15 +146,6 @@ class _PersonnelScreenState extends State<PersonnelScreen> {
 class _PersonnelTile extends StatelessWidget {
   final Personnel p; final VoidCallback onTap;
   const _PersonnelTile({required this.p, required this.onTap});
-
-  Color get _statusColor {
-    switch (p.status) {
-      case 'active': return AppColors.success;
-      case 'suspended': return AppColors.danger;
-      case 'on_leave': return AppColors.warning;
-      default: return AppColors.textMuted;
-    }
-  }
 
   @override Widget build(BuildContext context) => GestureDetector(
     onTap: onTap,
@@ -220,12 +186,6 @@ class _PersonnelTile extends StatelessWidget {
           Text(p.badgeNumber, style: const TextStyle(fontSize: 11, color: AppColors.textMuted, fontFamily: 'monospace')),
         ])),
         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-            decoration: BoxDecoration(color: _statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-            child: Text(p.status?.toUpperCase() ?? '', style: TextStyle(color: _statusColor, fontSize: 9, fontWeight: FontWeight.w700)),
-          ),
-          const SizedBox(height: 6),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
             decoration: BoxDecoration(color: AppColors.surfaceVariant, borderRadius: BorderRadius.circular(4)),

@@ -20,8 +20,8 @@ const navItems = [
   { to: '/notifications', icon: Bell, label: 'Notifications' },
   { to: '/attendance', icon: CalendarCheck, label: 'Attendance' },
   { to: '/chat', icon: MessageSquare, label: 'Chat' },
-  { to: '/reports', icon: FileBarChart2, label: 'Reports' },
-  { to: '/users', icon: Shield, label: 'Users', roles: ['Administrator', 'SecurityOfficer'] },
+  { to: '/reports', icon: FileBarChart2, label: 'Reports', roles: ['Administrator', 'SecurityOfficer'] },
+  { to: '/users', icon: Shield, label: 'Users', roles: ['Administrator'] },
 ];
 
 export default function Layout() {
@@ -36,7 +36,17 @@ export default function Layout() {
   const [notifUnread, setNotifUnread] = useState(0);
   const [recentAlerts, setRecentAlerts] = useState([]);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [unresolvedAlertCount, setUnresolvedAlertCount] = useState(0);
   const notifRef = useRef(null);
+
+  const fetchUnresolvedAlertCount = async () => {
+    try {
+      const { data } = await api.get('/alerts?isResolved=false&limit=1');
+      setUnresolvedAlertCount(data.total ?? (data.data || []).length);
+    } catch {
+      setUnresolvedAlertCount(0);
+    }
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -49,25 +59,32 @@ export default function Layout() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Connect socket & listen for new_alert
+  // Track unresolved alerts for the persistent system-wide bar
+  useEffect(() => {
+    if (!user) return;
+    fetchUnresolvedAlertCount();
+    const iv = setInterval(fetchUnresolvedAlertCount, 30000);
+    return () => clearInterval(iv);
+  }, [user]);
+
+  // Connect socket & listen for new_alert / alert_resolved
   useEffect(() => {
     if (!user) return;
     const socket = getSocket();
     const handleNewAlert = (alert) => {
+      if (['System Alert', 'Notification'].includes(alert.type)) return;
       setNotifUnread(prev => prev + 1);
       setRecentAlerts(prev => [alert, ...prev].slice(0, 5));
-      // Severity-based toast
-      const isCritical = alert.severity === 'Critical' || alert.severity === 'High';
-      const toastFn = isCritical ? toast.error : toast;
-      const sender = alert.reportedBy?.fullName;
-      toastFn(
-        `🔔 ${alert.type}: ${alert.message}${sender ? ` — ${sender}` : ''}`,
-        { duration: 5000, id: alert.alertId }
-      );
+      setUnresolvedAlertCount(prev => prev + 1);
+    };
+    const handleResolved = () => {
+      fetchUnresolvedAlertCount();
     };
     socket.on('new_alert', handleNewAlert);
+    socket.on('alert_resolved', handleResolved);
     return () => {
       socket.off('new_alert', handleNewAlert);
+      socket.off('alert_resolved', handleResolved);
     };
   }, [user]);
 
@@ -301,14 +318,7 @@ export default function Layout() {
 
               {/* Dropdown panel */}
               {notifOpen && (
-                <div id="notif-dropdown" style={{
-                  position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-                  width: 340, background: 'var(--bg-elevated)',
-                  border: '1px solid var(--border-light)', borderRadius: 10,
-                  boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
-                  zIndex: 1000, overflow: 'hidden',
-                  animation: 'fadeIn 0.15s ease'
-                }}>
+                <div id="notif-dropdown" className="notif-dropdown">
                   <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-primary)' }}>Live Notifications</span>
                     <button
@@ -327,10 +337,7 @@ export default function Layout() {
                     </div>
                   ) : (
                     <div>
-                      {recentAlerts.map((alert, i) => {
-                        const isCritical = alert.severity === 'Critical' || alert.severity === 'High';
-                        const color = isCritical ? 'var(--accent-red)' : alert.severity === 'Medium' ? 'var(--accent-gold)' : 'var(--accent-cyan)';
-                        return (
+                      {recentAlerts.map((alert, i) => (
                           <div key={alert.alertId || i} style={{
                             padding: '0.65rem 1rem',
                             borderBottom: '1px solid var(--border)',
@@ -338,24 +345,20 @@ export default function Layout() {
                             background: i === 0 ? 'rgba(255,255,255,0.02)' : 'transparent'
                           }}>
                             <div style={{ paddingTop: 2, flexShrink: 0 }}>
-                              {isCritical
-                                ? <AlertTriangle size={14} color={color} />
-                                : <Info size={14} color={color} />}
+                              <Info size={14} color="var(--accent-primary)" />
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{alert.message}</div>
                               <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                                <span style={{ color, fontWeight: 700, fontFamily: 'Rajdhani, sans-serif', textTransform: 'uppercase' }}>{alert.severity}</span>
-                                <span>•</span>
                                 <span>{alert.type}</span>
-                                {alert.gate && <><span>•</span><span>{alert.gate}</span></>}
+                                {alert.zone && <><span>•</span><span style={{ color: 'var(--accent-blue)', fontWeight: 600 }}>Zone: {alert.zone}</span></>}
+                                {alert.gate && alert.gate !== alert.zone && <><span>•</span><span>{alert.gate}</span></>}
                                 <span>•</span>
                                 <span>By: {alert.reportedBy?.fullName || 'System'}</span>
                               </div>
                             </div>
                           </div>
-                        );
-                      })}
+                        ))}
                     </div>
                   )}
 
@@ -372,12 +375,38 @@ export default function Layout() {
               )}
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div className="top-bar-online" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--accent-green)', animation: 'pulse-primary 2s infinite' }} />
               <span style={{ fontSize: 14, color: 'var(--accent-green)', fontFamily: 'Share Tech Mono, monospace', fontWeight: 800 }}>ONLINE</span>
             </div>
           </div>
         </header>
+
+        {unresolvedAlertCount > 0 && (
+          <button
+            type="button"
+            onClick={() => navigate('/notifications')}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '0.75rem 1.25rem',
+              background: 'rgba(239,68,68,0.12)',
+              border: 'none',
+              borderBottom: '1px solid rgba(239,68,68,0.35)',
+              color: 'var(--accent-red)',
+              cursor: 'pointer',
+              textAlign: 'left',
+              animation: 'pulse-primary 2s infinite',
+            }}
+          >
+            <AlertTriangle size={18} style={{ flexShrink: 0 }} />
+            <span className="alert-banner-text" style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 14, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              {unresolvedAlertCount} active notification{unresolvedAlertCount > 1 ? 's' : ''} require attention — resolve to dismiss
+            </span>
+          </button>
+        )}
 
         {/* Page content */}
         <main className="content-area noise-bg">

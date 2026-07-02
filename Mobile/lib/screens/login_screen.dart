@@ -135,24 +135,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                         ),
                       ),
                       const SizedBox(height: 32),
-                      // Security notice
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.warning.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.warning.withOpacity(0.2)),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.info_outline, color: AppColors.warning, size: 16),
-                            SizedBox(width: 8),
-                            Expanded(child: Text('Authorized personnel only. All access is monitored and logged.',
-                              style: TextStyle(color: AppColors.warning, fontSize: 11))),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
                       Center(
                         child: TextButton(
                           onPressed: () {
