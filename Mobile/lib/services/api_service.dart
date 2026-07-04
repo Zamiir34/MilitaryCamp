@@ -444,6 +444,19 @@ class ApiService {
     return data as List<dynamic>;
   }
 
+  Future<List<dynamic>> getTeamAttendance({String? date, String? startTime, String? endTime}) async {
+    final params = <String, String>{};
+    if (startTime != null && startTime.isNotEmpty && endTime != null && endTime.isNotEmpty) {
+      params['startTime'] = startTime;
+      params['endTime'] = endTime;
+    } else if (date != null && date.isNotEmpty) {
+      params['date'] = date;
+    }
+    final query = params.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&');
+    final data = await _get('/attendance/all${query.isNotEmpty ? '?$query' : ''}');
+    return data as List<dynamic>;
+  }
+
   // ─── Public Visitor Auth ──────────────────────────────────────
   Future<Map<String, dynamic>> requestVisitorOtp(String email) async {
     final res = await http.post(Uri.parse('${AppConstants.baseUrl}/public/visitor-auth/request-otp'),

@@ -114,21 +114,34 @@ router.get('/history', auth, requireRole('Administrator'), async (req, res) => {
 });
 
 // @route   GET /api/attendance/all
-// @desc    Get all users' attendance records (Administrator only)
-// @access  Private (Administrator)
-router.get('/all', auth, requireRole('Administrator'), async (req, res) => {
+// @desc    Get team attendance records (Administrator + Security Officer)
+// @access  Private (Administrator, SecurityOfficer)
+router.get('/all', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
-    const { date } = req.query;
+    const { date, startDate, endDate, startTime, endTime } = req.query;
     const query = {};
-    if (date) {
-      query.date = date; // Expecting YYYY-MM-DD
+
+    if (startTime && endTime) {
+      query.checkInTime = {
+        $gte: new Date(startTime),
+        $lte: new Date(endTime),
+      };
+    } else if (startDate && endDate) {
+      query.date = { $gte: startDate, $lte: endDate };
+    } else if (date) {
+      query.date = date;
     }
     
     const records = await Attendance.find(query)
       .populate('user', 'fullName username role rank badgeNumber')
-      .sort({ createdAt: -1 });
+      .sort({ checkInTime: -1 });
 
-    res.json(records.filter(rec => rec.user?.role !== 'Administrator'));
+    let filtered = records.filter(rec => rec.user?.role !== 'Administrator');
+    if (req.user.role === 'SecurityOfficer') {
+      filtered = filtered.filter(rec => rec.user?.role === 'Guard');
+    }
+
+    res.json(filtered);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
