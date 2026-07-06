@@ -18,6 +18,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@fontsource/exo-2": "^5.2.8",
+    "@fontsource/rajdhani": "^5.2.7",
+    "@fontsource/share-tech-mono": "^5.2.7",
     "axios": "^1.15.2",
     "date-fns": "^4.1.0",
     "lucide-react": "^1.11.0",
