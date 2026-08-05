@@ -83,11 +83,11 @@ class ApiService {
 
   // ─── Auth ────────────────────────────────────────────────
   /// Returns the raw JSON map. Caller must check for 'requireVerification' key.
-  Future<Map<String, dynamic>> login(String username, String password) async {
+  Future<Map<String, dynamic>> login(String email, String password) async {
     final res = await http.post(
       Uri.parse('${AppConstants.baseUrl}/auth/login'),
       headers: await _headers(),
-      body: jsonEncode({'username': username, 'password': password}),
+      body: jsonEncode({'email': email, 'password': password}),
     );
     final data = _handle(res);
     // Only set token when login is complete (no verification required)

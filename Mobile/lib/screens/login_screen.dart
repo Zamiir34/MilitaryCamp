@@ -13,7 +13,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
   final _form = GlobalKey<FormState>();
-  final _usernameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _obscure = true;
   late AnimationController _animCtrl;
@@ -30,12 +30,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   @override
-  void dispose() { _animCtrl.dispose(); _usernameCtrl.dispose(); _passwordCtrl.dispose(); super.dispose(); }
+  void dispose() { _animCtrl.dispose(); _emailCtrl.dispose(); _passwordCtrl.dispose(); super.dispose(); }
 
   Future<void> _login() async {
     if (!_form.currentState!.validate()) return;
     final auth = context.read<AuthProvider>();
-    final ok = await auth.login(_usernameCtrl.text.trim(), _passwordCtrl.text);
+    final ok = await auth.login(_emailCtrl.text.trim(), _passwordCtrl.text);
     if (!ok && mounted && auth.status != AuthStatus.requireVerification) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(auth.error ?? 'Login failed'), backgroundColor: AppColors.danger));
@@ -102,10 +102,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               const Text('AUTHENTICATION', style: TextStyle(fontSize: 12, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
                               const SizedBox(height: 20),
                               TextFormField(
-                                controller: _usernameCtrl,
+                                controller: _emailCtrl,
                                 decoration: const InputDecoration(
-                                  labelText: 'Username / Email',
-                                  prefixIcon: Icon(Icons.person_outline, color: AppColors.textMuted),
+                                  labelText: 'Email',
+                                  prefixIcon: Icon(Icons.email_outlined, color: AppColors.textMuted),
                                 ),
                                 validator: (v) => v?.isEmpty == true ? 'Required' : null,
                               ),

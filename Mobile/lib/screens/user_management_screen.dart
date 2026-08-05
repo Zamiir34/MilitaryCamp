@@ -214,7 +214,9 @@ class _UserTile extends StatelessWidget {
     final name = user['fullName'] ?? user['name'] ?? '';
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
 
-    return Container(
+    return GestureDetector(
+      onTap: () => _openViewDetails(context, user),
+      child: Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
@@ -263,7 +265,7 @@ class _UserTile extends StatelessWidget {
                   ),
               ]),
               const SizedBox(height: 2),
-              Text(user['username'] ?? '', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+
               Text(user['email'] ?? '', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
             ])),
             // Role badge
@@ -358,7 +360,7 @@ class _UserFormSheet extends StatefulWidget {
 
 class _UserFormSheetState extends State<_UserFormSheet> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _name, _username, _email, _password,
+  late final TextEditingController _name, _email, _password,
       _badge, _rank, _phone;
   String _role = 'Guard';
   bool _loading = false;
@@ -387,7 +389,7 @@ class _UserFormSheetState extends State<_UserFormSheet> {
     super.initState();
     final u = widget.user;
     _name     = TextEditingController(text: u?['fullName'] ?? u?['name'] ?? '');
-    _username = TextEditingController(text: u?['username'] ?? '');
+
     _email    = TextEditingController(text: u?['email'] ?? '');
     _password = TextEditingController();
     _badge    = TextEditingController(text: u?['militaryId'] ?? u?['badgeNumber'] ?? '');
@@ -418,7 +420,7 @@ class _UserFormSheetState extends State<_UserFormSheet> {
 
   @override
   void dispose() {
-    for (final c in [_name, _username, _email, _password, _badge, _rank, _phone]) c.dispose();
+    for (final c in [_name, _email, _password, _badge, _rank, _phone]) c.dispose();
     super.dispose();
   }
 
@@ -445,7 +447,7 @@ class _UserFormSheetState extends State<_UserFormSheet> {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('User updated.'), backgroundColor: AppColors.success));
       } else {
-        body['username'] = _username.text.trim();
+
         body['password'] = _password.text;
         await widget.api.createUser(body);
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(
@@ -524,8 +526,6 @@ class _UserFormSheetState extends State<_UserFormSheet> {
                 const SizedBox(height: 14),
 
                 if (!isEdit) ...[
-                  _FormField(ctrl: _username, label: 'Username *', icon: Icons.alternate_email,
-                    validator: (v) => v!.isEmpty ? 'Required' : null),
                   const SizedBox(height: 14),
                   _FormField(ctrl: _password, label: 'Password *', icon: Icons.lock_outline,
                     obscure: true,
@@ -560,7 +560,7 @@ class _UserFormSheetState extends State<_UserFormSheet> {
                           if (p != null) {
                             setState(() {
                               _selectedPersonnelId = val;
-                              _username.text = p['email'] ?? _username.text;
+
                               _name.text = p['fullName'] ?? _name.text;
                               _email.text = p['email'] ?? _email.text;
                               _rank.text = p['rank'] ?? _rank.text;
@@ -734,7 +734,57 @@ class _ResetPasswordSheetState extends State<_ResetPasswordSheet> {
                 ? const CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
                 : const Text('RESET PASSWORD', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
             )),
-        ]),
+        ],
+      ),
+    );
+  }
+
+  void _openViewDetails(BuildContext context, Map<String, dynamic> user) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('User Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.person, color: AppColors.primary),
+              title: const Text('Full Name', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+              subtitle: Text(user['fullName'] ?? user['name'] ?? 'N/A', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.email, color: AppColors.primary),
+              title: const Text('Email', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+              subtitle: Text(user['email'] ?? 'N/A', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.security, color: AppColors.primary),
+              title: const Text('Role', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+              subtitle: Text(user['role'] ?? 'N/A', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.badge, color: AppColors.primary),
+              title: const Text('Military ID', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+              subtitle: Text(user['militaryId'] ?? 'N/A', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }

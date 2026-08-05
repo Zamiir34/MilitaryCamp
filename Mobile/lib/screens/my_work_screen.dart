@@ -73,40 +73,6 @@ class _MyWorkScreenState extends State<MyWorkScreen> {
           Text(DateFormat('MMMM dd, yyyy').format(DateTime.now()),
             style: const TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.w400)),
         ]),
-        actions: [
-          // Duty Toggle Button
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: _togglingDuty
-                ? const SizedBox(width: 36, height: 36, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))
-                : GestureDetector(
-                    onTap: _handleToggleDuty,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: (user?.isOnDuty ?? false) ? AppColors.danger.withOpacity(0.15) : AppColors.primary.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: (user?.isOnDuty ?? false) ? AppColors.danger.withOpacity(0.5) : AppColors.primary.withOpacity(0.5)),
-                      ),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(
-                          (user?.isOnDuty ?? false) ? Icons.shield_outlined : Icons.shield,
-                          color: (user?.isOnDuty ?? false) ? AppColors.danger : AppColors.primary,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          (user?.isOnDuty ?? false) ? 'Stop Duty' : 'Start Duty',
-                          style: TextStyle(
-                            color: (user?.isOnDuty ?? false) ? AppColors.danger : AppColors.primary,
-                            fontSize: 13, fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ]),
-                    ),
-                  ),
-          ),
-        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: AppColors.primary))

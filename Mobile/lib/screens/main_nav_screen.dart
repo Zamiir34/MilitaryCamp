@@ -66,6 +66,35 @@ class _MainNavScreenState extends State<MainNavScreen> {
     final auth = context.watch<AuthProvider>();
     final user = auth.user;
 
+    if (user != null && !user.isOnDuty) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      return Scaffold(
+        backgroundColor: isDark ? Colors.black : Colors.white,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.shield, size: 64, color: AppColors.textMuted),
+                const SizedBox(height: 20),
+                const Text('SYSTEM IS OFF', style: TextStyle(color: AppColors.textPrimary, fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: 2)),
+                const SizedBox(height: 10),
+                const Text('You are currently off duty. Access to the system is restricted.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
+                const SizedBox(height: 30),
+                ElevatedButton.icon(
+                  onPressed: () => auth.logout(),
+                  icon: const Icon(Icons.logout),
+                  label: const Text('LOGOUT'),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       drawer: Drawer(
         backgroundColor: AppColors.background,

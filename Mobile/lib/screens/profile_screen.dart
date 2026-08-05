@@ -70,7 +70,7 @@ class ProfileScreen extends StatelessWidget {
             _ProfileSection(
               title: 'ACCOUNT INFORMATION',
               children: [
-                _ProfileRow(label: 'Username', value: user.username, icon: Icons.alternate_email),
+
                 _ProfileRow(label: 'Email', value: user.email, icon: Icons.email_outlined),
                 _ProfileRow(label: 'Badge Number', value: user.badgeNumber ?? 'NOT ASSIGNED', icon: Icons.badge_outlined),
                 _ProfileRow(label: 'Account Status', value: user.isActive ? 'Active' : 'Inactive', icon: Icons.verified_user_outlined, 
@@ -114,8 +114,13 @@ class ProfileScreen extends StatelessWidget {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCEL')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
+              if (auth.user?.isOnDuty == true) {
+                try {
+                  await ApiService().toggleDuty();
+                } catch (_) {}
+              }
               auth.logout();
             },
             child: const Text('LOGOUT'),

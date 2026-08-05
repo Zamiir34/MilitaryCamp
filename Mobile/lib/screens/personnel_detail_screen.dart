@@ -313,7 +313,7 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
           ),
           const SizedBox(height: 12),
           if (hasAccount && userObj != null) ...[
-            _InfoRow('Username', userObj['username'] ?? 'N/A'),
+
             _InfoRow('Email', userObj['email'] ?? 'N/A'),
             _InfoRow('Role', (userObj['role'] ?? 'Guard').toUpperCase()),
             _InfoRow('Assigned Zone', userObj['assignedZone'] ?? 'Zone A - Admin'),
@@ -355,7 +355,6 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
   }
 
   Future<void> _showIssueGuardAccountDialog() async {
-    final userCtrl = TextEditingController(text: _p!.personnelId.toLowerCase());
     final emailCtrl = TextEditingController(text: _p!.email ?? '');
     final passCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -374,12 +373,7 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
               children: [
                 const Text('Assign guard login credentials to this personnel record.', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
                 const SizedBox(height: 16),
-                TextFormField(
-                  controller: userCtrl,
-                  decoration: const InputDecoration(labelText: 'Username *'),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 10),
+
                 TextFormField(
                   controller: emailCtrl,
                   decoration: const InputDecoration(labelText: 'Email *'),
@@ -403,7 +397,6 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
                 setDialogState(() => isSubmitting = true);
                 try {
                   final res = await _api.issueGuardAccount(_p!.id, {
-                    'username': userCtrl.text.trim(),
                     'email': emailCtrl.text.trim(),
                     'password': passCtrl.text,
                   });

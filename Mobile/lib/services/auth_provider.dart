@@ -51,10 +51,10 @@ class AuthProvider extends ChangeNotifier {
 
   /// Returns true on full success, false on error.
   /// On requireVerification, returns false but status becomes [AuthStatus.requireVerification].
-  Future<bool> login(String username, String password) async {
+  Future<bool> login(String email, String password) async {
     _loading = true; _error = null; notifyListeners();
     try {
-      final data = await _api.login(username, password);
+      final data = await _api.login(email, password);
 
       if (data['requireVerification'] == true) {
         _pendingUserId = data['userId']?.toString();

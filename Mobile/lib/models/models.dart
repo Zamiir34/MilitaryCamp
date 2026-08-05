@@ -2,15 +2,15 @@
 import '../theme/app_theme.dart';
 
 class User {
-  final String id, name, username, email, role;
+  final String id, name, email, role;
   final String? rank, badgeNumber, profileImage, assignedZone;
   final bool isActive, isOnDuty;
   final DateTime? lastLogin;
 
-  User({required this.id, required this.name, required this.username, required this.email, required this.role, this.rank, this.badgeNumber, this.profileImage, this.assignedZone, this.isActive = true, this.isOnDuty = false, this.lastLogin});
+  User({required this.id, required this.name, required this.email, required this.role, this.rank, this.badgeNumber, this.profileImage, this.assignedZone, this.isActive = true, this.isOnDuty = false, this.lastLogin});
 
   factory User.fromJson(Map<String, dynamic> j) => User(
-    id: j['_id'] ?? '', name: j['fullName'] ?? j['name'] ?? '', username: j['username'] ?? '',
+    id: j['_id'] ?? '', name: j['fullName'] ?? j['name'] ?? '',
     email: j['email'] ?? '', role: j['role'] ?? 'guard',
     rank: j['rank'], badgeNumber: j['badgeNumber'], profileImage: j['profileImage'],
     assignedZone: j['assignedZone']?.toString(),
