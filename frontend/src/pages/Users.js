@@ -7,14 +7,8 @@ import { useAuth } from '../context/AuthContext';
 
 const RANKS = ['Dable', 'Captan', 'Cornel', 'Gashaanle'];
 
-const DEMO = [
-  { _id: '1', username: 'admin', fullName: 'System Administrator', role: 'Administrator', email: 'admin@camp.mil', isActive: true, lastLogin: new Date().toISOString(), createdAt: new Date().toISOString() },
-  { _id: '2', username: 'sec_officer1', fullName: 'MAJ. David Clarke', role: 'SecurityOfficer', email: 'dclarke@camp.mil', rank: 'Major', isActive: true, lastLogin: new Date(Date.now() - 3600000).toISOString(), createdAt: new Date().toISOString() },
-  { _id: '3', username: 'guard_stevens', fullName: 'CPL. Mark Stevens', role: 'Guard', email: 'mstevens@camp.mil', rank: 'Corporal', isActive: true, lastLogin: new Date(Date.now() - 7200000).toISOString(), createdAt: new Date().toISOString() },
-];
-
 const INITIAL_FORM = { 
-  username: '', password: '', fullName: '', email: '', role: 'Guard', 
+  password: '', fullName: '', email: '', role: 'Guard', 
   phone: '', rank: '', badgeNumber: '', militaryId: '', isActive: true,
   hasVehicle: false,
   vehicleDetails: { plateNumber: '', model: '', color: '' }
@@ -46,8 +40,9 @@ export default function Users() {
     try {
       const { data } = await api.get('/users');
       setUsers(data);
-    } catch {
-      setUsers(DEMO);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to load users');
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -117,15 +112,14 @@ export default function Users() {
           <table className="table-wide">
             <thead>
               <tr>
-                <th>Username</th><th>Full Name</th><th>Role</th><th>Email</th><th>Rank</th><th>Military ID</th><th>Status</th><th>Last Login</th><th>Actions</th>
+                <th>Full Name</th><th>Role</th><th>Email</th><th>Rank</th><th>Military ID</th><th>Status</th><th>Last Login</th><th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={9} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Loading...</td></tr>
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Loading...</td></tr>
               ) : users.map(u => (
-                <tr key={u._id}>
-                  <td><span className="mono" style={{ color: 'var(--accent-cyan)', fontSize: 13 }}>{u.username}</span></td>
+                <tr key={u._id} onClick={() => { setSelected(u); setModal('view'); }} style={{ cursor: 'pointer' }} className="hover-row">
                   <td><div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Shield size={13} color="var(--text-muted)" /></div><span style={{ fontWeight: 600 }}>{u.fullName}</span></div></td>
                   <td><span className={`badge ${roleConfig[u.role] || 'badge-gray'}`}>{u.role}</span></td>
                   <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{u.email}</td>
@@ -134,7 +128,8 @@ export default function Users() {
                   <td>{u.isActive ? <span className="badge badge-green">Active</span> : <span className="badge badge-red">Inactive</span>}</td>
                   <td><span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{u.lastLogin ? format(new Date(u.lastLogin), 'yyyy-MM-dd HH:mm') : 'Never'}</span></td>
                   <td>
-                    <div style={{ display: 'flex', gap: 4 }}>
+                    <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
+                      <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => { setSelected(u); setModal('view'); }}><Eye size={12} /></button>
                       <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => { setSelected(u); setForm({ ...u, password: '' }); setModal('edit'); }}><Edit2 size={12} /></button>
                     </div>
                   </td>
@@ -171,7 +166,7 @@ export default function Users() {
                     )}
                   </select>
                 </div>
-                <div className="form-group"><label className="form-label">Username *</label><input className="input" value={form.username} onChange={e => setForm(p => ({ ...p, username: e.target.value }))} required /></div>
+
                 <div className="form-group">
                   <label className="form-label">{modal === 'add' ? 'Password *' : 'New Password (leave blank to keep)'}</label>
                   <div style={{ position: 'relative' }}>
@@ -192,7 +187,6 @@ export default function Users() {
                       if (p) {
                         setForm(prev => ({
                           ...prev,
-                          username: p.email || prev.username,
                           fullName: p.fullName || prev.fullName,
                           email: p.email || prev.email,
                           rank: p.rank || prev.rank,
@@ -236,6 +230,68 @@ export default function Users() {
                 <button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? 'Saving...' : modal === 'add' ? 'Create User' : 'Update'}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {modal === 'view' && selected && (
+        <div className="modal-overlay" onClick={() => setModal(null)}>
+          <div className="modal" style={{ maxWidth: 500 }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 18, textTransform: 'uppercase' }}>
+                User Details
+              </h2>
+              <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => setModal(null)}><X size={16} /></button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 15, background: 'var(--bg-elevated)', padding: '1rem', borderRadius: 8, border: '1px solid var(--border)' }}>
+                <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Shield size={24} color="var(--accent-blue)" />
+                </div>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{selected.fullName}</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{selected.email}</div>
+                </div>
+              </div>
+              <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                <div style={{ padding: '0.75rem', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Role</div>
+                  <div style={{ fontWeight: 600 }}>{selected.role}</div>
+                </div>
+                <div style={{ padding: '0.75rem', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Status</div>
+                  <div style={{ fontWeight: 600 }}>{selected.isActive ? <span style={{ color: 'var(--accent-green)' }}>Active</span> : <span style={{ color: 'var(--accent-red)' }}>Inactive</span>}</div>
+                </div>
+                <div style={{ padding: '0.75rem', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Rank</div>
+                  <div style={{ fontWeight: 600 }}>{selected.rank || '-'}</div>
+                </div>
+                <div style={{ padding: '0.75rem', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Military ID</div>
+                  <div className="mono" style={{ fontWeight: 600 }}>{selected.militaryId || '-'}</div>
+                </div>
+                <div style={{ padding: '0.75rem', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Phone</div>
+                  <div style={{ fontWeight: 600 }}>{selected.phone || '-'}</div>
+                </div>
+                <div style={{ padding: '0.75rem', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Badge Number</div>
+                  <div className="mono" style={{ fontWeight: 600 }}>{selected.badgeNumber || '-'}</div>
+                </div>
+              </div>
+              <div style={{ padding: '0.75rem', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between' }}>
+                 <div>
+                   <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Account Created</div>
+                   <div className="mono" style={{ fontWeight: 600, fontSize: 13 }}>{selected.createdAt ? format(new Date(selected.createdAt), 'yyyy-MM-dd HH:mm') : '-'}</div>
+                 </div>
+                 <div>
+                   <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Last Login</div>
+                   <div className="mono" style={{ fontWeight: 600, fontSize: 13 }}>{selected.lastLogin ? format(new Date(selected.lastLogin), 'yyyy-MM-dd HH:mm') : '-'}</div>
+                 </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                <button className="btn btn-primary" onClick={() => setModal(null)}>Close</button>
+              </div>
+            </div>
           </div>
         </div>
       )}

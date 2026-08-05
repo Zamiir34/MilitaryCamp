@@ -1,6 +1,8 @@
 // lib/theme/app_theme.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
+import 'dart:convert';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class AppColors {
   // Military Dark Theme
@@ -204,6 +206,14 @@ class AppConstants {
     return 'http://localhost:5000/api';
   }
 
+  /// Frontend URL used in QR codes so phone cameras open the verify page.
+  static const String webBaseUrl = String.fromEnvironment(
+    'WEB_BASE_URL',
+    defaultValue: 'http://localhost:3000',
+  );
+
+  static String verifyUrl(String id) => '$webBaseUrl/verify/$id';
+
   static const String appName = 'CAMP MONITOR';
   static const String appVersion = '1.0.0';
 
@@ -231,5 +241,64 @@ class AppConstants {
       'All Zones': 'Zone A - Admin',
     };
     return labels[zone.trim()] ?? zone.trim();
+  }
+}
+
+class SafeAvatar extends StatelessWidget {
+  final String? photo;
+  final double radius;
+  final Widget fallback;
+
+  const SafeAvatar({
+    super.key,
+    required this.photo,
+    required this.radius,
+    required this.fallback,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (photo == null || photo!.trim().isEmpty) {
+      return CircleAvatar(
+        radius: radius,
+        backgroundColor: AppColors.primary.withOpacity(0.15),
+        child: fallback,
+      );
+    }
+
+    final trimmed = photo!.trim();
+
+    // Check base64
+    if (trimmed.startsWith('data:image') || (!trimmed.startsWith('http') && !trimmed.startsWith('/'))) {
+      try {
+        final base64Str = trimmed.contains(',') ? trimmed.split(',').last : trimmed;
+        final bytes = base64Decode(base64Str);
+        return CircleAvatar(
+          radius: radius,
+          backgroundColor: AppColors.primary.withOpacity(0.15),
+          backgroundImage: MemoryImage(bytes),
+        );
+      } catch (_) {}
+    }
+
+    // Network / File URL
+    final fullUrl = trimmed.startsWith('http')
+        ? trimmed
+        : '${AppConstants.baseUrl.replaceAll('/api', '')}${trimmed.startsWith('/') ? '' : '/'}$trimmed';
+
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: AppColors.primary.withOpacity(0.15),
+      child: ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: fullUrl,
+          fit: BoxFit.cover,
+          width: radius * 2,
+          height: radius * 2,
+          placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+          errorWidget: (context, url, error) => fallback,
+        ),
+      ),
+    );
   }
 }

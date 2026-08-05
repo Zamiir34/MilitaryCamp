@@ -6,22 +6,20 @@ const { normalizeMilitaryId } = require('./militaryId');
 async function findGuardAccountForPersonnel(personnel) {
   if (!personnel?.personnelId) return null;
   return User.findOne({ militaryId: personnel.personnelId, role: 'Guard' }).select(
-    'username email role isActive isEmailVerified fullName militaryId assignedZone createdAt'
+    'email role isActive isEmailVerified fullName militaryId assignedZone createdAt'
   );
 }
 
-async function issueGuardAccountForPersonnel(personnel, { username, password, email }) {
+async function issueGuardAccountForPersonnel(personnel, { password, email }) {
   if (!personnel) throw new Error('Personnel not found');
 
   if (!normalizeMilitaryId(personnel.militaryId)) {
     throw new Error('Personnel must have a Military ID before issuing a guard account.');
   }
 
-  const normalizedUsername = typeof username === 'string' ? username.trim() : '';
   const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
   const normalizedPassword = typeof password === 'string' ? password : '';
 
-  if (!normalizedUsername) throw new Error('Username is required.');
   if (!normalizedPassword || normalizedPassword.length < 6) {
     throw new Error('Password must be at least 6 characters.');
   }
@@ -37,18 +35,12 @@ async function issueGuardAccountForPersonnel(personnel, { username, password, em
     throw new Error('This personnel record already has a guard account.');
   }
 
-  const duplicate = await User.findOne({
-    $or: [{ username: normalizedUsername }, { email: normalizedEmail }],
-  });
+  const duplicate = await User.findOne({ email: normalizedEmail });
   if (duplicate) {
-    if (duplicate.username === normalizedUsername) {
-      throw new Error('Username is already taken.');
-    }
     throw new Error('Email is already taken.');
   }
 
   const user = new User({
-    username: normalizedUsername,
     password: normalizedPassword,
     email: normalizedEmail,
     fullName: personnel.fullName,

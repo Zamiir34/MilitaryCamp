@@ -1,46 +1,86 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const Personnel = require('../models/Personnel');
 const Visitor = require('../models/Visitor');
 const Vehicle = require('../models/Vehicle');
+const { cleanStringFields, escapeRegex, sendValidationError, validateEmail, validationError } = require('../utils/validation');
 
-// Public identity verification route
+// Public identity verification â€” used when a QR code is scanned
 router.get('/verify/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-    
-    // Check personnel first
+    const id = req.params.id?.trim();
+    if (!id) throw validationError('Verification ID is required.', 'id');
+
     let subject = await Personnel.findOne({ personnelId: id });
-    let type = 'Personnel';
-    
-    if (!subject) {
-      subject = await Visitor.findOne({ visitorId: id });
-      type = 'Visitor';
+    if (subject) {
+      return res.json({
+        type: 'Personnel',
+        id: subject.personnelId,
+        fullName: subject.fullName,
+        rank: subject.rank || '',
+        unit: subject.unit || '',
+        militaryId: subject.militaryId || '',
+        status: subject.status || 'Active',
+        photo: subject.photo || '',
+        phone: subject.phone || '',
+        hasVehicle: !!subject.hasVehicle,
+        vehiclePlate: subject.vehicleDetails?.plateNumber || '',
+        vehicleModel: subject.vehicleDetails?.model || '',
+        authorizedZones: subject.authorizedZones || [],
+        verifiedAt: new Date(),
+      });
     }
 
-    if (!subject) {
-        subject = await Vehicle.findOne({ vehicleId: id });
-        type = 'Vehicle';
+    subject = await Visitor.findOne({ visitorId: id });
+    if (subject) {
+      return res.json({
+        type: 'Visitor',
+        id: subject.visitorId,
+        fullName: subject.fullName,
+        visitorType: subject.visitorType || '',
+        organization: subject.organization || '',
+        purposeOfVisit: subject.purposeOfVisit || '',
+        hostName: subject.hostName || '',
+        idNumber: subject.idNumber || '',
+        status: subject.status || 'Pending',
+        photo: subject.photo || '',
+        phone: subject.phone || '',
+        email: subject.email || '',
+        visitDate: subject.visitDate || subject.createdAt,
+        hasVehicle: !!subject.hasVehicle,
+        vehiclePlate: subject.vehiclePlate || '',
+        vehicleModel: subject.vehicleModel || '',
+        vehicleColor: subject.vehicleColor || '',
+        verifiedAt: new Date(),
+      });
     }
-    
-    if (!subject) {
-      return res.status(404).json({ message: 'Identity not found in camp records.' });
-    }
-    
-    const result = {
-      fullName: subject.fullName || subject.plateNumber,
-      rank: subject.rank || '',
-      unit: subject.unit || subject.organization || subject.model || '',
-      status: subject.status,
-      photo: subject.photo,
-      type: type,
-      id: id,
-      verifiedAt: new Date()
-    };
 
-    res.json(result);
+    subject = await Vehicle.findOne({
+      $or: [{ vehicleId: id }, { plateNumber: new RegExp(`^${escapeRegex(id)}$`, 'i') }],
+    });
+    if (subject) {
+      return res.json({
+        type: 'Vehicle',
+        id: subject.vehicleId,
+        fullName: subject.plateNumber,
+        plateNumber: subject.plateNumber,
+        vehicleType: subject.vehicleType || '',
+        make: subject.make || '',
+        model: subject.model || '',
+        color: subject.color || '',
+        ownerName: subject.ownerName || '',
+        ownerPhone: subject.ownerPhone || '',
+        category: subject.category || '',
+        status: subject.status || 'Active',
+        isAuthorized: !!subject.isAuthorized,
+        photo: subject.photo || '',
+        verifiedAt: new Date(),
+      });
+    }
+
+    return res.status(404).json({ message: 'Identity not found in camp records.' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
@@ -50,11 +90,11 @@ const { sendVerificationEmail } = require('../utils/email');
 // Visitor OTP Request
 router.post('/visitor-auth/request-otp', async (req, res) => {
   try {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ message: 'Email is required' });
+    cleanStringFields(req.body, ['email']);
+    const email = validateEmail(req.body.email);
 
     // Find the most recently created Approved visitor with this email
-    const visitor = await Visitor.findOne({ email: new RegExp('^' + email + '$', 'i'), status: 'Approved' })
+    const visitor = await Visitor.findOne({ email: new RegExp('^' + escapeRegex(email) + '$', 'i'), status: 'Approved' })
       .sort({ createdAt: -1 });
 
     if (!visitor) {
@@ -70,17 +110,19 @@ router.post('/visitor-auth/request-otp', async (req, res) => {
 
     res.json({ message: 'OTP sent successfully', visitorId: visitor.visitorId, emailMasked: email.replace(/(.{2})(.*)(?=@)/, (gp1, gp2, gp3) => gp2 + '*'.repeat(gp3.length)) });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 // Visitor OTP Verify
 router.post('/visitor-auth/verify-otp', async (req, res) => {
   try {
-    const { email, code } = req.body;
-    if (!email || !code) return res.status(400).json({ message: 'Email and OTP code are required' });
+    cleanStringFields(req.body, ['email', 'code']);
+    const email = validateEmail(req.body.email);
+    const { code } = req.body;
+    if (!code) return res.status(400).json({ message: 'Email and OTP code are required' });
 
-    const visitor = await Visitor.findOne({ email: new RegExp('^' + email + '$', 'i'), status: 'Approved' })
+    const visitor = await Visitor.findOne({ email: new RegExp('^' + escapeRegex(email) + '$', 'i'), status: 'Approved' })
       .sort({ createdAt: -1 });
 
     if (!visitor) {
@@ -105,7 +147,7 @@ router.post('/visitor-auth/verify-otp', async (req, res) => {
 
     res.json({ token, visitor });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
@@ -128,3 +170,4 @@ router.get('/visitor-auth/me', async (req, res) => {
 });
 
 module.exports = router;
+

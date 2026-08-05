@@ -167,6 +167,19 @@ class ApiService {
 
   Future<void> deletePersonnel(String id) async => await _delete('/personnel/$id');
 
+  // ─── Guard Account Management for Personnel ────────────────
+  Future<Map<String, dynamic>> getGuardAccount(String personnelId) async {
+    return await _get('/personnel/$personnelId/guard-account');
+  }
+
+  Future<Map<String, dynamic>> issueGuardAccount(String personnelId, Map<String, dynamic> body) async {
+    return await _post('/personnel/$personnelId/guard-account', body);
+  }
+
+  Future<Map<String, dynamic>> resetGuardAccountPassword(String personnelId, String newPassword) async {
+    return await _put('/personnel/$personnelId/guard-account/password', {'password': newPassword});
+  }
+
   // ─── Vehicles ────────────────────────────────────────────────
   Future<Map<String, dynamic>> getVehicles({int page = 1, String? search, String? status}) async {
     var path = '/vehicles?page=$page&limit=20';

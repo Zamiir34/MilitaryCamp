@@ -2,11 +2,33 @@ const mongoose = require('mongoose');
 
 const visitorSchema = new mongoose.Schema({
   visitorId: { type: String, required: true, unique: true },
-  fullName: { type: String, required: true },
+  fullName: { 
+    type: String, 
+    required: true,
+    match: [/^[a-zA-Z\s]+$/, 'Fadlan magaca kaliya xarfo gali (Full name must contain only letters)']
+  },
   visitorType: { type: String, enum: ['Military', 'Civilian'], required: true },
-  idNumber: { type: String, required: true },
-  phone: { type: String },
-  email: { type: String },
+  idNumber: { 
+    type: String, 
+    required: true,
+    validate: {
+      validator: function(v) {
+        if (this.visitorType === 'Military') {
+          return /^\d+$/.test(v);
+        }
+        return true;
+      },
+      message: 'Fadlan Military ID kaliya nambaro gali (Military ID must contain only numbers)'
+    }
+  },
+  phone: { 
+    type: String,
+    match: [/^\d+$/, 'Fadlan number kaliya gali (Phone number must contain only numbers)']
+  },
+  email: { 
+    type: String,
+    match: [/@gmail\.com$/i, 'Emailka waa in uu ahaadaa @gmail.com']
+  },
   organization: { type: String },
   purposeOfVisit: { type: String },
   hostPersonnel: { type: mongoose.Schema.Types.ObjectId, ref: 'Personnel' },

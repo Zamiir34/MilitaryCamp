@@ -45,14 +45,7 @@ export default function MyWork() {
           <p className="page-subtitle">Personal activity summary for {format(new Date(), 'MMMM dd, yyyy')}</p>
         </div>
         <div className="page-header-actions">
-           <button 
-              onClick={handleToggleDuty}
-              className={`btn ${user?.isOnDuty ? 'btn-danger' : 'btn-primary'}`}
-              style={{ padding: '0.6rem 1.2rem', gap: 10, borderRadius: 30 }}
-           >
-              {user?.isOnDuty ? <ShieldOff size={18} /> : <Shield size={18} />}
-              {user?.isOnDuty ? 'Stop Duty' : 'Start Duty'}
-           </button>
+
            <div className="card" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0, background: 'rgba(34,197,94,0.05)', borderRadius: 30 }}>
               <CheckCircle size={16} color="var(--accent-green)" />
               <span style={{ fontSize: 13, fontWeight: 600 }}>{(summary.logsCount || 0) + (summary.personnelCount || 0) + (summary.vehiclesCount || 0) + (summary.visitorsCount || 0) + (summary.resolvedAlertsCount || 0)} Actions</span>

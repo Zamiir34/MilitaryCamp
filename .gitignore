@@ -1,15 +1,20 @@
-# Node modules
+# Dependencies
 node_modules/
 
 # Build outputs
 dist/
 build/
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
 
 # Environment files
 .env
 .env.local
+.env.*.local
 
 # Netlify
 .netlify/
@@ -26,6 +31,13 @@ Thumbs.db
 .idea/
 .vscode/
 *.iml
+.cursor/
 
 # Mobile local config
 Mobile/android/local.properties
+Mobile/ios/Flutter/Generated.xcconfig
+Mobile/ios/Flutter/flutter_export_environment.sh
+
+# Coverage / test artifacts
+coverage/
+.nyc_output/

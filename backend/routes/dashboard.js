@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const EntryLog = require('../models/EntryLog');
 const Personnel = require('../models/Personnel');
@@ -7,6 +7,7 @@ const Visitor = require('../models/Visitor');
 const Alert = require('../models/Alert');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
+const { sendValidationError } = require('../utils/validation');
 
 router.get('/', auth, async (req, res) => {
   try {
@@ -128,7 +129,7 @@ router.get('/', auth, async (req, res) => {
       personnelWithVehicles
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
@@ -191,8 +192,9 @@ router.get('/my-activity', auth, async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 module.exports = router;
+

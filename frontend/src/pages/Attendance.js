@@ -248,6 +248,7 @@ export default function Attendance() {
                     style={{ padding: '6px 12px', fontSize: 13, width: 'auto', marginBottom: 0 }}
                     value={startTime}
                     onChange={handleStartTimeChange}
+                    max={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
                   />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -258,6 +259,7 @@ export default function Attendance() {
                     style={{ padding: '6px 12px', fontSize: 13, width: 'auto', marginBottom: 0 }}
                     value={endTime}
                     onChange={handleEndTimeChange}
+                    max={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
                   />
                 </div>
                 <button type="button" className="btn btn-primary" style={{ padding: '6px 14px', fontSize: 13 }} onClick={applyTeamRange}>

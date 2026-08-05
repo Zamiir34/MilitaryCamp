@@ -118,9 +118,20 @@ class _LogEntryScreenState extends State<LogEntryScreen> {
 
     setState(() { _searching = true; _error = null; _clearSelection(); });
     try {
-      final data = jsonDecode(result);
-      final id = data['id']?.toString();
-      final type = data['type']?.toString().toLowerCase();
+      String? id;
+      String? type;
+
+      if (result.contains('/verify/')) {
+        id = result.split('/').last;
+        if (id.startsWith('PER-')) type = 'personnel';
+        else if (id.startsWith('VEH-')) type = 'vehicle';
+        else if (id.startsWith('VIS-')) type = 'visitor';
+      } else {
+        final data = jsonDecode(result);
+        id = data['id']?.toString() ?? data['plate']?.toString();
+        type = data['type']?.toString().toLowerCase();
+      }
+
       if (type == 'personnel' && _subjectType == 'Personnel' && id != null) {
         _applyPersonnel(await _api.getPersonnelById(id));
       } else if (type == 'vehicle' && _subjectType == 'Vehicle' && id != null) {
@@ -131,6 +142,7 @@ class _LogEntryScreenState extends State<LogEntryScreen> {
         setState(() => _error = 'Invalid QR code for selected type.');
       }
     } catch (_) {
+      _searchCtrl.text = result;
       await _search();
     } finally {
       setState(() => _searching = false);

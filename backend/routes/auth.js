@@ -2,9 +2,12 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Attendance = require('../models/Attendance');
 const { auth } = require('../middleware/auth');
 const { sendVerificationEmail } = require('../utils/email');
+const { format } = require('date-fns');
 const { resolveGuardZone, syncGuardZone } = require('../utils/guardZone');
+const { cleanStringFields, sendValidationError, validateObjectId, validatePassword, validationError } = require('../utils/validation');
 
 /** Generate a secure 6-digit OTP */
 function generateOTP() {
@@ -23,13 +26,20 @@ async function userPayload(user) {
   return payload;
 }
 
-// ─── Login ───────────────────────────────────────────────────────────────────
+// Login
 router.post('/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
-    const user = await User.findOne({ username });
-    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+    cleanStringFields(req.body, ['email']);
+    const { email, password } = req.body;
 
+    if (!email) throw validationError('Email is required.', 'email');
+    if (!password) throw validationError('Password is required.', 'password');
+
+    const user = await User.findOne({ email: new RegExp('^' + email.trim() + '$', 'i') });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+    
     const isMatch = await user.comparePassword(password);
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
@@ -49,6 +59,18 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    const dateStr = format(new Date(), 'yyyy-MM-dd');
+    let attendance = await Attendance.findOne({ user: user._id, date: dateStr });
+    
+    if (attendance && attendance.checkOutTime) {
+      user.isOnDuty = false;
+    } else {
+      user.isOnDuty = true; // Auto check-in
+      if (!attendance) {
+        await Attendance.create({ user: user._id, date: dateStr, checkInTime: new Date(), status: 'On Duty' });
+      }
+    }
+    
     user.lastLogin = new Date();
     await user.save();
 
@@ -60,15 +82,17 @@ router.post('/login', async (req, res) => {
 
     res.json({ token, user: await userPayload(user) });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
-// ─── Verify Email OTP ────────────────────────────────────────────────────────
+// Verify Email OTP
 router.post('/verify-email', async (req, res) => {
   try {
+    cleanStringFields(req.body, ['userId', 'code']);
     const { userId, code } = req.body;
     if (!userId || !code) return res.status(400).json({ message: 'userId and code are required' });
+    validateObjectId(userId, 'userId');
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -85,11 +109,23 @@ router.post('/verify-email', async (req, res) => {
       return res.status(400).json({ message: 'Invalid verification code' });
     }
 
-    // Mark as verified and clear code
     user.isEmailVerified = true;
     user.emailVerificationCode = undefined;
     user.emailVerificationExpires = undefined;
     user.lastLogin = new Date();
+
+    const dateStr = format(new Date(), 'yyyy-MM-dd');
+    let attendance = await Attendance.findOne({ user: user._id, date: dateStr });
+    
+    if (attendance && attendance.checkOutTime) {
+      user.isOnDuty = false;
+    } else {
+      user.isOnDuty = true; // Auto check-in
+      if (!attendance) {
+        await Attendance.create({ user: user._id, date: dateStr, checkInTime: new Date(), status: 'On Duty' });
+      }
+    }
+
     await user.save();
 
     const token = jwt.sign(
@@ -100,15 +136,17 @@ router.post('/verify-email', async (req, res) => {
 
     res.json({ token, user: await userPayload(user) });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
-// ─── Resend Verification ─────────────────────────────────────────────────────
+// Resend Verification
 router.post('/resend-verification', async (req, res) => {
   try {
+    cleanStringFields(req.body, ['userId']);
     const { userId } = req.body;
     if (!userId) return res.status(400).json({ message: 'userId is required' });
+    validateObjectId(userId, 'userId');
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -122,24 +160,46 @@ router.post('/resend-verification', async (req, res) => {
 
     res.json({ message: 'Verification code sent successfully' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
-// ─── Get current user ────────────────────────────────────────────────────────
+// Get current user
 router.get('/me', auth, async (req, res) => {
   res.json(await userPayload(req.user));
 });
 
-// ─── Toggle duty status ──────────────────────────────────────────────────────
+// Toggle duty status
 router.put('/duty', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
-    user.isOnDuty = !user.isOnDuty;
+    const dateStr = format(new Date(), 'yyyy-MM-dd');
+    let attendance = await Attendance.findOne({ user: user._id, date: dateStr });
+    
+    const isCurrentlyOnDuty = user.isOnDuty;
+
+    if (!isCurrentlyOnDuty) {
+      // Trying to Resume Duty
+      if (attendance && attendance.checkOutTime) {
+        return res.status(400).json({ message: 'Waxaad horey u joojisay shaqada maanta. Fadlan bari soo laabo. (You have already completed your shift today)' });
+      }
+      user.isOnDuty = true;
+      if (!attendance) {
+        await Attendance.create({ user: user._id, date: dateStr, checkInTime: new Date(), status: 'On Duty' });
+      }
+    } else {
+      // Trying to Stop Duty
+      user.isOnDuty = false;
+      if (attendance && !attendance.checkOutTime) {
+        attendance.checkOutTime = new Date();
+        await attendance.save();
+      }
+    }
+
     await user.save();
     res.json({ isOnDuty: user.isOnDuty, message: `Duty status: ${user.isOnDuty ? 'ON' : 'OFF'}` });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 

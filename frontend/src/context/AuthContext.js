@@ -9,10 +9,10 @@ export const AuthProvider = ({ children }) => {
   });
   const [loading, setLoading] = useState(false);
 
-  const login = useCallback(async (username, password) => {
+  const login = useCallback(async (email, password) => {
     setLoading(true);
     try {
-      const { data } = await api.post('/auth/login', { username, password });
+      const { data } = await api.post('/auth/login', { email, password });
 
       // If server requires email verification first
       if (data.requireVerification) {

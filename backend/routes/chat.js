@@ -1,11 +1,11 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const Message = require('../models/Message');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
+const { cleanStringFields, sendValidationError, validateObjectId, validatePositiveInt } = require('../utils/validation');
 
-
-// GET /api/chat/users — list all active users except self
+// GET /api/chat/users - list all active users except self
 router.get('/users', auth, async (req, res) => {
   try {
     const users = await User.find({ _id: { $ne: req.user._id }, isActive: true })
@@ -13,16 +13,15 @@ router.get('/users', auth, async (req, res) => {
       .sort({ role: 1, fullName: 1 });
     res.json(users);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
-// GET /api/chat/conversations — get last message per conversation + unread count
+// GET /api/chat/conversations - get last message per conversation + unread count
 router.get('/conversations', auth, async (req, res) => {
   try {
     const userId = req.user._id.toString();
 
-    // All messages involving this user
     const messages = await Message.find({
       $or: [{ sender: userId }, { recipient: userId }]
     })
@@ -30,7 +29,6 @@ router.get('/conversations', auth, async (req, res) => {
       .populate('recipient', 'fullName role rank')
       .sort({ createdAt: -1 });
 
-    // Build conversation map: other user -> { lastMessage, unreadCount }
     const convMap = new Map();
     for (const msg of messages) {
       const otherId = msg.sender._id.toString() === userId
@@ -41,7 +39,6 @@ router.get('/conversations', auth, async (req, res) => {
       if (!convMap.has(otherId)) {
         convMap.set(otherId, { user: otherUser, lastMessage: msg, unread: 0 });
       }
-      // Count unread messages sent to me
       if (msg.recipient._id.toString() === userId && !msg.read) {
         convMap.get(otherId).unread += 1;
       }
@@ -52,17 +49,18 @@ router.get('/conversations', auth, async (req, res) => {
 
     res.json(conversations);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
-// GET /api/chat/messages/:recipientId — get conversation with a specific user
+// GET /api/chat/messages/:recipientId - get conversation with a specific user
 router.get('/messages/:recipientId', auth, async (req, res) => {
   try {
     const { recipientId } = req.params;
+    validateObjectId(recipientId, 'recipientId');
     const userId = req.user._id;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 50;
+    const page = validatePositiveInt(req.query.page, 'page', 1);
+    const limit = validatePositiveInt(req.query.limit, 'limit', 50, 100);
 
     const messages = await Message.find({
       $or: [
@@ -78,15 +76,17 @@ router.get('/messages/:recipientId', auth, async (req, res) => {
 
     res.json(messages.reverse());
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
-// POST /api/chat/messages — send a message
+// POST /api/chat/messages - send a message
 router.post('/messages', auth, async (req, res) => {
   try {
+    cleanStringFields(req.body, ['recipientId', 'content']);
     const { recipientId, content } = req.body;
-    if (!recipientId || !content?.trim()) {
+    validateObjectId(recipientId, 'recipientId');
+    if (!content) {
       return res.status(400).json({ message: 'recipientId and content are required' });
     }
 
@@ -98,7 +98,7 @@ router.post('/messages', auth, async (req, res) => {
     const message = await Message.create({
       sender: req.user._id,
       recipient: recipientId,
-      content: content.trim(),
+      content,
     });
 
     const populated = await message.populate([
@@ -106,7 +106,6 @@ router.post('/messages', auth, async (req, res) => {
       { path: 'recipient', select: 'fullName role' },
     ]);
 
-    // Emit via socket if available
     const io = req.app.get('io');
     if (io) {
       io.to(recipientId).emit('new_message', populated);
@@ -115,30 +114,31 @@ router.post('/messages', auth, async (req, res) => {
 
     res.status(201).json(populated);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
-// PUT /api/chat/messages/:senderId/read — mark messages from sender as read
+// PUT /api/chat/messages/:senderId/read - mark messages from sender as read
 router.put('/messages/:senderId/read', auth, async (req, res) => {
   try {
+    validateObjectId(req.params.senderId, 'senderId');
     await Message.updateMany(
       { sender: req.params.senderId, recipient: req.user._id, read: false },
       { read: true, readAt: new Date() }
     );
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
-// GET /api/chat/unread-count — total unread messages for current user
+// GET /api/chat/unread-count - total unread messages for current user
 router.get('/unread-count', auth, async (req, res) => {
   try {
     const count = await Message.countDocuments({ recipient: req.user._id, read: false });
     res.json({ count });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 

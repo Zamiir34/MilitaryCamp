@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const QRCode = require('qrcode');
+const { buildVerifyQrDataUrl } = require('../utils/verifyUrl');
 const Visitor = require('../models/Visitor');
 const User = require('../models/User');
 const Vehicle = require('../models/Vehicle');
@@ -9,15 +9,55 @@ const EntryLog = require('../models/EntryLog');
 const crypto = require('crypto');
 const { auth, requireRole } = require('../middleware/auth');
 const { sendVerificationEmail } = require('../utils/email');
+const {
+  cleanStringFields,
+  escapeRegex,
+  requireFields,
+  sendValidationError,
+  validateEmail,
+  validateEnum,
+  validateObjectId,
+  validatePositiveInt,
+  validationError,
+} = require('../utils/validation');
 
 const generateId = () => 'VIS' + Date.now().toString().slice(-7);
+const visitorTypes = ['Military', 'Civilian'];
+const visitorStatuses = ['Pending', 'Approved', 'Denied', 'Completed'];
+
+const normalizeVisitorPayload = (body, { partial = false } = {}) => {
+  cleanStringFields(body, [
+    'fullName', 'visitorType', 'idNumber', 'phone', 'email', 'organization', 'purposeOfVisit',
+    'hostName', 'expectedDuration', 'photo', 'vehiclePlate', 'vehicleModel', 'vehicleColor',
+    'status', 'notes'
+  ]);
+
+  if (body.email !== undefined) body.email = validateEmail(body.email, 'email', !partial);
+  if (body.visitorType !== undefined) body.visitorType = validateEnum(body.visitorType, visitorTypes, 'visitorType', !partial);
+  if (body.status !== undefined) body.status = validateEnum(body.status, visitorStatuses, 'status', false);
+
+  if (!partial) {
+    requireFields(body, ['visitorType', 'email', 'photo']);
+  }
+
+  if (!partial) {
+    requireFields(body, ['fullName', 'idNumber', 'purposeOfVisit']);
+  }
+
+  if (body.hasVehicle && !body.vehiclePlate) {
+    throw validationError('Vehicle plate is required when visitor has a vehicle.', 'vehiclePlate');
+  }
+};
 
 router.get('/', auth, async (req, res) => {
   try {
     const { search, status, page = 1, limit = 20 } = req.query;
     const query = {};
+    const pageNum = validatePositiveInt(page, 'page', 1);
+    const limitNum = validatePositiveInt(limit, 'limit', 20);
+
     if (search) {
-      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escapedSearch = escapeRegex(search);
       query.$or = [
         { fullName: { $regex: escapedSearch, $options: 'i' } },
         { idNumber: { $regex: escapedSearch, $options: 'i' } },
@@ -25,8 +65,8 @@ router.get('/', auth, async (req, res) => {
         { organization: { $regex: escapedSearch, $options: 'i' } }
       ];
     }
-    if (status) query.status = status;
-    
+    if (status) query.status = validateEnum(status, visitorStatuses, 'status');
+
     // Data Isolation: Non-admins only see records created after they joined
     if (req.user.role !== 'Administrator') {
       query.createdAt = { $gte: req.user.createdAt };
@@ -36,54 +76,42 @@ router.get('/', auth, async (req, res) => {
     const visitors = await Visitor.find(query)
       .select('-photo -qrCode -otpCode -otpExpires')
       .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit));
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum);
 
-    res.json({ data: visitors, total, page: parseInt(page), pages: Math.ceil(total / limit) });
+    res.json({ data: visitors, total, page: pageNum, pages: Math.ceil(total / limitNum) });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 router.get('/:id', auth, async (req, res) => {
   try {
+    validateObjectId(req.params.id);
     const v = await Visitor.findById(req.params.id).select('-otpCode -otpExpires');
     if (!v) return res.status(404).json({ message: 'Not found' });
     res.json(v);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 router.post('/', auth, async (req, res) => {
   try {
-    if (!req.body.photo) {
-      return res.status(400).json({ message: req.body.visitorType === 'Military' ? 'Military ID card photo is required' : 'Visitor photo is required' });
-    }
-    if (!req.body.email) {
-      return res.status(400).json({ message: 'Email is required to register a visitor' });
-    }
+    normalizeVisitorPayload(req.body);
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(req.body.email)) {
-      return res.status(400).json({ message: 'A valid real email address is required' });
-    }
-
-    const existingEmail = await Visitor.findOne({ email: new RegExp('^' + req.body.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') });
+    const existingEmail = await Visitor.findOne({ email: new RegExp('^' + escapeRegex(req.body.email) + '$', 'i') });
     if (existingEmail) {
       return res.status(400).json({ message: `Email is already registered for visitor: ${existingEmail.fullName}` });
     }
 
     const visitorData = { ...req.body };
-    if (visitorData.visitorType === 'Military') {
-      if (!visitorData.fullName || visitorData.fullName.trim() === '') {
-        visitorData.fullName = 'Military Visitor';
-      }
-      if (!visitorData.idNumber || visitorData.idNumber.trim() === '') {
-        visitorData.idNumber = 'MIL-' + Date.now().toString().slice(-6);
-      }
-      if (!visitorData.purposeOfVisit || visitorData.purposeOfVisit.trim() === '') {
-        visitorData.purposeOfVisit = 'Facility Access / Official Visit';
+
+    if (visitorData.photo && visitorData.photo.length > 100) {
+      const existingVisitorPhoto = await Visitor.findOne({ photo: visitorData.photo });
+      const existingPersonnelPhoto = await require('../models/Personnel').findOne({ photo: visitorData.photo });
+      if (existingVisitorPhoto || existingPersonnelPhoto) {
+        return res.status(400).json({ message: 'Sawirkaan horay ayaa loo isticmaalay. Fadlan sawir cusub qaad (This photo has already been used).' });
       }
     }
 
@@ -95,7 +123,7 @@ router.post('/', auth, async (req, res) => {
     }
 
     if (visitorData.hasVehicle && visitorData.vehiclePlate) {
-      const plateRegex = new RegExp('^' + visitorData.vehiclePlate.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
+      const plateRegex = new RegExp('^' + escapeRegex(visitorData.vehiclePlate) + '$', 'i');
       const existingVisitorWithPlate = await Visitor.findOne({
         vehiclePlate: plateRegex,
         status: { $in: ['Pending', 'Approved'] }
@@ -103,35 +131,24 @@ router.post('/', auth, async (req, res) => {
       if (existingVisitorWithPlate) {
         return res.status(400).json({ message: `Vehicle plate is already in use by active visitor: ${existingVisitorWithPlate.fullName}` });
       }
-      
+
       const existingVehicle = await Vehicle.findOne({ plateNumber: plateRegex });
       if (existingVehicle) {
-        return res.status(400).json({ message: `Vehicle plate is already registered to a permanent vehicle.` });
+        return res.status(400).json({ message: 'Vehicle plate is already registered to a permanent vehicle.' });
       }
     }
 
     const visitorId = generateId();
-    const qrData = JSON.stringify({ type: 'Visitor', id: visitorId, name: visitorData.fullName });
-    const qrCode = await QRCode.toDataURL(qrData);
-    
+    const qrCode = await buildVerifyQrDataUrl(visitorId);
+
     // Generate OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const visitor = new Visitor({ 
-      ...visitorData, 
-      visitorId, 
-      qrCode, 
-      createdBy: req.user._id,
-      otpCode: otp,
-      otpExpires: new Date(Date.now() + 15 * 60000) // 15 mins
+    const visitor = new Visitor({
+      ...visitorData,
+      visitorId,
+      qrCode,
+      createdBy: req.user._id
     });
     await visitor.save();
-
-    // Send OTP email
-    try {
-      await sendVerificationEmail(visitor.email, visitor.fullName, otp);
-    } catch (emailErr) {
-      console.error('Failed to send visitor OTP email:', emailErr.message);
-    }
 
     // Automatically record an entry log for the registered person so they appear in the daily report
     try {
@@ -158,11 +175,11 @@ router.post('/', auth, async (req, res) => {
     // Auto-notify host if they are a system user
     if (visitorData.hostName) {
       try {
-        const host = await User.findOne({ 
-          fullName: { $regex: new RegExp('^' + visitorData.hostName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') }, 
-          isActive: true 
+        const host = await User.findOne({
+          fullName: { $regex: new RegExp('^' + escapeRegex(visitorData.hostName) + '$', 'i') },
+          isActive: true
         });
-        
+
         if (host) {
           const messageContent = `${visitorData.fullName}: waxaa kuu yimid qof ku doonaya, ma soodeeyaa mise waan ciliyaa?`;
           const message = await Message.create({
@@ -185,28 +202,28 @@ router.post('/', auth, async (req, res) => {
     res.status(201).json(visitor);
   } catch (err) {
     console.error('Visitor registration error:', err);
-    res.status(400).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 router.put('/:id', auth, async (req, res) => {
   try {
+    validateObjectId(req.params.id);
+    normalizeVisitorPayload(req.body, { partial: true });
+
     const updateData = { ...req.body, updatedAt: new Date() };
-    if (updateData.visitorType === 'Military') {
-      if (!updateData.fullName || updateData.fullName.trim() === '') {
-        updateData.fullName = 'Military Visitor';
-      }
-      if (!updateData.idNumber || updateData.idNumber.trim() === '') {
-        updateData.idNumber = 'MIL-' + Date.now().toString().slice(-6);
-      }
-      if (!updateData.purposeOfVisit || updateData.purposeOfVisit.trim() === '') {
-        updateData.purposeOfVisit = 'Facility Access / Official Visit';
-      }
-    }
     if (req.user.role === 'Guard') {
       const dateStr = new Date().toLocaleString('en-US');
       const logMsg = `[Guard ${req.user.fullName} updated record on ${dateStr}]`;
       updateData.notes = updateData.notes ? `${updateData.notes} | ${logMsg}` : logMsg;
+    }
+
+    if (updateData.photo && updateData.photo.length > 100) {
+      const existingVisitorPhoto = await Visitor.findOne({ photo: updateData.photo, _id: { $ne: req.params.id } });
+      const existingPersonnelPhoto = await require('../models/Personnel').findOne({ photo: updateData.photo });
+      if (existingVisitorPhoto || existingPersonnelPhoto) {
+        return res.status(400).json({ message: 'Sawirkaan horay ayaa loo isticmaalay. Fadlan sawir cusub qaad (This photo has already been used).' });
+      }
     }
 
     if (updateData.idNumber) {
@@ -217,14 +234,14 @@ router.put('/:id', auth, async (req, res) => {
     }
 
     if (updateData.email) {
-      const existingEmail = await Visitor.findOne({ email: new RegExp('^' + updateData.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') });
+      const existingEmail = await Visitor.findOne({ email: new RegExp('^' + escapeRegex(updateData.email) + '$', 'i') });
       if (existingEmail && existingEmail._id.toString() !== req.params.id) {
         return res.status(400).json({ message: `Email is already registered for visitor: ${existingEmail.fullName}` });
       }
     }
 
     if (updateData.hasVehicle && updateData.vehiclePlate) {
-      const plateRegex = new RegExp('^' + updateData.vehiclePlate.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
+      const plateRegex = new RegExp('^' + escapeRegex(updateData.vehiclePlate) + '$', 'i');
       const existingVisitorWithPlate = await Visitor.findOne({
         vehiclePlate: plateRegex,
         status: { $in: ['Pending', 'Approved'] }
@@ -235,24 +252,25 @@ router.put('/:id', auth, async (req, res) => {
 
       const existingVehicle = await Vehicle.findOne({ plateNumber: plateRegex });
       if (existingVehicle) {
-        return res.status(400).json({ message: `Vehicle plate is already registered to a permanent vehicle.` });
+        return res.status(400).json({ message: 'Vehicle plate is already registered to a permanent vehicle.' });
       }
     }
 
-    const visitor = await Visitor.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    const visitor = await Visitor.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
     if (!visitor) return res.status(404).json({ message: 'Not found' });
     res.json(visitor);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 router.delete('/:id', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
+    validateObjectId(req.params.id);
     await Visitor.findByIdAndDelete(req.params.id);
     res.json({ message: 'Visitor deleted' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 

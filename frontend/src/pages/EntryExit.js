@@ -1,17 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUpRight, ArrowDownLeft, Plus, Search, Filter, Clock, QrCode, User, Car, UserCheck } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Plus, Search, Clock, QrCode, User, Car, UserCheck } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { formatDateTime, formatTime } from '../utils/dateUtils';
 import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
-
-const DEMO_LOGS = [
-  { _id: '1', logId: 'LOG20240001', type: 'Personnel', action: 'Entry', subjectName: 'SGT. John Mitchell', subjectId: 'MIL-001234', gate: 'Main Gate', isAuthorized: true, recordedByName: 'Guard Stevens', createdAt: new Date().toISOString() },
-  { _id: '2', logId: 'LOG20240002', type: 'Vehicle', action: 'Entry', subjectName: 'Toyota Land Cruiser', subjectId: 'MIL-4472', gate: 'Vehicle Gate', isAuthorized: true, recordedByName: 'Guard Stevens', createdAt: new Date(Date.now() - 600000).toISOString() },
-  { _id: '3', logId: 'LOG20240003', type: 'Visitor', action: 'Exit', subjectName: 'James Thompson', subjectId: 'VIS240001', gate: 'Main Gate', isAuthorized: true, recordedByName: 'Guard Williams', createdAt: new Date(Date.now() - 1800000).toISOString() },
-  { _id: '4', logId: 'LOG20240004', type: 'Vehicle', action: 'Entry', subjectName: 'Unknown Vehicle', subjectId: 'XYZ-1234', gate: 'Vehicle Gate', isAuthorized: false, recordedByName: 'Guard Stevens', createdAt: new Date(Date.now() - 3600000).toISOString() },
-];
 
 const INITIAL_FORM = {
   type: 'Personnel', subjectName: '', subjectId: '', driverName: '', gate: 'Main Gate', purpose: '', isAuthorized: true, notes: '', category: ''
@@ -56,9 +49,8 @@ export default function EntryExit() {
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Failed to load entry records';
       toast.error(msg);
-      // Show demo data only in development so the UI is not empty
-      setLogs(DEMO_LOGS);
-      setTotal(DEMO_LOGS.length);
+      setLogs([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }

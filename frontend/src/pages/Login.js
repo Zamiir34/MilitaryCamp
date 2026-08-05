@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 export default function Login() {
   const { login, verifyEmail, resendVerification, loading } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ username: '', password: '' });
+  const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
 
   // OTP verification state
@@ -18,7 +18,7 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = await login(form.username, form.password);
+    const result = await login(form.email, form.password);
     if (result.success) {
       toast.success('Access granted');
       navigate('/');
@@ -219,18 +219,18 @@ export default function Login() {
 
             <form onSubmit={handleSubmit}>
               <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label className="form-label">Username</label>
+                <label className="form-label">Email</label>
                 <div style={{ position: 'relative' }}>
                   <User size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                   <input
                     className="input"
                     style={{ paddingLeft: 32 }}
-                    type="text"
-                    placeholder="Enter username"
-                    value={form.username}
-                    onChange={e => setForm(p => ({ ...p, username: e.target.value }))}
+                    type="email"
+                    placeholder="Enter email"
+                    value={form.email}
+                    onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
                     required
-                    autoComplete="username"
+                    autoComplete="email"
                   />
                 </div>
               </div>

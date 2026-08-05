@@ -1,8 +1,10 @@
-// lib/screens/personnel_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:provider/provider.dart';
 import '../services/api_service.dart';
+import '../services/auth_provider.dart';
 import '../models/models.dart';
 import '../theme/app_theme.dart';
 import 'log_entry_screen.dart';
@@ -17,6 +19,7 @@ class PersonnelDetailScreen extends StatefulWidget {
 class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
   final _api = ApiService();
   Personnel? _p;
+  Map<String, dynamic>? _guardAccount;
   List<EntryLog> _history = [];
   List<Vehicle> _vehicles = [];
   bool _loading = true;
@@ -26,16 +29,22 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
+      final pObj = await _api.getPersonnelById(widget.personnelId);
+      Map<String, dynamic>? gAccount;
+      try {
+        gAccount = await _api.getGuardAccount(pObj.id);
+      } catch (_) {}
+
       final results = await Future.wait([
-        _api.getPersonnelById(widget.personnelId),
         _api.getPersonnelHistory(widget.personnelId),
         _api.getVehiclesByOwner(widget.personnelId),
       ]);
       setState(() {
-        _p = results[0] as Personnel;
-        final hMap = results[1] as Map<String, dynamic>;
+        _p = pObj;
+        _guardAccount = gAccount;
+        final hMap = results[0] as Map<String, dynamic>;
         _history = (hMap['logs'] as List).map((e) => EntryLog.fromJson(e)).toList();
-        _vehicles = results[2] as List<Vehicle>;
+        _vehicles = results[1] as List<Vehicle>;
         _loading = false;
       });
     } catch (_) { setState(() => _loading = false); }
@@ -58,24 +67,13 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
               color: AppColors.surface,
               child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                 const SizedBox(height: 60),
-                CircleAvatar(
+                SafeAvatar(
+                  photo: _p!.photo,
                   radius: 40,
-                  backgroundColor: AppColors.primary.withOpacity(0.2),
-                  child: _p!.photo != null && _p!.photo!.isNotEmpty
-                      ? ClipOval(
-                          child: CachedNetworkImage(
-                            imageUrl: '${AppConstants.baseUrl.replaceAll('/api', '')}${_p!.photo}',
-                            fit: BoxFit.cover,
-                            width: 80,
-                            height: 80,
-                            placeholder: (context, url) => const CircularProgressIndicator(color: AppColors.primary),
-                            errorWidget: (context, url, error) => const Icon(Icons.person, color: AppColors.primary, size: 40),
-                          ),
-                        )
-                      : Text(
-                          '${_p!.firstName.isNotEmpty ? _p!.firstName[0] : '?'}${_p!.lastName.isNotEmpty ? _p!.lastName[0] : ''}',
-                          style: const TextStyle(color: AppColors.primary, fontSize: 28, fontWeight: FontWeight.bold),
-                        ),
+                  fallback: Text(
+                    '${_p!.firstName.isNotEmpty ? _p!.firstName[0] : '?'}${_p!.lastName.isNotEmpty ? _p!.lastName[0] : ''}',
+                    style: const TextStyle(color: AppColors.primary, fontSize: 28, fontWeight: FontWeight.bold),
+                  ),
                 ),
                 const SizedBox(height: 10),
                 Text(_p!.fullName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
@@ -118,6 +116,16 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
               if (_p!.phone != null) _InfoRow('Phone', _p!.phone!),
               if (_p!.bloodType != null) _InfoRow('Blood Type', _p!.bloodType!),
             ]),
+            const SizedBox(height: 24),
+
+            // Guard Account Management for Security Officers / Admins
+            if (context.watch<AuthProvider>().user?.isOfficer == true) ...[
+              _buildGuardAccountCard(),
+              const SizedBox(height: 24),
+            ],
+            
+            // QR Code Section
+            _QRCodeCard(personnel: _p!),
             const SizedBox(height: 24),
 
             // ── Registered Vehicles ──────────────────────────────
@@ -266,6 +274,227 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
       ]),
     );
   }
+
+  Widget _buildGuardAccountCard() {
+    final hasAccount = _guardAccount?['hasAccount'] == true;
+    final userObj = _guardAccount?['user'];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: hasAccount ? AppColors.success.withOpacity(0.4) : AppColors.primary.withOpacity(0.4),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    hasAccount ? Icons.verified_user : Icons.security,
+                    color: hasAccount ? AppColors.success : AppColors.primary,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text('GUARD SYSTEM ACCOUNT', style: TextStyle(fontSize: 10, color: AppColors.textMuted, letterSpacing: 1.5, fontWeight: FontWeight.w700)),
+                ],
+              ),
+              _Badge(
+                hasAccount ? 'ASSIGNED' : 'NOT ASSIGNED',
+                hasAccount ? AppColors.success : AppColors.warning,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (hasAccount && userObj != null) ...[
+            _InfoRow('Username', userObj['username'] ?? 'N/A'),
+            _InfoRow('Email', userObj['email'] ?? 'N/A'),
+            _InfoRow('Role', (userObj['role'] ?? 'Guard').toUpperCase()),
+            _InfoRow('Assigned Zone', userObj['assignedZone'] ?? 'Zone A - Admin'),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _showResetGuardPasswordDialog,
+                icon: const Icon(Icons.lock_reset, size: 16),
+                label: const Text('RESET GUARD PASSWORD'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.warning,
+                  side: const BorderSide(color: AppColors.warning),
+                ),
+              ),
+            ),
+          ] else ...[
+            const Text(
+              'This personnel record currently does not have an active Guard login account.',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _showIssueGuardAccountDialog,
+                icon: const Icon(Icons.person_add, size: 16),
+                label: const Text('ISSUE GUARD ACCOUNT'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.black,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showIssueGuardAccountDialog() async {
+    final userCtrl = TextEditingController(text: _p!.personnelId.toLowerCase());
+    final emailCtrl = TextEditingController(text: _p!.email ?? '');
+    final passCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool isSubmitting = false;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: AppColors.surface,
+          title: const Text('Issue Guard Account', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Assign guard login credentials to this personnel record.', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: userCtrl,
+                  decoration: const InputDecoration(labelText: 'Username *'),
+                  validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  controller: emailCtrl,
+                  decoration: const InputDecoration(labelText: 'Email *'),
+                  validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  controller: passCtrl,
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'Password *'),
+                  validator: (v) => v == null || v.length < 6 ? 'Min 6 characters' : null,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCEL')),
+            ElevatedButton(
+              onPressed: isSubmitting ? null : () async {
+                if (!formKey.currentState!.validate()) return;
+                setDialogState(() => isSubmitting = true);
+                try {
+                  final res = await _api.issueGuardAccount(_p!.id, {
+                    'username': userCtrl.text.trim(),
+                    'email': emailCtrl.text.trim(),
+                    'password': passCtrl.text,
+                  });
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(res['message'] ?? 'Guard account issued successfully'),
+                      backgroundColor: AppColors.success,
+                    ));
+                    _load();
+                  }
+                } catch (e) {
+                  setDialogState(() => isSubmitting = false);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(e.toString()),
+                      backgroundColor: AppColors.danger,
+                    ));
+                  }
+                }
+              },
+              child: isSubmitting
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Text('ISSUE ACCOUNT'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showResetGuardPasswordDialog() async {
+    final passCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool isSubmitting = false;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: AppColors.surface,
+          title: const Text('Reset Guard Password', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: passCtrl,
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'New Password *'),
+                  validator: (v) => v == null || v.length < 6 ? 'Min 6 characters' : null,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCEL')),
+            ElevatedButton(
+              onPressed: isSubmitting ? null : () async {
+                if (!formKey.currentState!.validate()) return;
+                setDialogState(() => isSubmitting = true);
+                try {
+                  final res = await _api.resetGuardAccountPassword(_p!.id, passCtrl.text);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(res['message'] ?? 'Password reset successfully'),
+                      backgroundColor: AppColors.success,
+                    ));
+                    _load();
+                  }
+                } catch (e) {
+                  setDialogState(() => isSubmitting = false);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(e.toString()),
+                      backgroundColor: AppColors.danger,
+                    ));
+                  }
+                }
+              },
+              child: isSubmitting
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Text('UPDATE PASSWORD'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // --- Style Section (Custom Widgets) ---
@@ -300,4 +529,60 @@ class _InfoRow extends StatelessWidget {
       Expanded(flex: 3, child: Text(value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w500))),
     ]),
   );
+}
+
+class _QRCodeCard extends StatelessWidget {
+  final Personnel personnel;
+  const _QRCodeCard({required this.personnel});
+
+  @override
+  Widget build(BuildContext context) {
+    // Generate verification link QR matching web app
+    final qrData = AppConstants.verifyUrl(personnel.personnelId);
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('IDENTIFICATION QR', style: TextStyle(fontSize: 10, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w800)),
+              Icon(Icons.qr_code_2, size: 16, color: AppColors.primary.withOpacity(0.5)),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(color: AppColors.primary.withOpacity(0.1), blurRadius: 20, spreadRadius: 2),
+              ],
+            ),
+            child: QrImageView(
+              data: qrData,
+              version: QrVersions.auto,
+              size: 180.0,
+              gapless: false,
+              eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.black),
+              dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Colors.black),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text('Scan this code at the gate to verify identity', 
+            style: TextStyle(color: AppColors.textMuted, fontSize: 11), textAlign: TextAlign.center),
+        ],
+      ),
+    );
+  }
 }

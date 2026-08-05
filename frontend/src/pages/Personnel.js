@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, X, ArrowLeftRight, Shield, Eye, EyeOff } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, ArrowLeftRight, Shield, Eye, EyeOff, QrCode } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { formatDate } from '../utils/dateUtils';
@@ -37,7 +38,7 @@ export default function Personnel() {
   const [transferForm, setTransferForm] = useState({ newUnit: '', newRank: '', transferReason: '', authorizedZones: '' });
   const [submitting, setSubmitting] = useState(false);
   const [guardAccount, setGuardAccount] = useState(null);
-  const [guardForm, setGuardForm] = useState({ username: '', password: '', email: '' });
+  const [guardForm, setGuardForm] = useState({ password: '', email: '' });
   const [showGuardPass, setShowGuardPass] = useState(false);
   const [guardSubmitting, setGuardSubmitting] = useState(false);
   const canManageGuardAccess = canAccess(['Administrator', 'SecurityOfficer']);
@@ -82,6 +83,26 @@ export default function Personnel() {
         setModal(null);
       } else {
         await api.put(`/personnel/${selected._id}`, payload);
+        
+        // Handle guard account creation/update if fields are filled
+        if (canManageGuardAccess) {
+          try {
+            if (guardAccount?.hasAccount && guardForm.password.length >= 6) {
+              await api.put(`/personnel/${selected._id}/guard-account/password`, { password: guardForm.password });
+              toast.success('Guard password updated');
+            } else if (!guardAccount?.hasAccount && guardForm.password.length >= 6 && guardForm.email) {
+              if (!zonesArray || zonesArray.length === 0) {
+                toast.error('Could not issue guard account: Authorized zone is required.');
+              } else {
+                await api.post(`/personnel/${selected._id}/guard-account`, guardForm);
+                toast.success('Guard credentials issued');
+              }
+            }
+          } catch (guardErr) {
+            toast.error(guardErr.response?.data?.message || 'Failed to update guard account');
+          }
+        }
+
         toast.success('Personnel updated');
         setModal(null);
         fetchPersonnel();
@@ -99,13 +120,13 @@ export default function Personnel() {
       const { data } = await api.get(`/personnel/${personnelId}/guard-account`);
       setGuardAccount(data);
       if (data.hasAccount && data.user) {
-        setGuardForm({ username: data.user.username, password: '', email: data.user.email });
+        setGuardForm({ password: '', email: data.user.email });
       } else {
-        setGuardForm({ username: '', password: '', email: email || '' });
+        setGuardForm({ password: '', email: email || '' });
       }
     } catch {
       setGuardAccount({ hasAccount: false });
-      setGuardForm({ username: '', password: '', email: email || '' });
+      setGuardForm({ password: '', email: email || '' });
     }
   };
 
@@ -151,7 +172,7 @@ export default function Personnel() {
     }); 
     setShowGuardPass(false);
     setGuardAccount(null);
-    setGuardForm({ username: '', password: '', email: p.email || '' });
+    setGuardForm({ password: '', email: p.email || '' });
     setModal('edit');
     loadGuardAccount(p._id, p.email || '');
   };
@@ -230,7 +251,7 @@ export default function Personnel() {
               ) : personnel.length === 0 ? (
                 <tr><td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No records found</td></tr>
               ) : personnel.map(p => (
-                <tr key={p._id} className="animate-fadeIn">
+                <tr key={p._id} className="animate-fadeIn hover-row" onClick={() => { setSelected(p); setModal('view'); }} style={{ cursor: 'pointer' }}>
                   <td><span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.personnelId}</span></td>
                   <td><span style={{ fontWeight: 600 }}>{p.fullName}</span></td>
                   <td>{p.rank}</td>
@@ -238,7 +259,9 @@ export default function Personnel() {
                   <td><span className={`badge ${typeBadge[p.type] || 'badge-gray'}`}>{p.type}</span></td>
                   <td><span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{formatDate(p.createdAt)}</span></td>
                   <td>
-                    <div style={{ display: 'flex', gap: 4 }}>
+                    <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
+                      <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => { setSelected(p); setModal('view'); }} title="View Details"><Eye size={12} /></button>
+                      <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => { setSelected(p); setModal('qr'); }} title="QR Code"><QrCode size={12} /></button>
                       {canAccess(['Administrator', 'SecurityOfficer']) && (
                         <>
                           <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => openEdit(p)} title="Edit"><Edit2 size={12} /></button>
@@ -322,27 +345,30 @@ export default function Personnel() {
                   </select>
                 </div>
 
+
                 {modal === 'edit' && canManageGuardAccess && (
                   <div className="form-group" style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1rem' }}>
                       <Shield size={16} color="var(--accent-primary)" />
                       <span style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 15, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                        Guard System Access
+                        Guard System Access (Optional)
                       </span>
                     </div>
+                    <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                      Assign or update guard credentials. Changes will be saved when you click "Update".
+                    </p>
 
                     {guardAccount?.hasAccount ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, padding: '1rem' }}>
-                          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Issued username</div>
-                          <div style={{ fontFamily: 'Share Tech Mono, monospace', fontWeight: 700, color: 'var(--accent-green)' }}>{guardAccount.user?.username}</div>
+                          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Issued Email</div>
+                          <div style={{ fontFamily: 'Share Tech Mono, monospace', fontWeight: 700, color: 'var(--accent-green)' }}>{guardAccount.user?.email}</div>
                           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>
                             Email: {guardAccount.user?.email} • {guardAccount.user?.isActive ? 'Active' : 'Inactive'}
-                            {guardAccount.user?.isEmailVerified ? ' • Verified' : ' • Pending email verification'}
                           </div>
                         </div>
                         <div className="form-group">
-                          <label className="form-label">New Password</label>
+                          <label className="form-label">New Password (Leave blank to keep current)</label>
                           <div style={{ position: 'relative' }}>
                             <input
                               className="input"
@@ -350,31 +376,18 @@ export default function Personnel() {
                               type={showGuardPass ? 'text' : 'password'}
                               value={guardForm.password}
                               onChange={e => setGuardForm(p => ({ ...p, password: e.target.value }))}
-                              placeholder="Enter new password (min 6 characters)"
+                              placeholder="Min 6 characters to update password"
                             />
                             <button type="button" className="btn btn-ghost" style={{ position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)', padding: 4 }} onClick={() => setShowGuardPass(v => !v)}>
                               {showGuardPass ? <EyeOff size={14} /> : <Eye size={14} />}
                             </button>
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          className="btn btn-primary"
-                          style={{ alignSelf: 'flex-start' }}
-                          disabled={guardSubmitting || guardForm.password.length < 6}
-                          onClick={handleResetGuardPassword}
-                        >
-                          {guardSubmitting ? 'Updating...' : 'Reset Guard Password'}
-                        </button>
                       </div>
                     ) : (
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
                         <div className="form-group">
-                          <label className="form-label">Guard Username *</label>
-                          <input className="input" value={guardForm.username} onChange={e => setGuardForm(p => ({ ...p, username: e.target.value }))} placeholder="e.g. guard_ali" />
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">Guard Password *</label>
+                          <label className="form-label">Guard Password</label>
                           <div style={{ position: 'relative' }}>
                             <input
                               className="input"
@@ -390,27 +403,13 @@ export default function Personnel() {
                           </div>
                         </div>
                         <div className="form-group">
-                          <label className="form-label">Login Email *</label>
+                          <label className="form-label">Login Email</label>
                           <input className="input" type="email" value={guardForm.email} onChange={e => setGuardForm(p => ({ ...p, email: e.target.value }))} placeholder="guard@camp.mil" />
-                        </div>
-                        <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                          <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 0.75rem' }}>
-                            Issue guard login credentials linked to this personnel record. The guard&apos;s zone is taken from the authorized zone above.
-                          </p>
-                          <button
-                            type="button"
-                            className="btn btn-primary"
-                            disabled={guardSubmitting || !guardForm.username || guardForm.password.length < 6 || !guardForm.email}
-                            onClick={handleIssueGuardAccount}
-                          >
-                            {guardSubmitting ? 'Issuing...' : 'Issue Guard Credentials'}
-                          </button>
                         </div>
                       </div>
                     )}
                   </div>
                 )}
-
                 <div className="form-group" style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 16, fontWeight: 700 }}>
                     <input 
@@ -531,6 +530,111 @@ export default function Personnel() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {modal === 'qr' && selected && (
+        <div className="modal-overlay">
+          <div className="modal" style={{ maxWidth: 360, textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 16, textTransform: 'uppercase' }}>Personnel QR Code</h2>
+              <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => setModal(null)}><X size={16} /></button>
+            </div>
+            <div style={{ background: 'white', padding: '1rem', borderRadius: 8, display: 'inline-block', marginBottom: '1rem' }}>
+              <QRCodeSVG value={`${window.location.origin}/verify/${selected.personnelId}`} size={180} />
+            </div>
+            <div style={{ fontWeight: 700, fontSize: 16 }}>{selected.fullName}</div>
+            <div className="mono" style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{selected.personnelId}</div>
+            <div style={{ marginTop: '1.25rem', padding: '0.75rem', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)', textAlign: 'left' }}>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, fontWeight: 700, textTransform: 'uppercase' }}>Scan to view identity</div>
+              <a href={`${window.location.origin}/verify/${selected.personnelId}`} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: 'var(--accent-primary)', wordBreak: 'break-all', fontFamily: 'Share Tech Mono, monospace' }}>
+                {`${window.location.origin}/verify/${selected.personnelId}`}
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+      {modal === 'view' && selected && (
+        <div className="modal-overlay" onClick={() => setModal(null)}>
+          <div className="modal" style={{ maxWidth: 600 }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 18, textTransform: 'uppercase' }}>
+                Personnel Details
+              </h2>
+              <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={() => setModal(null)}><X size={16} /></button>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+              {selected.photo ? (
+                <img src={selected.photo} alt={selected.fullName} style={{ width: 100, height: 100, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border)' }} />
+              ) : (
+                <div style={{ width: 100, height: 100, borderRadius: 8, background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--border)' }}>
+                  <Shield size={32} color="var(--text-muted)" />
+                </div>
+              )}
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>{selected.fullName}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-muted)' }} className="mono">{selected.personnelId}</div>
+                <div style={{ marginTop: 8 }}>
+                  <span className={`badge ${selected.type === 'Military' ? 'badge-blue' : selected.type === 'Civilian' ? 'badge-yellow' : 'badge-gray'}`}>
+                    {selected.type}
+                  </span>
+                  {selected.status === 'Active' ? <span className="badge badge-green" style={{ marginLeft: 8 }}>Active</span> : <span className="badge badge-red" style={{ marginLeft: 8 }}>{selected.status}</span>}
+                </div>
+              </div>
+            </div>
+
+            <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+              <div style={{ padding: '0.75rem', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Rank</div>
+                <div style={{ fontWeight: 600 }}>{selected.rank || '-'}</div>
+              </div>
+              <div style={{ padding: '0.75rem', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Unit</div>
+                <div style={{ fontWeight: 600 }}>{selected.unit || '-'}</div>
+              </div>
+              <div style={{ padding: '0.75rem', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>National ID</div>
+                <div className="mono" style={{ fontWeight: 600 }}>{selected.idNumber || '-'}</div>
+              </div>
+              <div style={{ padding: '0.75rem', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Phone</div>
+                <div style={{ fontWeight: 600 }}>{selected.phone || '-'}</div>
+              </div>
+              <div style={{ padding: '0.75rem', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Email</div>
+                <div style={{ fontWeight: 600 }}>{selected.email || '-'}</div>
+              </div>
+              <div style={{ padding: '0.75rem', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Auth Zones</div>
+                <div style={{ fontWeight: 600 }}>{selected.authorizedZones?.join(', ') || '-'}</div>
+              </div>
+            </div>
+            
+            {selected.hasVehicle && selected.vehicleDetails && (
+              <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(245, 158, 11, 0.05)', borderRadius: 8, border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-gold)', textTransform: 'uppercase', marginBottom: 8 }}>Registered Vehicle</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Plate</div>
+                    <div className="mono" style={{ fontWeight: 600 }}>{selected.vehicleDetails.plateNumber}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Model</div>
+                    <div style={{ fontWeight: 600 }}>{selected.vehicleDetails.model}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Color</div>
+                    <div style={{ fontWeight: 600 }}>{selected.vehicleDetails.color}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+              <button className="btn btn-primary" onClick={() => setModal(null)}>Close</button>
+            </div>
           </div>
         </div>
       )}

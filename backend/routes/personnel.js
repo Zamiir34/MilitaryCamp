@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const QRCode = require('qrcode');
+const { buildVerifyQrDataUrl } = require('../utils/verifyUrl');
 const Personnel = require('../models/Personnel');
 const User = require('../models/User');
 const { zoneFromPersonnel, syncLinkedGuardZone } = require('../utils/guardZone');
@@ -10,18 +10,47 @@ const {
   resetGuardPasswordForPersonnel,
 } = require('../utils/guardAccount');
 const { assertMilitaryIdAvailable } = require('../utils/militaryId');
+const {
+  cleanStringFields,
+  escapeRegex,
+  requireFields,
+  sendValidationError,
+  validateEnum,
+  validateObjectId,
+  validatePositiveInt,
+  validationError,
+} = require('../utils/validation');
+
 const EntryLog = require('../models/EntryLog');
 const crypto = require('crypto');
 const { auth, requireRole } = require('../middleware/auth');
 
+const personnelTypes = ['Military', 'Civilian', 'Staff'];
+const personnelStatuses = ['Active', 'Inactive', 'Suspended'];
+
+const normalizePersonnelPayload = (body, { partial = false } = {}) => {
+  cleanStringFields(body, ['fullName', 'rank', 'unit', 'idNumber', 'phone', 'email', 'photo', 'type', 'status', 'militaryId', 'transferredFrom', 'serviceHistory']);
+  if (body.vehicleDetails) cleanStringFields(body.vehicleDetails, ['plateNumber', 'model', 'color']);
+  if (body.type !== undefined) body.type = validateEnum(body.type, personnelTypes, 'type', false);
+  if (body.status !== undefined) body.status = validateEnum(body.status, personnelStatuses, 'status', false);
+  if (!partial) requireFields(body, ['fullName', 'rank', 'unit']);
+  if (body.hasVehicle && !body.vehicleDetails?.plateNumber) {
+    throw validationError('Vehicle plate is required when personnel has a vehicle.', 'vehicleDetails.plateNumber');
+  }
+  if (body.authorizedZones !== undefined && !Array.isArray(body.authorizedZones) && typeof body.authorizedZones !== 'string') {
+    throw validationError('authorizedZones must be a list or comma-separated string.', 'authorizedZones');
+  }
+};
 
 // Get all personnel
 router.get('/', auth, async (req, res) => {
   try {
     const { search, type, status, page = 1, limit = 20 } = req.query;
     const query = {};
+    const pageNum = validatePositiveInt(page, 'page', 1);
+    const limitNum = validatePositiveInt(limit, 'limit', 20);
     if (search) {
-      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escapedSearch = escapeRegex(search);
       query.$or = [
         { fullName: { $regex: escapedSearch, $options: 'i' } },
         { personnelId: { $regex: escapedSearch, $options: 'i' } },
@@ -29,8 +58,8 @@ router.get('/', auth, async (req, res) => {
         { unit: { $regex: escapedSearch, $options: 'i' } }
       ];
     }
-    if (type) query.type = type;
-    if (status) query.status = status;
+    if (type) query.type = validateEnum(type, personnelTypes, 'type');
+    if (status) query.status = validateEnum(status, personnelStatuses, 'status');
     
     // Data Isolation: Non-admins only see records created after they joined
     if (req.user.role !== 'Administrator') {
@@ -40,18 +69,19 @@ router.get('/', auth, async (req, res) => {
     const total = await Personnel.countDocuments(query);
     const personnel = await Personnel.find(query)
       .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit));
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum);
 
-    res.json({ data: personnel, total, page: parseInt(page), pages: Math.ceil(total / limit) });
+    res.json({ data: personnel, total, page: pageNum, pages: Math.ceil(total / limitNum) });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 // Get linked guard account for personnel
 router.get('/:id/guard-account', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
+    validateObjectId(req.params.id);
     const personnel = await Personnel.findById(req.params.id);
     if (!personnel) return res.status(404).json({ message: 'Personnel not found' });
 
@@ -59,56 +89,68 @@ router.get('/:id/guard-account', auth, requireRole('Administrator', 'SecurityOff
     if (!user) return res.json({ hasAccount: false });
     res.json({ hasAccount: true, user });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 // Issue guard login credentials for personnel
 router.post('/:id/guard-account', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
+    validateObjectId(req.params.id);
     const personnel = await Personnel.findById(req.params.id);
     if (!personnel) return res.status(404).json({ message: 'Personnel not found' });
 
     const user = await issueGuardAccountForPersonnel(personnel, req.body);
     res.status(201).json({ hasAccount: true, user, message: 'Guard account issued successfully.' });
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 // Reset guard password for personnel
 router.put('/:id/guard-account/password', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
+    validateObjectId(req.params.id);
     const personnel = await Personnel.findById(req.params.id);
     if (!personnel) return res.status(404).json({ message: 'Personnel not found' });
 
     const user = await resetGuardPasswordForPersonnel(personnel, req.body.password);
     res.json({ message: 'Guard password updated successfully.', user });
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 // Get single personnel
 router.get('/:id', auth, async (req, res) => {
   try {
+    validateObjectId(req.params.id);
     const p = await Personnel.findById(req.params.id);
     if (!p) return res.status(404).json({ message: 'Not found' });
     res.json(p);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 // Create personnel
 router.post('/', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
+    normalizePersonnelPayload(req.body);
     const { fullName, idNumber: providedIdNumber } = req.body;
+
+    if (req.body.photo && req.body.photo.length > 100) {
+      const existingPersonnelPhoto = await Personnel.findOne({ photo: req.body.photo });
+      const existingVisitorPhoto = await require('../models/Visitor').findOne({ photo: req.body.photo });
+      if (existingPersonnelPhoto || existingVisitorPhoto) {
+        return res.status(400).json({ message: 'Sawirkaan horay ayaa loo isticmaalay. Fadlan sawir cusub qaad (This photo has already been used).' });
+      }
+    }
 
     // Check for duplicate
     const existing = await Personnel.findOne({ 
       $or: [
-        { fullName: { $regex: new RegExp('^' + fullName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') } },
+        { fullName: { $regex: new RegExp('^' + escapeRegex(fullName) + '$', 'i') } },
         { idNumber: providedIdNumber }
       ].filter(q => q.idNumber || q.fullName)
     });
@@ -120,13 +162,13 @@ router.post('/', auth, requireRole('Administrator', 'SecurityOfficer'), async (r
     try {
       req.body.militaryId = await assertMilitaryIdAvailable(req.body.militaryId);
     } catch (err) {
-      return res.status(400).json({ message: err.message });
+      return sendValidationError(res, err);
     }
 
     if (req.body.hasVehicle && req.body.vehicleDetails && req.body.vehicleDetails.plateNumber) {
       const plate = req.body.vehicleDetails.plateNumber.trim();
       if (plate) {
-        const plateRegex = new RegExp('^' + plate.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
+        const plateRegex = new RegExp('^' + escapeRegex(plate) + '$', 'i');
         const existingPersonnelWithPlate = await Personnel.findOne({
           hasVehicle: true,
           'vehicleDetails.plateNumber': { $regex: plateRegex }
@@ -163,8 +205,7 @@ router.post('/', auth, requireRole('Administrator', 'SecurityOfficer'), async (r
       idNumber = '2026' + Math.floor(100000 + Math.random() * 899999);
     }
 
-    const qrData = JSON.stringify({ type: 'Personnel', id: personnelId, name: req.body.fullName });
-    const qrCode = await QRCode.toDataURL(qrData);
+    const qrCode = await buildVerifyQrDataUrl(personnelId);
     const personnel = new Personnel({ ...req.body, personnelId, idNumber, qrCode, createdBy: req.user._id });
     await personnel.save();
 
@@ -196,27 +237,38 @@ router.post('/', auth, requireRole('Administrator', 'SecurityOfficer'), async (r
     if (err.code === 11000 && err.keyPattern?.militaryId) {
       return res.status(400).json({ message: 'This Military ID has already been issued and cannot be used again.' });
     }
-    res.status(400).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 // Update personnel
 router.put('/:id', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
+    validateObjectId(req.params.id);
+    normalizePersonnelPayload(req.body, { partial: true });
+
+    if (req.body.photo && req.body.photo.length > 100) {
+      const existingPersonnelPhoto = await Personnel.findOne({ photo: req.body.photo, _id: { $ne: req.params.id } });
+      const existingVisitorPhoto = await require('../models/Visitor').findOne({ photo: req.body.photo });
+      if (existingPersonnelPhoto || existingVisitorPhoto) {
+        return res.status(400).json({ message: 'Sawirkaan horay ayaa loo isticmaalay. Fadlan sawir cusub qaad (This photo has already been used).' });
+      }
+    }
+
     if (req.body.militaryId !== undefined) {
       try {
         req.body.militaryId = await assertMilitaryIdAvailable(req.body.militaryId, {
           excludePersonnelId: req.params.id,
         });
       } catch (err) {
-        return res.status(400).json({ message: err.message });
+        return sendValidationError(res, err);
       }
     }
 
     if (req.body.hasVehicle && req.body.vehicleDetails && req.body.vehicleDetails.plateNumber) {
       const plate = req.body.vehicleDetails.plateNumber.trim();
       if (plate) {
-        const plateRegex = new RegExp('^' + plate.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
+        const plateRegex = new RegExp('^' + escapeRegex(plate) + '$', 'i');
         const existingPersonnelWithPlate = await Personnel.findOne({
           _id: { $ne: req.params.id },
           hasVehicle: true,
@@ -238,7 +290,7 @@ router.put('/:id', auth, requireRole('Administrator', 'SecurityOfficer'), async 
     const personnel = await Personnel.findByIdAndUpdate(
       req.params.id,
       { ...req.body, updatedAt: new Date() },
-      { new: true }
+      { new: true, runValidators: true }
     );
     if (!personnel) return res.status(404).json({ message: 'Not found' });
     await syncLinkedGuardZone(personnel);
@@ -247,13 +299,14 @@ router.put('/:id', auth, requireRole('Administrator', 'SecurityOfficer'), async 
     if (err.code === 11000 && err.keyPattern?.militaryId) {
       return res.status(400).json({ message: 'This Military ID has already been issued and cannot be used again.' });
     }
-    res.status(400).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 // Delete personnel
 router.delete('/:id', auth, requireRole('Administrator'), async (req, res) => {
   try {
+    validateObjectId(req.params.id);
     const personnel = await Personnel.findById(req.params.id);
     if (!personnel) return res.status(404).json({ message: 'Personnel not found' });
 
@@ -268,13 +321,15 @@ router.delete('/:id', auth, requireRole('Administrator'), async (req, res) => {
     await Personnel.findByIdAndDelete(req.params.id);
     res.json({ message: 'Personnel deleted' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 // Transfer personnel
 router.post('/:id/transfer', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
+    validateObjectId(req.params.id);
+    cleanStringFields(req.body, ['newUnit', 'newRank', 'transferReason']);
     const { newUnit, newRank, transferReason, authorizedZones } = req.body;
     if (!newUnit) {
       return res.status(400).json({ message: 'New unit is required for transfer.' });
@@ -309,9 +364,14 @@ router.post('/:id/transfer', auth, requireRole('Administrator', 'SecurityOfficer
 
     res.json(personnel);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 module.exports = router;
+
+
+
+
+
 

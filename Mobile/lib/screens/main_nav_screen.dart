@@ -161,15 +161,6 @@ class _MainNavScreenState extends State<MainNavScreen> {
                     onTap: () { setState(() => _currentIndex = 1); Navigator.pop(context); },
                   ),
                   _DrawerItem(
-                    icon: Icons.directions_car_outlined,
-                    label: 'Vehicle Registry',
-                    iconColor: AppColors.info,
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const VehicleScreen()));
-                    },
-                  ),
-                  _DrawerItem(
                     icon: Icons.badge_outlined,
                     label: 'Visitor Center',
                     iconColor: AppColors.secondary,
@@ -224,10 +215,10 @@ class _MainNavScreenState extends State<MainNavScreen> {
                     },
                   ),
 
-                  if (user?.isOfficer == true) ...[
+                  if (user?.isOfficer == true || user?.isAdmin == true) ...[
                     const SizedBox(height: 8),
-                    // ── OFFICER TOOLS ────────────────────────
-                    _DrawerLabel(label: 'OFFICER TOOLS'),
+                    // ── MANAGEMENT TOOLS ──────────────────────
+                    _DrawerLabel(label: user?.isAdmin == true ? 'ADMIN TOOLS' : 'OFFICER TOOLS'),
                     _DrawerItem(
                       icon: Icons.analytics_outlined,
                       label: 'Activity Reports',
@@ -236,16 +227,10 @@ class _MainNavScreenState extends State<MainNavScreen> {
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportsScreen()));
                       },
                     ),
-                  ],
-
-                  if (user?.isAdmin == true) ...[
-                    const SizedBox(height: 8),
-                    // ── ADMIN TOOLS ──────────────────────────
-                    _DrawerLabel(label: 'ADMIN TOOLS'),
                     _DrawerItem(
                       icon: Icons.manage_accounts_outlined,
-                      label: 'User Management',
-                      iconColor: AppColors.danger,
+                      label: user?.isAdmin == true ? 'User Management' : 'Guard Accounts',
+                      iconColor: AppColors.warning,
                       onTap: () {
                         Navigator.pop(context);
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const UserManagementScreen()));
@@ -336,22 +321,69 @@ class _MainNavScreenState extends State<MainNavScreen> {
           Expanded(child: IndexedStack(index: _currentIndex, children: _screens)),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: AppColors.surface,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.textMuted,
-        currentIndex: _currentIndex,
-        onTap: (i) {
-          setState(() => _currentIndex = i);
-          if (i == 3) _loadUnresolvedAlerts();
-        },
-        items: const [
-          BottomNavigationBarItem(backgroundColor: AppColors.surface, icon: Icon(Icons.dashboard_outlined), activeIcon: Icon(Icons.dashboard), label: 'DASHBOARD'),
-          BottomNavigationBarItem(backgroundColor: AppColors.surface, icon: Icon(Icons.people_outline), activeIcon: Icon(Icons.people), label: 'PERSONNEL'),
-          BottomNavigationBarItem(backgroundColor: AppColors.surface, icon: Icon(Icons.swap_horiz_outlined), activeIcon: Icon(Icons.swap_horiz), label: 'LOGS'),
-          BottomNavigationBarItem(backgroundColor: AppColors.surface, icon: Icon(Icons.notifications_outlined), activeIcon: Icon(Icons.notifications), label: 'ALERTS'),
+      bottomNavigationBar: SafeArea(
+        child: _buildFloatingNavBar(),
+      ),
+    );
+  }
+
+  Widget _buildFloatingNavBar() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(color: AppColors.primary.withOpacity(0.12), blurRadius: 20, offset: const Offset(0, 8)),
         ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildNavItem(0, Icons.dashboard_outlined, Icons.dashboard, 'DASHBOARD'),
+          _buildNavItem(1, Icons.people_outline, Icons.people, 'PERSONNEL'),
+          _buildNavItem(2, Icons.swap_horiz_outlined, Icons.swap_horiz, 'LOGS'),
+          _buildNavItem(3, Icons.notifications_outlined, Icons.notifications, 'ALERTS'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {
+    final isSelected = _currentIndex == index;
+    return GestureDetector(
+      onTap: () {
+        setState(() => _currentIndex = index);
+        if (index == 3) _loadUnresolvedAlerts();
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutQuint,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary.withOpacity(0.12) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(isSelected ? activeIcon : icon, color: isSelected ? AppColors.primary : AppColors.textMuted, size: 22),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeOutQuint,
+              child: isSelected 
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(width: 8),
+                      Text(label, style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 0.5)),
+                    ],
+                  )
+                : const SizedBox.shrink(),
+            ),
+          ],
+        ),
       ),
     );
   }

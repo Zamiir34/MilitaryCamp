@@ -12,13 +12,10 @@ async function seed() {
     console.log('Connected to MongoDB');
 
     // Create default admin
-    const existingAdmin = await User.findOne({ 
-      $or: [{ username: 'admin' }, { email: 'admin@militarycamp.mil' }] 
-    });
+    const existingAdmin = await User.findOne({ email: 'admin@militarycamp.mil' });
     
     if (!existingAdmin) {
       await User.create({
-        username: 'admin',
         password: 'admin123',
         fullName: 'System Administrator',
         email: 'admin@militarycamp.mil',
@@ -35,16 +32,9 @@ async function seed() {
     }
 
     // Create security officer
-    const existingOfficer = await User.findOne({ 
-      $or: [
-        { username: 'sec_officer' }, 
-        { email: 'dclarke@militarycamp.mil' },
-        { militaryId: 'MIL-SO-001' }
-      ] 
-    });
+    const existingOfficer = await User.findOne({ email: 'dclarke@militarycamp.mil' });
     if (!existingOfficer) {
       await User.create({
-        username: 'sec_officer',
         password: 'officer123',
         fullName: 'MAJ. David Clarke',
         email: 'dclarke@militarycamp.mil',
@@ -54,7 +44,7 @@ async function seed() {
         militaryId: 'MIL-SO-001',
         isEmailVerified: true,
       });
-      console.log('✅ Security Officer created: sec_officer / officer123');
+      console.log('✅ Security Officer created: dclarke@militarycamp.mil / officer123');
     } else {
       existingOfficer.password = 'officer123';
       existingOfficer.isEmailVerified = true;
@@ -63,16 +53,9 @@ async function seed() {
     }
 
     // Create guard
-    const existingGuard = await User.findOne({ 
-      $or: [
-        { username: 'guard1' }, 
-        { email: 'mstevens@militarycamp.mil' },
-        { militaryId: 'MIL-G-042' }
-      ] 
-    });
+    const existingGuard = await User.findOne({ email: 'mstevens@militarycamp.mil' });
     if (!existingGuard) {
       await User.create({
-        username: 'guard1',
         password: 'guard123',
         fullName: 'CPL. Mark Stevens',
         email: 'mstevens@militarycamp.mil',
@@ -93,14 +76,14 @@ async function seed() {
     // Sample Personnel
     const personnelCount = await Personnel.countDocuments();
     if (personnelCount === 0) {
-      const QRCode = require('qrcode');
+      const { buildVerifyQrDataUrl } = require('./utils/verifyUrl');
       const samplePersonnel = [
         { personnelId: 'P20260001', fullName: 'SGT. John Mitchell', rank: 'Sergeant', unit: 'Alpha Company', idNumber: 'MIL-001234', type: 'Military', status: 'Active' },
         { personnelId: 'P20260002', fullName: 'CPL. Sarah Adams', rank: 'Corporal', unit: 'Bravo Company', idNumber: 'MIL-001235', type: 'Military', status: 'Active' },
         { personnelId: 'P20260003', fullName: 'Dr. Robert Chen', rank: 'Civilian', unit: 'Medical Division', idNumber: 'CIV-003421', type: 'Civilian', status: 'Active' },
       ];
       for (const p of samplePersonnel) {
-        const qrCode = await QRCode.toDataURL(JSON.stringify({ type: 'Personnel', id: p.personnelId, name: p.fullName }));
+        const qrCode = await buildVerifyQrDataUrl(p.personnelId);
         await Personnel.create({ ...p, qrCode });
       }
       console.log('✅ Sample personnel created');
@@ -109,13 +92,13 @@ async function seed() {
     // Sample Vehicles
     const vehicleCount = await Vehicle.countDocuments();
     if (vehicleCount === 0) {
-      const QRCode = require('qrcode');
+      const { buildVerifyQrDataUrl } = require('./utils/verifyUrl');
       const sampleVehicles = [
         { vehicleId: 'V20260001', plateNumber: 'MIL-4472', vehicleType: 'Military Vehicle', make: 'Toyota', model: 'Land Cruiser', color: 'Olive Green', ownerName: 'Alpha Company', isAuthorized: true, status: 'Active' },
         { vehicleId: 'V20260002', plateNumber: 'MIL-3310', vehicleType: 'Truck', make: 'IVECO', model: 'Daily', color: 'Khaki', ownerName: 'Logistics Unit', isAuthorized: true, status: 'Active' },
       ];
       for (const v of sampleVehicles) {
-        const qrCode = await QRCode.toDataURL(JSON.stringify({ type: 'Vehicle', id: v.vehicleId, plate: v.plateNumber }));
+        const qrCode = await buildVerifyQrDataUrl(v.vehicleId);
         await Vehicle.create({ ...v, qrCode });
       }
       console.log('✅ Sample vehicles created');

@@ -85,37 +85,13 @@ class _VisitorDetailScreenState extends State<VisitorDetailScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(height: 60),
-                    CircleAvatar(
+                    SafeAvatar(
+                      photo: _visitor!.photo,
                       radius: 40,
-                      backgroundColor: AppColors.primary.withOpacity(0.2),
-                      child: _visitor!.photo != null && _visitor!.photo!.isNotEmpty
-                          ? ClipOval(
-                              child: _visitor!.photo!.startsWith('data:')
-                                  ? Image.memory(
-                                      base64Decode(_visitor!.photo!.split(',').last),
-                                      fit: BoxFit.cover,
-                                      width: 80,
-                                      height: 80,
-                                    )
-                                  : CachedNetworkImage(
-                                      imageUrl: _visitor!.photo!.startsWith('http')
-                                          ? _visitor!.photo!
-                                          : '${AppConstants.baseUrl.replaceAll('/api', '')}${_visitor!.photo}',
-                                      fit: BoxFit.cover,
-                                      width: 80,
-                                      height: 80,
-                                      placeholder: (context, url) => const CircularProgressIndicator(color: AppColors.primary),
-                                      errorWidget: (context, url, error) => Icon(
-                                        isMilitary ? Icons.shield : Icons.person,
-                                        color: AppColors.primary,
-                                        size: 40,
-                                      ),
-                                    ),
-                            )
-                          : Text(
-                              _visitor!.fullName.isNotEmpty ? _visitor!.fullName[0].toUpperCase() : '?',
-                              style: const TextStyle(color: AppColors.primary, fontSize: 28, fontWeight: FontWeight.bold),
-                            ),
+                      fallback: Text(
+                        _visitor!.fullName.isNotEmpty ? _visitor!.fullName[0].toUpperCase() : 'V',
+                        style: const TextStyle(color: AppColors.primary, fontSize: 28, fontWeight: FontWeight.bold),
+                      ),
                     ),
                     const SizedBox(height: 10),
                     Text(_visitor!.fullName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
@@ -218,7 +194,7 @@ class _VisitorDetailScreenState extends State<VisitorDetailScreen> {
                                     if (_visitor!.vehicleColor != null && _visitor!.vehicleColor!.isNotEmpty) _visitor!.vehicleColor!,
                                     if (_visitor!.vehicleModel != null && _visitor!.vehicleModel!.isNotEmpty) _visitor!.vehicleModel!,
                                     'Car Details'
-                                  ].join(' · '),
+                                  ].join(' - '),
                                   style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                                 ),
                               ],
@@ -271,7 +247,7 @@ class _VisitorDetailScreenState extends State<VisitorDetailScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        '${log.action.toUpperCase()} · ${log.gate}',
+                                        '${log.action.toUpperCase()} - ${log.gate}',
                                         style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary),
                                       ),
                                       Text(
@@ -307,9 +283,8 @@ class _QRCodeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Generate verification link QR matching web app:
-    // http://<client-host>/verify/<visitorId>
-    final baseUrl = AppConstants.baseUrl.replaceAll('/api', '');
-    final qrData = '$baseUrl/verify/${visitor.visitorId}';
+    // http://<frontend-host>/verify/<visitorId>
+    final qrData = AppConstants.verifyUrl(visitor.visitorId);
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -413,3 +388,4 @@ class _InfoRow extends StatelessWidget {
     );
   }
 }
+

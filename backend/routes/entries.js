@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const { randomBytes } = require('crypto');
 const EntryLog = require('../models/EntryLog');
@@ -6,6 +6,11 @@ const Alert = require('../models/Alert');
 const { auth } = require('../middleware/auth');
 const { broadcastAlert } = require('../utils/alerts');
 const { resolveDriverNameForEntry } = require('../utils/reportLogs');
+const { cleanStringFields, escapeRegex, sendValidationError, validateEnum, validateObjectId, validatePositiveInt, validationError } = require('../utils/validation');
+
+const entryTypes = ['Personnel', 'Vehicle', 'Visitor'];
+const entryActions = ['Entry', 'Exit'];
+
 
 // Collision-resistant IDs: timestamp (base36) + 3 random bytes
 const generateLogId = () => 'LOG' + Date.now().toString(36).toUpperCase() + randomBytes(3).toString('hex').toUpperCase();
@@ -16,19 +21,23 @@ router.get('/', auth, async (req, res) => {
   try {
     const { search, type, action, date, gate, page = 1, limit = 30 } = req.query;
     const query = {};
+    const pageNum = validatePositiveInt(page, 'page', 1);
+    const limitNum = validatePositiveInt(limit, 'limit', 30, 100);
     if (search) {
-      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escapedSearch = escapeRegex(search);
       query.$or = [
         { subjectName: { $regex: escapedSearch, $options: 'i' } },
         { subjectId: { $regex: escapedSearch, $options: 'i' } },
         { logId: { $regex: escapedSearch, $options: 'i' } }
       ];
     }
-    if (type) query.type = type;
-    if (action) query.action = action;
+    if (type) query.type = validateEnum(type, entryTypes, 'type');
+    if (action) query.action = validateEnum(action, entryActions, 'action');
     if (gate) query.gate = gate;
     if (date) {
       const start = new Date(date);
+      if (Number.isNaN(start.getTime())) throw validationError('date must be a valid date.', 'date');
+      if (Number.isNaN(start.getTime())) throw validationError('date must be a valid date.', 'date');
       const end = new Date(date);
       end.setDate(end.getDate() + 1);
       query.createdAt = { $gte: start, $lt: end };
@@ -49,23 +58,23 @@ router.get('/', auth, async (req, res) => {
     const logs = await EntryLog.find(query)
       .populate('vehicle', 'ownerName make model plateNumber category')
       .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit));
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum);
 
-    res.json({ data: logs, total, page: parseInt(page), pages: Math.ceil(total / limit) });
+    res.json({ data: logs, total, page: pageNum, pages: Math.ceil(total / limitNum) });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 // Record entry
 router.post('/entry', auth, async (req, res) => {
   try {
-    const { type, subjectName } = req.body;
-    if (!type) return res.status(400).json({ message: 'Type is required (Personnel, Vehicle, or Visitor)' });
-    if (!subjectName || (typeof subjectName === 'string' && !subjectName.trim())) {
-      return res.status(400).json({ message: 'Subject name is required' });
-    }
+    cleanStringFields(req.body, ['type', 'subjectName', 'subjectId', 'driverName', 'gate', 'purpose', 'notes', 'category']);
+    const type = validateEnum(req.body.type, entryTypes, 'type');
+    const { subjectName } = req.body;
+    if (!subjectName) return res.status(400).json({ message: 'Subject name is required' });
+    req.body.type = type;
 
     const logId = generateLogId();
     const driverName = await resolveDriverNameForEntry({
@@ -107,18 +116,18 @@ router.post('/entry', auth, async (req, res) => {
     res.status(201).json(log);
   } catch (err) {
     console.error('Entry record error:', err);
-    res.status(400).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 // Record exit
 router.post('/exit', auth, async (req, res) => {
   try {
-    const { type, subjectName } = req.body;
-    if (!type) return res.status(400).json({ message: 'Type is required (Personnel, Vehicle, or Visitor)' });
-    if (!subjectName || (typeof subjectName === 'string' && !subjectName.trim())) {
-      return res.status(400).json({ message: 'Subject name is required' });
-    }
+    cleanStringFields(req.body, ['type', 'subjectName', 'subjectId', 'driverName', 'gate', 'purpose', 'notes', 'category']);
+    const type = validateEnum(req.body.type, entryTypes, 'type');
+    const { subjectName } = req.body;
+    if (!subjectName) return res.status(400).json({ message: 'Subject name is required' });
+    req.body.type = type;
 
     const logId = generateLogId();
     const driverName = await resolveDriverNameForEntry({
@@ -160,13 +169,14 @@ router.post('/exit', auth, async (req, res) => {
     res.status(201).json(log);
   } catch (err) {
     console.error('Exit record error:', err);
-    res.status(400).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 // Update entry with exit time (Check-out)
 router.put('/:id/exit', auth, async (req, res) => {
   try {
+    validateObjectId(req.params.id);
     const log = await EntryLog.findById(req.params.id);
     if (!log) {
       return res.status(404).json({ message: 'Entry record not found' });
@@ -178,19 +188,20 @@ router.put('/:id/exit', auth, async (req, res) => {
 
     log.exitTime = new Date();
     log.action = 'Exit';
-    if (req.body.notes) log.notes = (log.notes ? log.notes + ' | ' : '') + req.body.notes;
+    if (req.body.notes) log.notes = (log.notes ? log.notes + ' | ' : '') + String(req.body.notes).trim();
     
     await log.save();
     res.json(log);
   } catch (err) {
     console.error('Exit update error:', err);
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 // Process QR Scan (Entry/Exit toggle)
 router.post('/scan', auth, async (req, res) => {
   try {
+    cleanStringFields(req.body, ['gate']);
     const { qrData, gate } = req.body;
     if (!qrData) return res.status(400).json({ message: 'QR data is required' });
     
@@ -222,7 +233,7 @@ router.post('/scan', auth, async (req, res) => {
 
     // Support both 'id' and 'visitorId' or 'personnelId'
     const subjectId = parsed.id || parsed.visitorId || parsed.personnelId || parsed.plate || parsed.plateNumber;
-    const type = parsed.type;
+    const type = parsed.type ? validateEnum(parsed.type, entryTypes, 'type') : parsed.type;
     const subjectName = parsed.name || parsed.fullName || subjectId;
 
     if (!type || !subjectId) {
@@ -284,8 +295,12 @@ router.post('/scan', auth, async (req, res) => {
     });
   } catch (err) {
     console.error('Scan processing error:', err);
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 module.exports = router;
+
+
+
+

@@ -288,42 +288,11 @@ class _VisitorTile extends StatelessWidget {
   }
 
   Widget _buildAvatar() {
-    if (v.photo != null && v.photo!.isNotEmpty) {
-      try {
-        if (v.photo!.startsWith('data:')) {
-          return ClipOval(
-            child: Image.memory(
-              base64Decode(v.photo!.split(',').last),
-              fit: BoxFit.cover,
-              width: 48,
-              height: 48,
-            ),
-          );
-        } else {
-          return ClipOval(
-            child: CachedNetworkImage(
-              imageUrl: v.photo!.startsWith('http')
-                  ? v.photo!
-                  : '${AppConstants.baseUrl.replaceAll('/api', '')}${v.photo}',
-              fit: BoxFit.cover,
-              width: 48,
-              height: 48,
-              placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-              errorWidget: (context, url, error) => Icon(
-                v.visitorType == 'Military' ? Icons.shield : Icons.person,
-                color: AppColors.secondary,
-                size: 24,
-              ),
-            ),
-          );
-        }
-      } catch (_) {}
-    }
-    return CircleAvatar(
+    return SafeAvatar(
+      photo: v.photo,
       radius: 24,
-      backgroundColor: AppColors.secondary.withOpacity(0.15),
-      child: Text(
-        v.fullName.isNotEmpty ? v.fullName[0].toUpperCase() : '?',
+      fallback: Text(
+        v.fullName.isNotEmpty ? v.fullName[0].toUpperCase() : 'V',
         style: const TextStyle(color: AppColors.secondary, fontWeight: FontWeight.bold, fontSize: 14),
       ),
     );

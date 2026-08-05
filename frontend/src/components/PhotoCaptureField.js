@@ -69,6 +69,13 @@ export default function PhotoCaptureField({
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Fadlan kaliya sawir geli (Please upload an image file only)');
+      e.target.value = '';
+      return;
+    }
+
     const reader = new FileReader();
     reader.onloadend = () => onPhotoChange(reader.result);
     reader.readAsDataURL(file);

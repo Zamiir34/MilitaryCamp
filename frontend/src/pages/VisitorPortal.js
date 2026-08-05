@@ -3,6 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { User, QrCode, Shield, CheckCircle, Mail, KeyRound, Download, LogOut, Loader, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
+import { downloadQrAsPng } from '../utils/downloadQr';
 
 export default function VisitorPortal() {
   const [email, setEmail] = useState('');
@@ -136,14 +137,13 @@ export default function VisitorPortal() {
     setStep(1);
   };
 
+  const verifyUrl = visitorData ? `${window.location.origin}/verify/${visitorData.visitorId}` : '';
+
   const downloadQR = () => {
-    if (visitorData?.qrCode) {
-      const a = document.createElement("a");
-      a.download = `VisitorQR_${visitorData.visitorId}.png`;
-      a.href = visitorData.qrCode;
-      a.click();
-      toast.success('QR Code downloaded!');
-    }
+    if (!visitorData?.visitorId) return;
+    const ok = downloadQrAsPng('.qr-download', `VisitorQR_${visitorData.visitorId}.png`, 512);
+    if (ok) toast.success('QR image downloaded');
+    else toast.error('Could not download QR image');
   };
 
   return (
@@ -248,17 +248,19 @@ export default function VisitorPortal() {
               <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>{visitorData.visitorType.toUpperCase()} VISITOR • ID: {visitorData.visitorId}</p>
             </div>
 
-            {visitorData.qrCode ? (
+            {visitorData.visitorId ? (
               <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                <div className="qr-download" style={{ background: '#fff', padding: '1rem', borderRadius: 16, display: 'inline-block', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', border: '4px solid var(--accent-primary)' }}>
-                  <img src={visitorData.qrCode} alt="Visitor QR Pass" style={{ width: 220, height: 220, display: 'block' }} />
+                <div className="qr-download" style={{ background: '#fff', padding: '1rem', borderRadius: 16, display: 'inline-block' }}>
+                  <QRCodeSVG value={verifyUrl} size={220} includeMargin />
                 </div>
                 <div style={{ marginTop: '1.5rem' }}>
                   <button onClick={downloadQR} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '1rem', fontSize: 15 }}>
-                    <Download size={18} style={{ marginRight: 8 }} /> Download QR Pass
+                    <Download size={18} style={{ marginRight: 8 }} /> Download QR Image
                   </button>
                 </div>
-                <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: '1rem' }}>Present this QR code at the security gate for scanning.</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: '1rem' }}>
+                  Downloads a PNG image of the QR code only.
+                </p>
               </div>
             ) : (
               <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--bg-primary)', borderRadius: 12, border: '1px dashed var(--border)' }}>

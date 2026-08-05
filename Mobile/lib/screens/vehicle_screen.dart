@@ -36,7 +36,7 @@ class _VehicleScreenState extends State<VehicleScreen> {
       final data = await _api.getVehicles(search: _searchCtrl.text.trim());
       if (mounted) {
         setState(() {
-          _list = (data['vehicles'] as List).map((e) => Vehicle.fromJson(e)).toList();
+          _list = (data['data'] as List).map((e) => Vehicle.fromJson(e)).toList();
           _total = data['total'] ?? 0;
           _loading = false;
         });
@@ -55,13 +55,19 @@ class _VehicleScreenState extends State<VehicleScreen> {
     if (result == null) return;
 
     try {
-      final data = jsonDecode(result);
-      final type = data['type'];
-      final badge = data['badge'];
-
-      if (type == 'vehicle' || type == 'personnel') {
-        _searchCtrl.text = badge ?? '';
+      if (result.contains('/verify/')) {
+        final id = result.split('/').last;
+        _searchCtrl.text = id;
         _load();
+      } else {
+        final data = jsonDecode(result);
+        final type = data['type']?.toString().toLowerCase();
+        final id = data['badge']?.toString() ?? data['id']?.toString() ?? data['plate']?.toString();
+
+        if (type == 'vehicle' || type == 'personnel') {
+          _searchCtrl.text = id ?? '';
+          _load();
+        }
       }
     } catch (e) {
       _searchCtrl.text = result;

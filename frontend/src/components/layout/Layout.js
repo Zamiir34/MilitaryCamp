@@ -25,7 +25,7 @@ const navItems = [
 ];
 
 export default function Layout() {
-  const { user, logout } = useAuth();
+  const { user, logout, toggleDuty } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -123,7 +123,14 @@ export default function Layout() {
     checkTodayAttendance();
   }, [user]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (user && user.isOnDuty) {
+      try {
+        await toggleDuty();
+      } catch (e) {
+        // ignore errors on logout
+      }
+    }
     disconnectSocket(); // tear down socket before clearing token
     logout();
     navigate('/login');
@@ -375,9 +382,26 @@ export default function Layout() {
               )}
             </div>
 
-            <div className="top-bar-online" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--accent-green)', animation: 'pulse-primary 2s infinite' }} />
-              <span style={{ fontSize: 14, color: 'var(--accent-green)', fontFamily: 'Share Tech Mono, monospace', fontWeight: 800 }}>ONLINE</span>
+            <div className="top-bar-online" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: user?.isOnDuty ? 'var(--accent-green)' : 'var(--text-muted)', animation: user?.isOnDuty ? 'pulse-primary 2s infinite' : 'none' }} />
+                <span style={{ fontSize: 14, color: user?.isOnDuty ? 'var(--accent-green)' : 'var(--text-muted)', fontFamily: 'Share Tech Mono, monospace', fontWeight: 800 }}>
+                  {user?.isOnDuty ? 'ON DUTY' : 'OFF DUTY'}
+                </span>
+              </div>
+              {user?.isOnDuty && (
+                <button
+                  onClick={async () => {
+                    const res = await toggleDuty();
+                    if (res.success) toast.success('Duty Stopped');
+                    else toast.error(res.message);
+                  }}
+                  className="btn btn-ghost"
+                  style={{ fontSize: 11, padding: '4px 8px', color: 'var(--accent-red)', border: '1px solid rgba(239,68,68,0.3)' }}
+                >
+                  Stop Duty
+                </button>
+              )}
             </div>
           </div>
         </header>
@@ -471,6 +495,31 @@ export default function Layout() {
                 Dismiss for now
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Off Duty Overlay */}
+      {user && !user.isOnDuty && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999, 
+          background: theme === 'dark' ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)'
+        }}>
+          <Shield size={64} color="var(--text-muted)" style={{ marginBottom: 20 }} />
+          <h2 style={{ color: 'var(--text-primary)', fontFamily: 'Rajdhani, sans-serif', fontSize: 32, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            System is Off
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 16, marginTop: 10, marginBottom: 30 }}>
+            You are currently off duty. Access to the system is restricted.
+          </p>
+          <div style={{ display: 'flex', gap: 15 }}>
+            <button
+              onClick={handleLogout}
+              className="btn btn-primary"
+              style={{ fontSize: 16, padding: '10px 32px' }}
+            >
+              <LogOut size={18} style={{ marginRight: 8 }} /> Confirm Logout
+            </button>
           </div>
         </div>
       )}

@@ -34,7 +34,7 @@ class _PersonnelScreenState extends State<PersonnelScreen> {
     if (mounted) setState(() => _loading = true);
     try {
       final data = await _api.getPersonnel(page: _page, search: _searchCtrl.text.trim());
-      final items = (data['personnel'] as List).map((e) => Personnel.fromJson(e)).toList();
+      final items = (data['data'] as List).map((e) => Personnel.fromJson(e)).toList();
       if (mounted) {
         setState(() { _list = reset ? items : [..._list, ...items]; _total = data['total'] ?? 0; _loading = false; });
       }
@@ -52,14 +52,22 @@ class _PersonnelScreenState extends State<PersonnelScreen> {
     if (result == null) return;
 
     try {
-      final data = jsonDecode(result);
-      final id = data['id'];
-      final type = data['type'];
+      String? id;
+      String? type;
 
-      if (type == 'personnel') {
+      if (result.contains('/verify/')) {
+        id = result.split('/').last;
+        if (id.startsWith('PER-')) type = 'personnel';
+      } else {
+        final data = jsonDecode(result);
+        id = data['id']?.toString();
+        type = data['type']?.toString().toLowerCase();
+      }
+
+      if (type == 'personnel' && id != null) {
         if (mounted) {
           Navigator.push(context, MaterialPageRoute(
-            builder: (_) => PersonnelDetailScreen(personnelId: id)));
+            builder: (_) => PersonnelDetailScreen(personnelId: id!)));
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -154,24 +162,13 @@ class _PersonnelTile extends StatelessWidget {
       decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
       child: Row(children: [
         Stack(children: [
-          CircleAvatar(
+          SafeAvatar(
+            photo: p.photo,
             radius: 24,
-            backgroundColor: AppColors.primary.withOpacity(0.15),
-            child: p.photo != null && p.photo!.isNotEmpty
-                ? ClipOval(
-                    child: CachedNetworkImage(
-                      imageUrl: '${AppConstants.baseUrl.replaceAll('/api', '')}${p.photo}',
-                      fit: BoxFit.cover,
-                      width: 48,
-                      height: 48,
-                      placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-                      errorWidget: (context, url, error) => const Icon(Icons.person, color: AppColors.primary, size: 24),
-                    ),
-                  )
-                : Text(
-                    '${p.firstName.isNotEmpty ? p.firstName[0] : '?'}${p.lastName.isNotEmpty ? p.lastName[0] : ''}',
-                    style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
+            fallback: Text(
+              '${p.firstName.isNotEmpty ? p.firstName[0] : '?'}${p.lastName.isNotEmpty ? p.lastName[0] : ''}',
+              style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 14),
+            ),
           ),
           Positioned(bottom: 0, right: 0, child: Container(
             width: 10, height: 10,

@@ -5,6 +5,17 @@ const Personnel = require('../models/Personnel');
 const { auth, requireRole } = require('../middleware/auth');
 const { sendVerificationEmail } = require('../utils/email');
 const { zoneFromPersonnel, findPersonnelForGuard } = require('../utils/guardZone');
+const {
+  cleanStringFields,
+  requireFields,
+  sendValidationError,
+  validateEmail,
+  validateEnum,
+  validateObjectId,
+  validatePassword,
+} = require('../utils/validation');
+
+const userRoles = ['Administrator', 'SecurityOfficer', 'Guard'];
 
 const resolvePersonnelForMilitaryId = async (militaryId) => {
   const normalized = typeof militaryId === 'string' ? militaryId.trim() : militaryId;
@@ -13,31 +24,45 @@ const resolvePersonnelForMilitaryId = async (militaryId) => {
   return findPersonnelForGuard({ militaryId: normalized });
 };
 
+const normalizeUserPayload = (body, { partial = false, allowPassword = true } = {}) => {
+  cleanStringFields(body, ['fullName', 'email', 'phone', 'rank', 'badgeNumber', 'militaryId', 'assignedZone', 'role']);
+  if (body.vehicleDetails) cleanStringFields(body.vehicleDetails, ['plateNumber', 'model', 'color']);
+
+  if (!partial) requireFields(body, ['fullName', 'email']);
+  if (body.email !== undefined) body.email = validateEmail(body.email, 'email', !partial);
+  if (body.role !== undefined) body.role = validateEnum(body.role, userRoles, 'role', false);
+  if (allowPassword && (!partial || body.password !== undefined)) body.password = validatePassword(body.password, 'password', !partial);
+};
+
 // Get all users
-router.get('/', auth, requireRole('Administrator'), async (req, res) => {
+router.get('/', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
-    const users = await User.find({}).sort({ createdAt: -1 });
+    const query = {};
+    if (req.user.role === 'SecurityOfficer') {
+      query.role = 'Guard';
+    }
+    const users = await User.find(query).sort({ createdAt: -1 });
     res.json(users);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 // Create user
-router.post('/', auth, requireRole('Administrator'), async (req, res) => {
+router.post('/', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
-    const { username, email, role } = req.body;
+    normalizeUserPayload(req.body);
+    let { email, role } = req.body;
+    if (req.user.role === 'SecurityOfficer') {
+      role = 'Guard';
+      req.body.role = 'Guard';
+    }
     let militaryId = typeof req.body.militaryId === 'string' ? req.body.militaryId.trim() : req.body.militaryId;
-    
-    // Check for existing user by username or email
-    const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+
+    // Check for existing user by email
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
-      if (existingUser.username === username) {
-        return res.status(400).json({ message: 'Username is already taken.' });
-      }
-      if (existingUser.email === email) {
-        return res.status(400).json({ message: 'Email is already taken.' });
-      }
+      return res.status(400).json({ message: 'Email is already taken.' });
     }
 
     if (!militaryId) {
@@ -97,38 +122,30 @@ router.post('/', auth, requireRole('Administrator'), async (req, res) => {
     const user = new User({ ...req.body, militaryId, assignedZone, isEmailVerified: false });
     await user.save();
 
-    // Send initial verification email
-    try {
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      user.emailVerificationCode = code;
-      user.emailVerificationExpires = new Date(Date.now() + 15 * 60 * 1000);
-      await user.save();
-      await sendVerificationEmail(user.email, user.fullName, code);
-    } catch (emailErr) {
-      console.error('Failed to send verification email:', emailErr.message);
-    }
-
     res.status(201).json(user);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 // Update user
-router.put('/:id', auth, requireRole('Administrator'), async (req, res) => {
+router.put('/:id', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
+    validateObjectId(req.params.id);
     const { password, ...updateData } = req.body;
-    if (typeof updateData.militaryId === 'string') {
-      updateData.militaryId = updateData.militaryId.trim();
-    }
+    normalizeUserPayload(updateData, { partial: true, allowPassword: false });
+    if (password) updateData.password = validatePassword(password, 'password');
 
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
-    
+
+    if (req.user.role === 'SecurityOfficer' && user.role !== 'Guard') {
+      return res.status(403).json({ message: 'Security Officers can only manage Guard accounts.' });
+    }
+
     // Check for uniqueness if fields are updated
-    if (updateData.username || updateData.email || updateData.militaryId) {
+    if (updateData.email || updateData.militaryId) {
       const orQuery = [];
-      if (updateData.username) orQuery.push({ username: updateData.username });
       if (updateData.email) orQuery.push({ email: updateData.email });
       if (updateData.militaryId) orQuery.push({ militaryId: updateData.militaryId });
 
@@ -136,9 +153,6 @@ router.put('/:id', auth, requireRole('Administrator'), async (req, res) => {
         const existingUsers = await User.find({ $or: orQuery });
         for (const eu of existingUsers) {
           if (eu._id.toString() !== req.params.id) {
-            if (updateData.username && eu.username === updateData.username) {
-              return res.status(400).json({ message: 'Username is already taken by another user.' });
-            }
             if (updateData.email && eu.email === updateData.email) {
               return res.status(400).json({ message: 'Email is already taken by another user.' });
             }
@@ -179,35 +193,40 @@ router.put('/:id', auth, requireRole('Administrator'), async (req, res) => {
       }
     }
 
-    if (password) updateData.password = password;
     updateData.updatedAt = new Date();
-    
+
     Object.assign(user, updateData);
     await user.save();
-    
+
     res.json(user);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 // Delete user
-router.delete('/:id', auth, requireRole('Administrator'), async (req, res) => {
+router.delete('/:id', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
+    validateObjectId(req.params.id);
     if (req.params.id === req.user._id.toString()) {
       return res.status(400).json({ message: 'You cannot delete your own account.' });
     }
-    const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    const userToDelete = await User.findById(req.params.id);
+    if (!userToDelete) return res.status(404).json({ message: 'User not found' });
+    if (req.user.role === 'SecurityOfficer' && userToDelete.role !== 'Guard') {
+      return res.status(403).json({ message: 'Security Officers can only delete Guard accounts.' });
+    }
+    await User.findByIdAndDelete(req.params.id);
     res.json({ message: 'User deleted' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 // Toggle user active status
-router.put('/:id/toggle', auth, requireRole('Administrator'), async (req, res) => {
+router.put('/:id/toggle', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
+    validateObjectId(req.params.id);
     if (req.params.id === req.user._id.toString()) {
       return res.status(400).json({ message: 'You cannot deactivate your own account.' });
     }
@@ -219,17 +238,15 @@ router.put('/:id/toggle', auth, requireRole('Administrator'), async (req, res) =
     await user.save();
     res.json(user);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 // Reset user password
-router.put('/:id/reset-password', auth, requireRole('Administrator'), async (req, res) => {
+router.put('/:id/reset-password', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
-    const { newPassword } = req.body;
-    if (!newPassword || newPassword.length < 6) {
-      return res.status(400).json({ message: 'Password must be at least 6 characters.' });
-    }
+    validateObjectId(req.params.id);
+    const newPassword = validatePassword(req.body.newPassword, 'newPassword');
 
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -238,8 +255,9 @@ router.put('/:id/reset-password', auth, requireRole('Administrator'), async (req
     await user.save();
     res.json({ message: 'Password reset successfully.' });
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    sendValidationError(res, err);
   }
 });
 
 module.exports = router;
+

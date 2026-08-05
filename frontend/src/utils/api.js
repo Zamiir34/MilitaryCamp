@@ -13,7 +13,9 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    const url = err.config?.url || '';
+    const isPublic = url.includes('/public/');
+    if (err.response?.status === 401 && !isPublic) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';

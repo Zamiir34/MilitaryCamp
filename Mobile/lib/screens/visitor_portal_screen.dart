@@ -106,13 +106,12 @@ class _VisitorPortalScreenState extends State<VisitorPortalScreen> {
 
   Future<void> _downloadQrCode() async {
     try {
-      final qrCode = _visitorData?['qrCode'];
-      if (qrCode == null) {
+      final visitorId = _visitorData?['visitorId']?.toString();
+      if (visitorId == null || visitorId.isEmpty) {
         _showError('QR Code not available');
         return;
       }
 
-      // Request storage permission
       PermissionStatus status;
       if (Theme.of(context).platform == TargetPlatform.android) {
         status = await Permission.storage.request();
@@ -125,23 +124,40 @@ class _VisitorPortalScreenState extends State<VisitorPortalScreen> {
         return;
       }
 
-      // Extract base64 from data URL (data:image/png;base64,XXXXX)
-      final base64Str = qrCode.toString().split(',').last;
-      final Uint8List bytes = base64Decode(base64Str);
+      Uint8List? bytes;
+      final stored = _visitorData?['qrCode']?.toString();
+      if (stored != null && stored.startsWith('data:image')) {
+        bytes = base64Decode(stored.split(',').last);
+      } else {
+        final painter = QrPainter(
+          data: AppConstants.verifyUrl(visitorId),
+          version: QrVersions.auto,
+          gapless: true,
+          color: const Color(0xFF000000),
+          emptyColor: const Color(0xFFFFFFFF),
+        );
+        final pic = await painter.toImageData(512);
+        bytes = pic?.buffer.asUint8List();
+      }
+
+      if (bytes == null) {
+        _showError('Failed to create QR image');
+        return;
+      }
 
       final result = await ImageGallerySaver.saveImage(
         bytes,
         quality: 100,
-        name: 'QRCode_${_visitorData!['visitorId'] ?? 'visitor'}',
+        name: 'QRCode_$visitorId',
       );
 
       if (result['isSuccess'] == true || result['filePath'] != null) {
-        _showSuccess('✅ QR Code saved to gallery!');
+        _showSuccess('QR image saved to gallery');
       } else {
-        _showError('Failed to save QR Code');
+        _showError('Failed to save QR image');
       }
     } catch (e) {
-      _showError('Error saving QR Code: $e');
+      _showError('Error saving QR image: $e');
     }
   }
 
@@ -224,16 +240,19 @@ class _VisitorPortalScreenState extends State<VisitorPortalScreen> {
           ),
           const SizedBox(height: 24),
           Text(_visitorData!['fullName'] ?? 'Unknown', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-          Text('${(_visitorData!['visitorType'] ?? '').toString().toUpperCase()} VISITOR • ID: ${_visitorData!['visitorId']}', style: const TextStyle(color: AppColors.textMuted)),
+          Text('${(_visitorData!['visitorType'] ?? '').toString().toUpperCase()} VISITOR - ID: ${_visitorData!['visitorId']}', style: const TextStyle(color: AppColors.textMuted)),
           const SizedBox(height: 32),
-          if (_visitorData!['qrCode'] != null) ...[
+          if (_visitorData!['visitorId'] != null) ...[
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.primary, width: 4)),
-              child: QrImageView(data: _visitorData!['qrCode'], version: QrVersions.auto, size: 200),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+              child: QrImageView(
+                data: AppConstants.verifyUrl(_visitorData!['visitorId'].toString()),
+                version: QrVersions.auto,
+                size: 200,
+                backgroundColor: Colors.white,
+              ),
             ),
-            const SizedBox(height: 12),
-            const Text('Present this QR code at the security gate.', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -241,7 +260,7 @@ class _VisitorPortalScreenState extends State<VisitorPortalScreen> {
               child: ElevatedButton.icon(
                 onPressed: _downloadQrCode,
                 icon: const Icon(Icons.download_rounded),
-                label: const Text('DOWNLOAD QR CODE'),
+                label: const Text('DOWNLOAD QR IMAGE'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -272,3 +291,4 @@ class _VisitorPortalScreenState extends State<VisitorPortalScreen> {
     );
   }
 }
+
