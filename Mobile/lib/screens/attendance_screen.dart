@@ -484,7 +484,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(20),
                 children: [
-                  _buildStatusCard(),
+                  if (user?.role == 'SecurityOfficer' || user?.role == 'Guard') _buildStatusCard(),
                   if (canViewTeam) ...[
                     const SizedBox(height: 20),
                     _buildTeamSection(user?.role),

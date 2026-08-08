@@ -315,7 +315,58 @@ class _UserTile extends StatelessWidget {
             _ActionBtn(icon: Icons.lock_reset, label: 'RESET PWD', color: AppColors.accent, onTap: onResetPassword),
           ]),
         ),
-      ]),
+        ]),
+      ),
+    );
+  }
+
+  void _openViewDetails(BuildContext context, Map<String, dynamic> user) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('User Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.person, color: AppColors.primary),
+              title: const Text('Full Name', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+              subtitle: Text(user['fullName'] ?? user['name'] ?? 'N/A', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.email, color: AppColors.primary),
+              title: const Text('Email', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+              subtitle: Text(user['email'] ?? 'N/A', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.security, color: AppColors.primary),
+              title: const Text('Role', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+              subtitle: Text(user['role'] ?? 'N/A', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.badge, color: AppColors.primary),
+              title: const Text('Military ID', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+              subtitle: Text(user['militaryId'] ?? 'N/A', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -736,56 +787,6 @@ class _ResetPasswordSheetState extends State<_ResetPasswordSheet> {
             )),
         ],
       ),
-    );
-  }
-
-  void _openViewDetails(BuildContext context, Map<String, dynamic> user) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('User Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.person, color: AppColors.primary),
-              title: const Text('Full Name', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
-              subtitle: Text(user['fullName'] ?? user['name'] ?? 'N/A', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.email, color: AppColors.primary),
-              title: const Text('Email', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
-              subtitle: Text(user['email'] ?? 'N/A', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.security, color: AppColors.primary),
-              title: const Text('Role', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
-              subtitle: Text(user['role'] ?? 'N/A', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.badge, color: AppColors.primary),
-              title: const Text('Military ID', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
-              subtitle: Text(user['militaryId'] ?? 'N/A', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
+    ));
   }
 }

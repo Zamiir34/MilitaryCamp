@@ -23,6 +23,7 @@ class _LogEntryScreenState extends State<LogEntryScreen> {
   final _notesCtrl = TextEditingController();
 
   String _subjectType = 'Personnel';
+  String _vehicleStatus = 'took';
   String _gate = AppConstants.gates.first;
   bool _isAuthorized = true;
   bool _searching = false;
@@ -153,6 +154,15 @@ class _LogEntryScreenState extends State<LogEntryScreen> {
     if (_subjectName == null) return;
     setState(() { _logging = true; _error = null; });
     try {
+      String notes = _notesCtrl.text.trim();
+      if (!isEntry) {
+        if (_vehicleStatus == 'took') {
+          notes = notes.isNotEmpty ? '$notes | Gaariga: Waa la kaxeystay' : 'Gaariga: Waa la kaxeystay';
+        } else if (_vehicleStatus == 'left') {
+          notes = notes.isNotEmpty ? '$notes | Gaariga: Dhexda ayaa kaga tagay' : 'Gaariga: Dhexda ayaa kaga tagay';
+        }
+      }
+
       final body = {
         'type': _subjectType,
         'subjectName': _subjectName,
@@ -162,7 +172,7 @@ class _LogEntryScreenState extends State<LogEntryScreen> {
         if (_category != null) 'category': _category,
         'gate': _gate,
         'purpose': _purposeCtrl.text.trim(),
-        'notes': _notesCtrl.text.trim(),
+        'notes': notes,
         'isAuthorized': _isAuthorized,
       };
       if (isEntry) {
@@ -200,7 +210,7 @@ class _LogEntryScreenState extends State<LogEntryScreen> {
             _SectionLabel(label: 'SUBJECT TYPE'),
             const SizedBox(height: 8),
             Row(children: [
-              for (final t in ['Personnel', 'Vehicle', 'Visitor'])
+              for (final t in ['Personnel', 'Visitor'])
                 Expanded(
                   child: Padding(
                     padding: EdgeInsets.only(right: t != 'Visitor' ? 8 : 0),
@@ -220,8 +230,8 @@ class _LogEntryScreenState extends State<LogEntryScreen> {
                 controller: _searchCtrl,
                 textCapitalization: TextCapitalization.characters,
                 decoration: InputDecoration(
-                  hintText: _subjectType == 'Personnel' ? 'Badge number' : (_subjectType == 'Vehicle' ? 'Plate number' : 'Visitor name or ID'),
-                  prefixIcon: Icon(_subjectType == 'Vehicle' ? Icons.directions_car : Icons.search, color: AppColors.textMuted),
+                  hintText: _subjectType == 'Personnel' ? 'Badge number' : 'Visitor name or ID',
+                  prefixIcon: const Icon(Icons.search, color: AppColors.textMuted),
                 ),
                 onSubmitted: (_) => _search(),
               )),
@@ -262,6 +272,51 @@ class _LogEntryScreenState extends State<LogEntryScreen> {
                   Text(_selectedPreview!['id'] ?? '', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
                 ]),
               ),
+              if (!isEntry) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '🚗 Gaariga maka tagtay mise waad wadataa?',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.warning),
+                      ),
+                      const SizedBox(height: 6),
+                      RadioListTile<String>(
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                        title: const Text('🚗 Waan wadaa gaariga (Taking vehicle)', style: TextStyle(fontSize: 12)),
+                        value: 'took',
+                        groupValue: _vehicleStatus,
+                        onChanged: (v) => setState(() => _vehicleStatus = v!),
+                      ),
+                      RadioListTile<String>(
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                        title: const Text('🅿️ Gaariga dhexdaan kaga tagay (Left vehicle in camp)', style: TextStyle(fontSize: 12)),
+                        value: 'left',
+                        groupValue: _vehicleStatus,
+                        onChanged: (v) => setState(() => _vehicleStatus = v!),
+                      ),
+                      RadioListTile<String>(
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                        title: const Text('🚶 Ma wado gaari (No vehicle)', style: TextStyle(fontSize: 12)),
+                        value: 'none',
+                        groupValue: _vehicleStatus,
+                        onChanged: (v) => setState(() => _vehicleStatus = v!),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
               _SectionLabel(label: 'GATE / CHECKPOINT'),
               const SizedBox(height: 8),
@@ -282,8 +337,6 @@ class _LogEntryScreenState extends State<LogEntryScreen> {
               ),
               const SizedBox(height: 8),
               TextField(controller: _purposeCtrl, decoration: const InputDecoration(labelText: 'Purpose (optional)', prefixIcon: Icon(Icons.description_outlined, color: AppColors.textMuted))),
-              const SizedBox(height: 12),
-              TextField(controller: _notesCtrl, maxLines: 2, decoration: const InputDecoration(labelText: 'Notes (optional)', prefixIcon: Icon(Icons.notes_outlined, color: AppColors.textMuted))),
               const SizedBox(height: 24),
               SizedBox(
                 height: 52,

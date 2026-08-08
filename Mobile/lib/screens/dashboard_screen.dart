@@ -141,22 +141,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
               // ── Quick Log Buttons ────────────────────────────────
               SliverToBoxAdapter(child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                child: Row(children: [
-                  Expanded(child: _QuickLogBtn(
+                child: Column(children: [
+                  _QuickLogBtn(
                     label: 'LOG PERSONNEL',
                     icon: Icons.person_add,
                     color: AppColors.primary,
                     onTap: () => Navigator.push(context, MaterialPageRoute(
                         builder: (_) => const LogEntryScreen(action: 'entry'))).then((_) => _load()),
-                  )),
-                  const SizedBox(width: 12),
-                  Expanded(child: _QuickLogBtn(
+                  ),
+                  const SizedBox(height: 12),
+                  _QuickLogBtn(
                     label: 'VISITOR CENTER',
                     icon: Icons.badge_outlined,
                     color: AppColors.secondary,
                     onTap: () => Navigator.push(context, MaterialPageRoute(
                         builder: (_) => const VisitorScreen())).then((_) => _load()),
-                  )),
+                  ),
                 ]),
               )),
 
@@ -172,9 +172,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 )),
                 SliverToBoxAdapter(child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                  child: GridView.count(
-                    crossAxisCount: 3, mainAxisSpacing: 8, crossAxisSpacing: 8,
-                    childAspectRatio: 0.95, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
+                  child: Column(
                     children: [
                       _StatCard(label: 'ACTIVE PERSONNEL', value: '${_stats!.totalPersonnel}', icon: Icons.person, color: AppColors.success),
                       _StatCard(label: 'REGISTERED VEHICLES', value: '${_stats!.totalVehicles}', icon: Icons.directions_car, color: AppColors.info),
@@ -373,21 +371,26 @@ class _StatCard extends StatelessWidget {
   const _StatCard({required this.label, required this.value, required this.icon, required this.color});
 
   @override Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(12),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    margin: const EdgeInsets.only(bottom: 12),
     decoration: BoxDecoration(
       color: AppColors.surface,
       borderRadius: BorderRadius.circular(12),
-      border: Border(left: BorderSide(color: color, width: 3)),
+      border: Border(left: BorderSide(color: color, width: 4)),
     ),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-      Row(children: [
-        Icon(icon, color: color, size: 15),
-        const Spacer(),
-        Container(width: 6, height: 6, decoration: BoxDecoration(color: color.withOpacity(0.5), shape: BoxShape.circle)),
-      ]),
-      const SizedBox(height: 8),
-      FittedBox(fit: BoxFit.scaleDown, child: Text(value, style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: color))),
-      Text(label, style: const TextStyle(fontSize: 8, color: AppColors.textMuted, letterSpacing: 0.8, fontWeight: FontWeight.w700), maxLines: 2, overflow: TextOverflow.ellipsis),
+    child: Row(children: [
+      Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+        child: Icon(icon, color: color, size: 28),
+      ),
+      const SizedBox(width: 16),
+      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textMuted, letterSpacing: 1.0, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 4),
+        Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: color)),
+      ])),
+      Container(width: 8, height: 8, decoration: BoxDecoration(color: color.withOpacity(0.5), shape: BoxShape.circle)),
     ]),
   );
 }

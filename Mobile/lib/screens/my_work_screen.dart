@@ -99,28 +99,29 @@ class _MyWorkScreenState extends State<MyWorkScreen> {
                         style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textPrimary)),
                       const Spacer(),
                       // On-duty indicator
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: (user?.isOnDuty ?? false) ? AppColors.success.withOpacity(0.15) : AppColors.textMuted.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          Container(
-                            width: 7, height: 7,
-                            decoration: BoxDecoration(
-                              color: (user?.isOnDuty ?? false) ? AppColors.success : AppColors.textMuted,
-                              shape: BoxShape.circle,
-                            ),
+                      if (user?.role == 'SecurityOfficer' || user?.role == 'Guard')
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: (user?.isOnDuty ?? false) ? AppColors.success.withOpacity(0.15) : AppColors.textMuted.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
                           ),
-                          const SizedBox(width: 5),
-                          Text((user?.isOnDuty ?? false) ? 'ON DUTY' : 'OFF DUTY',
-                            style: TextStyle(
-                              fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1,
-                              color: (user?.isOnDuty ?? false) ? AppColors.success : AppColors.textMuted,
-                            )),
-                        ]),
-                      ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Container(
+                              width: 7, height: 7,
+                              decoration: BoxDecoration(
+                                color: (user?.isOnDuty ?? false) ? AppColors.success : AppColors.textMuted,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Text((user?.isOnDuty ?? false) ? 'ON DUTY' : 'OFF DUTY',
+                              style: TextStyle(
+                                fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1,
+                                color: (user?.isOnDuty ?? false) ? AppColors.success : AppColors.textMuted,
+                              )),
+                          ]),
+                        ),
                     ]),
                   ),
 

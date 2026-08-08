@@ -146,18 +146,17 @@ class ApiService {
 
   Future<Personnel> getPersonnelById(String id) async {
     final data = await _get('/personnel/$id');
-    return Personnel.fromJson(data['personnel']);
+    return Personnel.fromJson(data['personnel'] ?? data);
   }
 
   Future<Personnel> searchByBadge(String badge) async {
     final data = await _get('/personnel/search/badge/$badge');
-    return Personnel.fromJson(data['personnel']);
+    return Personnel.fromJson(data['personnel'] ?? data);
   }
 
   Future<Personnel> createPersonnel(Map<String, dynamic> body) async {
     final data = await _post('/personnel', body);
-    // Backend returns the personnel object directly (not wrapped in { personnel: ... })
-    return Personnel.fromJson(data is Map<String, dynamic> ? data : data['personnel']);
+    return Personnel.fromJson(data['personnel'] ?? data);
   }
 
   Future<Personnel> updatePersonnel(String id, Map<String, dynamic> body) async {
@@ -194,23 +193,27 @@ class ApiService {
   }
 
   Future<List<Vehicle>> getVehiclesByOwner(String personnelId) async {
-    final data = await _get('/vehicles/owner/$personnelId');
-    return (data['vehicles'] as List).map((v) => Vehicle.fromJson(v)).toList();
+    try {
+      final data = await _get('/vehicles/owner/$personnelId');
+      return (data['vehicles'] as List).map((v) => Vehicle.fromJson(v)).toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   Future<Vehicle> searchByPlate(String plate) async {
     final data = await _get('/vehicles/search/plate/$plate');
-    return Vehicle.fromJson(data['vehicle']);
+    return Vehicle.fromJson(data['vehicle'] ?? data);
   }
 
   Future<Vehicle> createVehicle(Map<String, dynamic> body) async {
     final data = await _post('/vehicles', body);
-    return Vehicle.fromJson(data['vehicle']);
+    return Vehicle.fromJson(data['vehicle'] ?? data);
   }
 
   Future<Vehicle> updateVehicle(String id, Map<String, dynamic> body) async {
     final data = await _put('/vehicles/$id', body);
-    return Vehicle.fromJson(data['vehicle']);
+    return Vehicle.fromJson(data['vehicle'] ?? data);
   }
 
   // ─── Entry Logs ──────────────────────────────────────────────

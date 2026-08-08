@@ -66,7 +66,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
     final auth = context.watch<AuthProvider>();
     final user = auth.user;
 
-    if (user != null && !user.isOnDuty) {
+    if (user != null && !user.isOnDuty && (user.role == 'SecurityOfficer' || user.role == 'Guard')) {
       final isDark = Theme.of(context).brightness == Brightness.dark;
       return Scaffold(
         backgroundColor: isDark ? Colors.black : Colors.white,
@@ -142,28 +142,29 @@ class _MainNavScreenState extends State<MainNavScreen> {
                       ),
                       const SizedBox(width: 8),
                       // Duty status dot
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: (user?.isOnDuty ?? false) ? AppColors.success.withOpacity(0.15) : AppColors.textMuted.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          Container(
-                            width: 5, height: 5,
-                            decoration: BoxDecoration(
-                              color: (user?.isOnDuty ?? false) ? AppColors.success : AppColors.textMuted,
-                              shape: BoxShape.circle,
-                            ),
+                      if (user?.role == 'SecurityOfficer' || user?.role == 'Guard')
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: (user?.isOnDuty ?? false) ? AppColors.success.withOpacity(0.15) : AppColors.textMuted.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
                           ),
-                          const SizedBox(width: 4),
-                          Text((user?.isOnDuty ?? false) ? 'ON DUTY' : 'OFF DUTY',
-                            style: TextStyle(
-                              color: (user?.isOnDuty ?? false) ? AppColors.success : AppColors.textMuted,
-                              fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 0.8,
-                            )),
-                        ]),
-                      ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Container(
+                              width: 5, height: 5,
+                              decoration: BoxDecoration(
+                                color: (user?.isOnDuty ?? false) ? AppColors.success : AppColors.textMuted,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text((user?.isOnDuty ?? false) ? 'ON DUTY' : 'OFF DUTY',
+                              style: TextStyle(
+                                color: (user?.isOnDuty ?? false) ? AppColors.success : AppColors.textMuted,
+                                fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 0.8,
+                              )),
+                          ]),
+                        ),
                     ]),
                   ])),
                 ]),
@@ -183,12 +184,13 @@ class _MainNavScreenState extends State<MainNavScreen> {
                     isSelected: _currentIndex == 0,
                     onTap: () { setState(() => _currentIndex = 0); Navigator.pop(context); },
                   ),
-                  _DrawerItem(
-                    icon: Icons.people_outline,
-                    label: 'Personnel Roster',
-                    isSelected: _currentIndex == 1,
-                    onTap: () { setState(() => _currentIndex = 1); Navigator.pop(context); },
-                  ),
+                  if (user?.role != 'Guard')
+                    _DrawerItem(
+                      icon: Icons.people_outline,
+                      label: 'Personnel Roster',
+                      isSelected: _currentIndex == 1,
+                      onTap: () { setState(() => _currentIndex = 1); Navigator.pop(context); },
+                    ),
                   _DrawerItem(
                     icon: Icons.badge_outlined,
                     label: 'Visitor Center',

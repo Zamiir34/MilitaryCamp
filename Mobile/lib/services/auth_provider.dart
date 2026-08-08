@@ -154,7 +154,6 @@ class AuthProvider extends ChangeNotifier {
   Map<String, dynamic> _userToJson(User u) => {
     '_id': u.id,
     'fullName': u.name,
-    'username': u.username,
     'email': u.email,
     'role': u.role,
     'rank': u.rank,
