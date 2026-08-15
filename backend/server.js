@@ -46,6 +46,10 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
+// Audit Logger Middleware
+const auditLogger = require('./middleware/auditLogger');
+app.use(auditLogger);
+
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
@@ -60,6 +64,7 @@ app.use('/api/qrcode', require('./routes/qrcode'));
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/public', require('./routes/public'));
 app.use('/api/attendance', require('./routes/attendance'));
+app.use('/api/audit', require('./routes/audit'));
 
 // Socket.IO — authenticate via JWT, join personal room
 io.use((socket, next) => {

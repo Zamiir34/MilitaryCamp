@@ -8,6 +8,7 @@ const visitorSchema = new mongoose.Schema({
     match: [/^[a-zA-Z\s]+$/, 'Fadlan magaca kaliya xarfo gali (Full name must contain only letters)']
   },
   visitorType: { type: String, enum: ['Military', 'Civilian'], required: true },
+  rank: { type: String },
   idNumber: { 
     type: String, 
     required: true,
@@ -23,7 +24,7 @@ const visitorSchema = new mongoose.Schema({
   },
   phone: { 
     type: String,
-    match: [/^\d+$/, 'Fadlan number kaliya gali (Phone number must contain only numbers)']
+    match: [/^\+?\d[\d\s\-]*$/, 'Fadlan number sax ah gali (Please enter a valid phone number)']
   },
   email: { 
     type: String,

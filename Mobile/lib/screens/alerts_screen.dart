@@ -1,4 +1,4 @@
-// lib/screens/alerts_screen.dart
+﻿// lib/screens/alerts_screen.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -52,7 +52,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          backgroundColor: AppColors.surface,
+          backgroundColor: context.surfaceColor,
           title: const Text('NEW NOTIFICATION', style: TextStyle(fontSize: 14, letterSpacing: 1)),
           content: SingleChildScrollView(
             child: Column(
@@ -61,7 +61,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
               children: [
                 DropdownButtonFormField<String>(
                   value: type,
-                  dropdownColor: AppColors.surfaceVariant,
+                  dropdownColor: context.surfaceVarColor,
                   decoration: const InputDecoration(labelText: 'Type *'),
                   items: AppConstants.notificationTypes
                       .map((t) => DropdownMenuItem(value: t, child: Text(t, style: const TextStyle(fontSize: 12))))
@@ -115,7 +115,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
     final unread = _alerts.where((a) => !a.isRead).length;
     final isGuard = context.watch<AuthProvider>().user?.isGuard ?? false;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
@@ -133,7 +133,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
             onPressed: _markAllRead,
           ),
           IconButton(
-            icon: Icon(Icons.filter_list, color: _showUnreadOnly ? AppColors.primary : AppColors.textMuted),
+            icon: Icon(Icons.filter_list, color: _showUnreadOnly ? AppColors.primary : context.textMuted),
             onPressed: () { setState(() => _showUnreadOnly = !_showUnreadOnly); _load(); },
           ),
         ],
@@ -144,9 +144,9 @@ class _AlertsScreenState extends State<AlertsScreen> {
             onRefresh: _load, color: AppColors.primary,
             child: _alerts.isEmpty
               ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  const Icon(Icons.notifications_none, color: AppColors.textMuted, size: 56),
+                  Icon(Icons.notifications_none, color: context.textMuted, size: 56),
                   const SizedBox(height: 12),
-                  Text(_showUnreadOnly ? 'No unread notifications' : 'No notifications', style: const TextStyle(color: AppColors.textMuted)),
+                  Text(_showUnreadOnly ? 'No unread notifications' : 'No notifications', style: TextStyle(color: context.textMuted)),
                 ]))
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
@@ -194,7 +194,7 @@ class _AlertTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: alert.isRead ? AppColors.surface : AppColors.primary.withOpacity(0.04),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: alert.isRead ? AppColors.border : AppColors.primary.withOpacity(0.35), width: alert.isRead ? 1 : 1.5),
+        border: Border.all(color: alert.isRead ? context.borderColor : AppColors.primary.withOpacity(0.35), width: alert.isRead ? 1 : 1.5),
       ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(
@@ -206,12 +206,12 @@ class _AlertTile extends StatelessWidget {
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Expanded(child: Text(alert.title,
-              style: TextStyle(fontWeight: alert.isRead ? FontWeight.w500 : FontWeight.w700, fontSize: 14, color: AppColors.textPrimary))),
+              style: TextStyle(fontWeight: alert.isRead ? FontWeight.w500 : FontWeight.w700, fontSize: 14, color: context.textPrimary))),
             if (!alert.isRead)
               Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle)),
           ]),
           const SizedBox(height: 4),
-          Text(alert.message, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary), maxLines: 2, overflow: TextOverflow.ellipsis),
+          Text(alert.message, style: TextStyle(fontSize: 12, color: context.textSecondary), maxLines: 2, overflow: TextOverflow.ellipsis),
           const SizedBox(height: 6),
           Row(children: [
             if (alert.zone != null && alert.zone!.isNotEmpty) ...[
@@ -225,25 +225,25 @@ class _AlertTile extends StatelessWidget {
               const SizedBox(width: 10),
             ],
             if (alert.gate != null && alert.gate != alert.zone) ...[
-              Icon(Icons.door_back_door_outlined, size: 11, color: AppColors.textMuted),
+              Icon(Icons.door_back_door_outlined, size: 11, color: context.textMuted),
               const SizedBox(width: 3),
-              Text(alert.gate!, style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+              Text(alert.gate!, style: TextStyle(fontSize: 10, color: context.textMuted)),
               const SizedBox(width: 10),
             ],
-            Icon(Icons.person_outline, size: 11, color: AppColors.textMuted),
+            Icon(Icons.person_outline, size: 11, color: context.textMuted),
             const SizedBox(width: 3),
             Expanded(
               child: Text(
                 alert.reporterName != null
                     ? 'Sent by: ${alert.reporterRank != null ? '${alert.reporterRank} ' : ''}${alert.reporterName}'
                     : 'Sent by: System',
-                style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+                style: TextStyle(fontSize: 10, color: context.textMuted),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            Icon(Icons.access_time, size: 11, color: AppColors.textMuted),
+            Icon(Icons.access_time, size: 11, color: context.textMuted),
             const SizedBox(width: 3),
-            Text(DateFormat('MMM d, HH:mm').format(alert.createdAt), style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+            Text(DateFormat('MMM d, HH:mm').format(alert.createdAt), style: TextStyle(fontSize: 10, color: context.textMuted)),
           ]),
         ])),
       ]),

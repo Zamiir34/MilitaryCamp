@@ -34,6 +34,26 @@ class AppColors {
   static const Color borderLight    = Color(0xFF2D3F55);
 }
 
+// ─── Theme-aware color helpers ──────────────────────────────────────────────
+extension AppC on BuildContext {
+  bool get isDark => Theme.of(this).brightness == Brightness.dark;
+
+  // Backgrounds
+  Color get bgColor         => isDark ? AppColors.background     : Colors.white;
+  Color get surfaceColor    => isDark ? AppColors.surface        : Colors.white;
+  Color get surfaceVarColor => isDark ? AppColors.surfaceVariant : const Color(0xFFF1F5F9);
+  Color get cardColor       => isDark ? AppColors.card           : Colors.white;
+
+  // Text
+  Color get textPrimary    => isDark ? AppColors.textPrimary   : const Color(0xFF0F172A);
+  Color get textSecondary  => isDark ? AppColors.textSecondary : const Color(0xFF334155);
+  Color get textMuted      => isDark ? AppColors.textMuted     : const Color(0xFF64748B);
+
+  // Border
+  Color get borderColor    => isDark ? AppColors.border      : const Color(0xFFE2E8F0);
+  Color get borderLight    => isDark ? AppColors.borderLight  : const Color(0xFFCBD5E1);
+}
+
 class AppTheme {
   static ThemeData get darkTheme {
     return ThemeData(
@@ -191,6 +211,17 @@ class AppTheme {
         unselectedLabelStyle: TextStyle(fontFamily: 'Rajdhani'),
       ),
       dividerColor: const Color(0xFFE2E8F0),
+      textTheme: const TextTheme(
+        displayLarge: TextStyle(color: Color(0xFF0F172A), fontFamily: 'Rajdhani', fontWeight: FontWeight.w700),
+        displayMedium: TextStyle(color: Color(0xFF0F172A), fontFamily: 'Rajdhani', fontWeight: FontWeight.w700),
+        headlineLarge: TextStyle(color: Color(0xFF0F172A), fontFamily: 'Rajdhani', fontWeight: FontWeight.w700),
+        headlineMedium: TextStyle(color: Color(0xFF0F172A), fontFamily: 'Rajdhani', fontWeight: FontWeight.w600),
+        titleLarge: TextStyle(color: Color(0xFF0F172A), fontFamily: 'Rajdhani', fontWeight: FontWeight.w600),
+        titleMedium: TextStyle(color: Color(0xFF0F172A), fontFamily: 'Rajdhani', fontWeight: FontWeight.w500),
+        bodyLarge: TextStyle(color: Color(0xFF334155), fontFamily: 'Rajdhani'),
+        bodyMedium: TextStyle(color: Color(0xFF334155), fontFamily: 'Rajdhani'),
+        bodySmall: TextStyle(color: Color(0xFF64748B), fontFamily: 'Rajdhani'),
+      ),
     );
   }
 }

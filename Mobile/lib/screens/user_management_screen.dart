@@ -62,10 +62,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: context.surfaceColor,
         title: const Text('Delete User', style: TextStyle(color: AppColors.danger)),
         content: Text('Are you sure you want to permanently delete "${u['fullName'] ?? u['name']}"?',
-          style: const TextStyle(color: AppColors.textSecondary)),
+          style: TextStyle(color: context.textSecondary)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false),
             child: const Text('CANCEL')),
@@ -113,18 +113,18 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   Widget build(BuildContext context) {
     final me = context.watch<AuthProvider>().user;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('USER MANAGEMENT', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-          Text('${_filtered.length} system users', style: const TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.normal)),
+          Text('${_filtered.length} system users', style: TextStyle(fontSize: 11, color: context.textMuted, fontWeight: FontWeight.normal)),
         ]),
         actions: [
           // Role filter
           PopupMenuButton<String?>(
-            color: AppColors.surfaceVariant,
+            color: context.surfaceVarColor,
             icon: Icon(Icons.filter_list,
-              color: _roleFilter != null ? AppColors.primary : AppColors.textPrimary),
+              color: _roleFilter != null ? AppColors.primary : context.textPrimary),
             onSelected: (v) => setState(() => _roleFilter = v),
             itemBuilder: (_) => [
               const PopupMenuItem(value: null, child: Text('All Roles')),
@@ -141,7 +141,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.background,
+        foregroundColor: context.bgColor,
         icon: const Icon(Icons.person_add_outlined),
         label: const Text('ADD USER', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
         onPressed: () => _openForm(),
@@ -150,9 +150,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
         : _filtered.isEmpty
           ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.manage_accounts_outlined, size: 64, color: AppColors.textMuted.withOpacity(0.4)),
+              Icon(Icons.manage_accounts_outlined, size: 64, color: context.textMuted.withOpacity(0.4)),
               const SizedBox(height: 16),
-              const Text('No users found', style: TextStyle(color: AppColors.textMuted, fontSize: 16)),
+              Text('No users found', style: TextStyle(color: context.textMuted, fontSize: 16)),
             ]))
           : RefreshIndicator(
               onRefresh: _load, color: AppColors.primary,
@@ -183,7 +183,7 @@ class _UserTile extends StatelessWidget {
     required this.onEdit, required this.onToggle, required this.onDelete,
     required this.onResetPassword});
 
-  Color get _roleColor {
+  Color _roleColor(BuildContext context) {
     switch (user['role']) {
       case 'Administrator':
       case 'admin':   return AppColors.danger;
@@ -191,7 +191,7 @@ class _UserTile extends StatelessWidget {
       case 'officer': return AppColors.warning;
       case 'Guard':
       case 'guard':   return AppColors.primary;
-      default:        return AppColors.textMuted;
+      default:        return context.textMuted;
     }
   }
 
@@ -203,7 +203,7 @@ class _UserTile extends StatelessWidget {
       case 'officer': return Icons.military_tech;
       case 'Guard':
       case 'guard':   return Icons.security;
-      default:        return Icons.visibility;
+      default:        return Icons.person;
     }
   }
 
@@ -211,17 +211,18 @@ class _UserTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isActive = user['isActive'] ?? true;
     final isSelf = user['_id'] == currentUserId;
-    final name = user['fullName'] ?? user['name'] ?? '';
+    final roleColor = _roleColor(context);
+    final name = (user['fullName'] ?? user['name'] ?? '').toString();
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
 
     return GestureDetector(
       onTap: () => _openViewDetails(context, user),
       child: Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isSelf ? AppColors.primary.withOpacity(0.4) : AppColors.border),
+          color: isSelf ? AppColors.primary.withOpacity(0.4) : context.borderColor),
       ),
       child: Column(children: [
         Padding(
@@ -233,11 +234,11 @@ class _UserTile extends StatelessWidget {
                 width: 50, height: 50,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: _roleColor.withOpacity(0.15),
-                  border: Border.all(color: _roleColor.withOpacity(0.4), width: 1.5),
+                  color: roleColor.withOpacity(0.15),
+                  border: Border.all(color: roleColor.withOpacity(0.4), width: 1.5),
                 ),
                 child: Center(child: Text(initial,
-                  style: TextStyle(color: _roleColor, fontSize: 20, fontWeight: FontWeight.bold))),
+                  style: TextStyle(color: roleColor, fontSize: 20, fontWeight: FontWeight.bold))),
               ),
               if (!isActive)
                 Positioned.fill(child: Container(
@@ -254,7 +255,7 @@ class _UserTile extends StatelessWidget {
               Row(children: [
                 Expanded(child: Text(name,
                   style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15,
-                    color: isActive ? AppColors.textPrimary : AppColors.textMuted))),
+                    color: isActive ? context.textPrimary : context.textMuted))),
                 if (isSelf)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -266,22 +267,22 @@ class _UserTile extends StatelessWidget {
               ]),
               const SizedBox(height: 2),
 
-              Text(user['email'] ?? '', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+              Text(user['email'] ?? '', style: TextStyle(fontSize: 11, color: context.textMuted)),
             ])),
             // Role badge
             Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _roleColor.withOpacity(0.12),
+                  color: roleColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: _roleColor.withOpacity(0.3)),
+                  border: Border.all(color: roleColor.withOpacity(0.3)),
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(_roleIcon, size: 12, color: _roleColor),
+                  Icon(_roleIcon, size: 12, color: roleColor),
                   const SizedBox(width: 4),
                   Text((user['role'] ?? '').toUpperCase(),
-                    style: TextStyle(color: _roleColor, fontSize: 10, fontWeight: FontWeight.w800)),
+                    style: TextStyle(color: roleColor, fontSize: 10, fontWeight: FontWeight.w800)),
                 ]),
               ),
               const SizedBox(height: 6),
@@ -300,8 +301,8 @@ class _UserTile extends StatelessWidget {
         ),
         // Action buttons row
         Container(
-          decoration: const BoxDecoration(
-            border: Border(top: BorderSide(color: AppColors.border))),
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: context.borderColor))),
           child: Row(children: [
             _ActionBtn(icon: Icons.edit_outlined, label: 'EDIT', color: AppColors.secondary, onTap: onEdit),
             _Divider(),
@@ -327,8 +328,8 @@ class _UserTile extends StatelessWidget {
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
         padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
+        decoration: BoxDecoration(
+          color: context.surfaceColor,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
@@ -338,30 +339,30 @@ class _UserTile extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('User Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                Text('User Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.textPrimary)),
                 IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
               ],
             ),
             const SizedBox(height: 16),
             ListTile(
               leading: const Icon(Icons.person, color: AppColors.primary),
-              title: const Text('Full Name', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
-              subtitle: Text(user['fullName'] ?? user['name'] ?? 'N/A', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
+              title: Text('Full Name', style: TextStyle(color: context.textMuted, fontSize: 12)),
+              subtitle: Text(user['fullName'] ?? user['name'] ?? 'N/A', style: TextStyle(color: context.textPrimary, fontSize: 16)),
             ),
             ListTile(
               leading: const Icon(Icons.email, color: AppColors.primary),
-              title: const Text('Email', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
-              subtitle: Text(user['email'] ?? 'N/A', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
+              title: Text('Email', style: TextStyle(color: context.textMuted, fontSize: 12)),
+              subtitle: Text(user['email'] ?? 'N/A', style: TextStyle(color: context.textPrimary, fontSize: 16)),
             ),
             ListTile(
               leading: const Icon(Icons.security, color: AppColors.primary),
-              title: const Text('Role', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
-              subtitle: Text(user['role'] ?? 'N/A', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
+              title: Text('Role', style: TextStyle(color: context.textMuted, fontSize: 12)),
+              subtitle: Text(user['role'] ?? 'N/A', style: TextStyle(color: context.textPrimary, fontSize: 16)),
             ),
             ListTile(
               leading: const Icon(Icons.badge, color: AppColors.primary),
-              title: const Text('Military ID', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
-              subtitle: Text(user['militaryId'] ?? 'N/A', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16)),
+              title: Text('Military ID', style: TextStyle(color: context.textMuted, fontSize: 12)),
+              subtitle: Text(user['militaryId'] ?? 'N/A', style: TextStyle(color: context.textPrimary, fontSize: 16)),
             ),
             const SizedBox(height: 16),
           ],
@@ -374,7 +375,7 @@ class _UserTile extends StatelessWidget {
 class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
-    Container(width: 1, height: 36, color: AppColors.border);
+    Container(width: 1, height: 36, color: context.borderColor);
 }
 
 class _ActionBtn extends StatelessWidget {
@@ -388,11 +389,11 @@ class _ActionBtn extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 10),
         child: Column(children: [
-          Icon(icon, size: 16, color: onTap == null ? AppColors.textMuted : color),
+          Icon(icon, size: 16, color: onTap == null ? context.textMuted : color),
           const SizedBox(height: 3),
           Text(label, style: TextStyle(
             fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 0.5,
-            color: onTap == null ? AppColors.textMuted : color)),
+            color: onTap == null ? context.textMuted : color)),
         ]),
       ),
     ),
@@ -520,15 +521,15 @@ class _UserFormSheetState extends State<_UserFormSheet> {
       minChildSize: 0.5,
       maxChildSize: 0.95,
       builder: (_, ctrl) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.background,
+        decoration: BoxDecoration(
+          color: context.bgColor,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(children: [
           // Handle
           Container(margin: const EdgeInsets.only(top: 12, bottom: 8),
             width: 40, height: 4,
-            decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2))),
+            decoration: BoxDecoration(color: context.borderColor, borderRadius: BorderRadius.circular(2))),
           // Header
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
@@ -536,11 +537,11 @@ class _UserFormSheetState extends State<_UserFormSheet> {
               Icon(isEdit ? Icons.edit : Icons.person_add_outlined, color: AppColors.primary),
               const SizedBox(width: 12),
               Text(isEdit ? 'EDIT USER' : 'CREATE NEW USER',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary, letterSpacing: 1)),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800,
+                  color: context.textPrimary, letterSpacing: 1)),
             ]),
           ),
-          const Divider(color: AppColors.border, height: 24),
+          Divider(color: context.borderColor, height: 24),
           // Form
           Expanded(child: Form(
             key: _formKey,
@@ -550,16 +551,16 @@ class _UserFormSheetState extends State<_UserFormSheet> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceVariant,
+                    color: context.surfaceVarColor,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: context.borderColor),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       value: _role,
-                      dropdownColor: AppColors.surfaceVariant,
+                      dropdownColor: context.surfaceVarColor,
                       isExpanded: true,
-                      icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textMuted),
+                      icon: Icon(Icons.keyboard_arrow_down, color: context.textMuted),
                       items: isSecurityOfficer
                         ? [_roleItem('Guard', 'Guard', Icons.security, AppColors.primary)]
                         : [
@@ -588,22 +589,22 @@ class _UserFormSheetState extends State<_UserFormSheet> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceVariant,
+                      color: context.surfaceVarColor,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: context.borderColor),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: _selectedPersonnelId,
-                        dropdownColor: AppColors.surfaceVariant,
+                        dropdownColor: context.surfaceVarColor,
                         isExpanded: true,
-                        hint: Text(_role == 'Guard' ? 'Select Personnel Record *' : 'Link to Personnel Record', style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                        hint: Text(_role == 'Guard' ? 'Select Personnel Record *' : 'Link to Personnel Record', style: TextStyle(color: context.textMuted, fontSize: 13)),
                         icon: const Icon(Icons.link, color: AppColors.primary),
                         items: _personnelList
                           .where((p) => p['type'] == 'Military' || p['type'] == 'Staff')
                           .map((p) => DropdownMenuItem<String>(
                             value: p['_id'],
-                            child: Text('${p['fullName']} (${p['personnelId']} - ${p['rank'] ?? p['type']})', style: const TextStyle(color: AppColors.textPrimary)),
+                            child: Text('${p['fullName']} (${p['personnelId']} - ${p['rank'] ?? p['type']})', style: TextStyle(color: context.textPrimary)),
                           )).toList(),
                         onChanged: (val) {
                           if (val == null) return;
@@ -630,7 +631,7 @@ class _UserFormSheetState extends State<_UserFormSheet> {
                     child: Text(_role == 'Guard'
                       ? 'Guard accounts must be linked to an existing personnel record. Details are filled from that record.'
                       : 'Selecting a personnel automatically fills their details.',
-                      style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                      style: TextStyle(color: context.textMuted, fontSize: 11)),
                   ),
                 ],
                 _FormField(ctrl: _name, label: 'Full Name *', icon: Icons.person_outline,
@@ -642,9 +643,9 @@ class _UserFormSheetState extends State<_UserFormSheet> {
                 const SizedBox(height: 14),
                 DropdownButtonFormField<String>(
                   value: AppConstants.ranks.contains(_rank.text) ? _rank.text : null,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Rank',
-                    prefixIcon: Icon(Icons.military_tech_outlined, color: AppColors.textMuted, size: 20),
+                    prefixIcon: Icon(Icons.military_tech_outlined, color: context.textMuted, size: 20),
                   ),
                   items: AppConstants.ranks.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
                   onChanged: (v) => setState(() => _rank.text = v ?? ''),
@@ -692,7 +693,7 @@ class _FormField extends StatelessWidget {
     keyboardType: keyboardType, validator: validator,
     decoration: InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon, color: AppColors.textMuted, size: 20),
+      prefixIcon: Icon(icon, color: context.textMuted, size: 20),
     ),
   );
 }
@@ -744,37 +745,37 @@ class _ResetPasswordSheetState extends State<_ResetPasswordSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
+        decoration: BoxDecoration(
+          color: context.surfaceColor,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Container(width: 40, height: 4,
-            decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2))),
+            decoration: BoxDecoration(color: context.borderColor, borderRadius: BorderRadius.circular(2))),
           const SizedBox(height: 16),
           Row(children: [
             const Icon(Icons.lock_reset, color: AppColors.accent),
             const SizedBox(width: 12),
             Expanded(child: Text('RESET PASSWORD: ${widget.userName.toUpperCase()}',
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15,
-                color: AppColors.textPrimary, letterSpacing: 0.5))),
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15,
+                color: context.textPrimary, letterSpacing: 0.5))),
           ]),
           const SizedBox(height: 20),
           TextField(
             controller: _ctrl,
             obscureText: true,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'New Password',
-              prefixIcon: Icon(Icons.lock_outline, color: AppColors.textMuted, size: 20)),
+              prefixIcon: Icon(Icons.lock_outline, color: context.textMuted, size: 20)),
           ),
           const SizedBox(height: 14),
           TextField(
             controller: _confirmCtrl,
             obscureText: true,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Confirm Password',
-              prefixIcon: Icon(Icons.lock_outline, color: AppColors.textMuted, size: 20)),
+              prefixIcon: Icon(Icons.lock_outline, color: context.textMuted, size: 20)),
           ),
           const SizedBox(height: 24),
           SizedBox(width: double.infinity, height: 50,

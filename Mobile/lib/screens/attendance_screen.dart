@@ -129,14 +129,14 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('TODAY\'S SHIFT', style: TextStyle(color: AppColors.textMuted, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+          Text('TODAY\'S SHIFT', style: TextStyle(color: context.textMuted, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -144,7 +144,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('CHECK IN', style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
+                  Text('CHECK IN', style: TextStyle(color: context.textMuted, fontSize: 10)),
                   const SizedBox(height: 4),
                   Text(
                     hasCheckedIn && _todayRecord!['checkInTime'] != null
@@ -157,24 +157,24 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('CHECK OUT', style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
+                  Text('CHECK OUT', style: TextStyle(color: context.textMuted, fontSize: 10)),
                   const SizedBox(height: 4),
                   Text(
                     hasCheckedOut
                         ? DateFormat('HH:mm').format(DateTime.parse(_todayRecord!['checkOutTime']))
                         : '--:--',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: hasCheckedOut ? AppColors.warning : AppColors.textMuted),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: hasCheckedOut ? AppColors.warning : context.textMuted),
                   ),
                 ],
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('DURATION', style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
+                  Text('DURATION', style: TextStyle(color: context.textMuted, fontSize: 10)),
                   const SizedBox(height: 4),
                   Text(
                     shiftDuration,
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: context.textPrimary),
                   ),
                 ],
               ),
@@ -221,16 +221,16 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
-                color: AppColors.background,
+                color: context.bgColor,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: context.borderColor),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.check_circle, color: AppColors.success),
-                  SizedBox(width: 8),
-                  Text('Shift Completed', style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
+                  const Icon(Icons.check_circle, color: AppColors.success),
+                  const SizedBox(width: 8),
+                  Text('Shift Completed', style: TextStyle(color: context.textSecondary, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -311,9 +311,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -334,7 +334,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('START TIME', style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                      Text('START TIME', style: TextStyle(fontSize: 10, color: context.textMuted)),
                       const SizedBox(height: 4),
                       Text(_formatDateTime(_startTime), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                     ],
@@ -348,7 +348,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('END TIME', style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                      Text('END TIME', style: TextStyle(fontSize: 10, color: context.textMuted)),
                       const SizedBox(height: 4),
                       Text(_formatDateTime(_endTime), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                     ],
@@ -373,7 +373,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               child: Center(
                 child: Text(
                   'No attendance records for the selected time range.',
-                  style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                  style: TextStyle(color: context.textMuted, fontSize: 13),
                 ),
               ),
             )
@@ -389,9 +389,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 margin: const EdgeInsets.only(bottom: 10),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.background,
+                  color: context.bgColor,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: context.borderColor),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -408,7 +408,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                     const SizedBox(height: 4),
                     Text(
                       '${user['rank'] ?? 'N/A'} • ${user['role'] ?? 'Guard'} • Badge ${user['badgeNumber'] ?? 'N/A'}',
-                      style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                      style: TextStyle(color: context.textMuted, fontSize: 11),
                     ),
                     const SizedBox(height: 10),
                     Row(
@@ -417,7 +417,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('CHECK IN', style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
+                              Text('CHECK IN', style: TextStyle(color: context.textMuted, fontSize: 10)),
                               Text(
                                 checkIn != null ? DateFormat('HH:mm:ss').format(DateTime.parse(checkIn)) : '--',
                                 style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w700),
@@ -429,7 +429,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('CHECK OUT', style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
+                              Text('CHECK OUT', style: TextStyle(color: context.textMuted, fontSize: 10)),
                               Text(
                                 completed ? DateFormat('HH:mm:ss').format(DateTime.parse(checkOut)) : '--',
                                 style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w700),
@@ -469,7 +469,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     final canViewTeam = user?.isOfficer == true;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
         title: const Text('Check In / Out'),
         actions: [

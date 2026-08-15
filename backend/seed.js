@@ -31,6 +31,25 @@ async function seed() {
       console.log('✅ Admin password reset: admin / admin123');
     }
 
+    // Create second admin (mohamedabdi9098@gmail.com)
+    const existingAdmin2 = await User.findOne({ email: 'mohamedabdi9098@gmail.com' });
+    if (!existingAdmin2) {
+      await User.create({
+        password: 'admin123',
+        fullName: 'Mohamed Abdi',
+        email: 'mohamedabdi9098@gmail.com',
+        role: 'Administrator',
+        militaryId: 'ADMIN-002',
+        isEmailVerified: true,
+      });
+      console.log('✅ Admin user created: mohamedabdi9098@gmail.com / admin123');
+    } else {
+      existingAdmin2.role = 'Administrator';
+      existingAdmin2.isEmailVerified = true;
+      await existingAdmin2.save();
+      console.log('✅ mohamedabdi9098@gmail.com updated to Administrator role');
+    }
+
     // Create security officer
     const existingOfficer = await User.findOne({ email: 'dclarke@militarycamp.mil' });
     if (!existingOfficer) {

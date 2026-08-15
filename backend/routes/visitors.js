@@ -27,7 +27,7 @@ const visitorStatuses = ['Pending', 'Approved', 'Denied', 'Completed'];
 
 const normalizeVisitorPayload = (body, { partial = false } = {}) => {
   cleanStringFields(body, [
-    'fullName', 'visitorType', 'idNumber', 'phone', 'email', 'organization', 'purposeOfVisit',
+    'fullName', 'visitorType', 'rank', 'idNumber', 'phone', 'email', 'organization', 'purposeOfVisit',
     'hostName', 'expectedDuration', 'photo', 'vehiclePlate', 'vehicleModel', 'vehicleColor',
     'status', 'notes'
   ]);
@@ -37,7 +37,7 @@ const normalizeVisitorPayload = (body, { partial = false } = {}) => {
   if (body.status !== undefined) body.status = validateEnum(body.status, visitorStatuses, 'status', false);
 
   if (!partial) {
-    requireFields(body, ['visitorType', 'email', 'photo']);
+    requireFields(body, ['visitorType', 'photo']);
   }
 
   if (!partial) {
@@ -62,7 +62,8 @@ router.get('/', auth, async (req, res) => {
         { fullName: { $regex: escapedSearch, $options: 'i' } },
         { idNumber: { $regex: escapedSearch, $options: 'i' } },
         { visitorId: { $regex: escapedSearch, $options: 'i' } },
-        { organization: { $regex: escapedSearch, $options: 'i' } }
+        { organization: { $regex: escapedSearch, $options: 'i' } },
+        { rank: { $regex: escapedSearch, $options: 'i' } }
       ];
     }
     if (status) query.status = validateEnum(status, visitorStatuses, 'status');

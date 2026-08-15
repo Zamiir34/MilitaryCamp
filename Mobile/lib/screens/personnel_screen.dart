@@ -84,7 +84,7 @@ class _PersonnelScreenState extends State<PersonnelScreen> {
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
@@ -92,7 +92,7 @@ class _PersonnelScreenState extends State<PersonnelScreen> {
         ),
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('PERSONNEL'),
-          Text('$_total registered', style: const TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.normal)),
+          Text('$_total registered', style: TextStyle(fontSize: 11, color: context.textMuted, fontWeight: FontWeight.normal)),
         ]),
         actions: [
           if (user?.isOfficer == true)
@@ -108,10 +108,10 @@ class _PersonnelScreenState extends State<PersonnelScreen> {
           child: Row(children: [
             Expanded(child: TextField(
               controller: _searchCtrl,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Search by name, badge...',
-                prefixIcon: Icon(Icons.search, color: AppColors.textMuted),
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                prefixIcon: Icon(Icons.search, color: context.textMuted),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
               onSubmitted: (_) => _load(reset: true),
             )),
@@ -120,7 +120,7 @@ class _PersonnelScreenState extends State<PersonnelScreen> {
               icon: const Icon(Icons.qr_code_scanner, color: AppColors.primary),
               onPressed: _scanQR,
               style: IconButton.styleFrom(
-                backgroundColor: AppColors.surfaceVariant,
+                backgroundColor: context.surfaceVarColor,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 padding: const EdgeInsets.all(12),
               ),
@@ -133,7 +133,7 @@ class _PersonnelScreenState extends State<PersonnelScreen> {
           : RefreshIndicator(
               onRefresh: () => _load(reset: true), color: AppColors.primary,
               child: _list.isEmpty
-                ? const Center(child: Text('No personnel found', style: TextStyle(color: AppColors.textMuted)))
+                ? Center(child: Text('No personnel found', style: TextStyle(color: context.textMuted)))
                 : ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     itemCount: _list.length,
@@ -159,7 +159,7 @@ class _PersonnelTile extends StatelessWidget {
     onTap: onTap,
     child: Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+      decoration: BoxDecoration(color: context.surfaceColor, borderRadius: BorderRadius.circular(12), border: Border.all(color: context.borderColor)),
       child: Row(children: [
         Stack(children: [
           SafeAvatar(
@@ -172,21 +172,21 @@ class _PersonnelTile extends StatelessWidget {
           ),
           Positioned(bottom: 0, right: 0, child: Container(
             width: 10, height: 10,
-            decoration: BoxDecoration(color: p.isInside ? AppColors.success : AppColors.textMuted,
-              shape: BoxShape.circle, border: Border.all(color: AppColors.surface, width: 1.5)),
+            decoration: BoxDecoration(color: p.isInside ? AppColors.success : context.textMuted,
+              shape: BoxShape.circle, border: Border.all(color: context.surfaceColor, width: 1.5)),
           )),
         ]),
         const SizedBox(width: 14),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(p.fullName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppColors.textPrimary)),
-          Text('${p.rank} · ${p.unit}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-          Text(p.badgeNumber, style: const TextStyle(fontSize: 11, color: AppColors.textMuted, fontFamily: 'monospace')),
+          Text(p.fullName, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: context.textPrimary)),
+          Text('${p.rank} · ${p.unit}', style: TextStyle(fontSize: 12, color: context.textSecondary)),
+          Text(p.badgeNumber, style: TextStyle(fontSize: 11, color: context.textMuted, fontFamily: 'monospace')),
         ])),
         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-            decoration: BoxDecoration(color: AppColors.surfaceVariant, borderRadius: BorderRadius.circular(4)),
-            child: Text(p.category?.toUpperCase() ?? '', style: const TextStyle(color: AppColors.textMuted, fontSize: 9)),
+            decoration: BoxDecoration(color: context.surfaceVarColor, borderRadius: BorderRadius.circular(4)),
+            child: Text(p.category?.toUpperCase() ?? '', style: TextStyle(color: context.textMuted, fontSize: 9)),
           ),
         ]),
       ]),

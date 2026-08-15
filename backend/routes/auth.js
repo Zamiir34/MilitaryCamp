@@ -3,11 +3,28 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
+const AuditLog = require('../models/AuditLog');
 const { auth } = require('../middleware/auth');
 const { sendVerificationEmail } = require('../utils/email');
 const { format } = require('date-fns');
 const { resolveGuardZone, syncGuardZone } = require('../utils/guardZone');
 const { cleanStringFields, sendValidationError, validateObjectId, validatePassword, validationError } = require('../utils/validation');
+
+/** Save an audit log entry without throwing */
+async function logAudit({ userId, action, method, endpoint, details, req }) {
+  try {
+    await AuditLog.create({
+      user: userId,
+      action,
+      method: method || 'POST',
+      endpoint,
+      details,
+      ipAddress: req.ip || req.connection?.remoteAddress
+    });
+  } catch (e) {
+    console.error('Audit log error:', e.message);
+  }
+}
 
 /** Generate a secure 6-digit OTP */
 function generateOTP() {
@@ -79,6 +96,15 @@ router.post('/login', async (req, res) => {
       process.env.JWT_SECRET || 'military_secret_2024',
       { expiresIn: '8h' }
     );
+
+    // --- Audit Log: LOGIN ---
+    await logAudit({
+      userId: user._id,
+      action: 'LOGIN',
+      endpoint: '/api/auth/login',
+      details: { description: `User ${user.fullName} ayaa soo galay nidaamka.`, email: user.email },
+      req
+    });
 
     res.json({ token, user: await userPayload(user) });
   } catch (err) {
@@ -198,6 +224,22 @@ router.put('/duty', auth, async (req, res) => {
 
     await user.save();
     res.json({ isOnDuty: user.isOnDuty, message: `Duty status: ${user.isOnDuty ? 'ON' : 'OFF'}` });
+  } catch (err) {
+    sendValidationError(res, err);
+  }
+});
+
+// Logout - records audit log
+router.post('/logout', auth, async (req, res) => {
+  try {
+    await logAudit({
+      userId: req.user._id,
+      action: 'LOGOUT',
+      endpoint: '/api/auth/logout',
+      details: { description: `Isticmaalaha ${req.user.fullName} ayaa ka baxay nidaamka.` },
+      req
+    });
+    res.json({ message: 'Logged out successfully' });
   } catch (err) {
     sendValidationError(res, err);
   }

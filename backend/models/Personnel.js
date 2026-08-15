@@ -5,14 +5,15 @@ const personnelSchema = new mongoose.Schema({
   fullName: { 
     type: String, 
     required: true,
-    match: [/^[a-zA-Z\s]+$/, 'Fadlan magaca kaliya xarfo gali (Full name must contain only letters)']
+    trim: true,
+    match: [/^[\p{L}\s\-']+$/u, 'Magaca waa inuu ka kooban yahay xarfaha kaliya (Full name must contain letters only)']
   },
   rank: { type: String, required: true },
   unit: { type: String, required: true },
   idNumber: { type: String, required: true, unique: true },
   phone: { 
     type: String,
-    match: [/^\d+$/, 'Fadlan number kaliya gali (Phone number must contain only numbers)']
+    match: [/^\+?[\d\s\-]{6,20}$/, 'Fadlan phone number sax ah gali (Enter a valid phone number)']
   },
   email: { 
     type: String,
@@ -26,7 +27,8 @@ const personnelSchema = new mongoose.Schema({
     unique: true, 
     sparse: true, 
     trim: true,
-    match: [/^\d+$/, 'Military ID fadlan number kaliya gali (Must contain only numbers)']
+    uppercase: true,
+    match: [/^[A-Za-z]{1,6}(-[A-Za-z0-9]{1,8})+$/, 'Military ID waa inuu ahaado qaab sidan: MIL-001 ama MC-2024-001']
   },
   transferredFrom: { type: String },
   qrCode: { type: String },

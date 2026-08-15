@@ -1,4 +1,4 @@
-// lib/screens/splash_screen.dart
+﻿// lib/screens/splash_screen.dart
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
@@ -26,7 +26,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.bgColor,
       body: Center(
         child: AnimatedBuilder(
           animation: _ctrl,
@@ -42,7 +42,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(color: AppColors.primary, width: 2),
-                      color: AppColors.surface,
+                      color: context.surfaceColor,
                     ),
                     child: const Icon(Icons.shield, size: 50, color: AppColors.primary),
                   ),
@@ -50,13 +50,13 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   Text(AppConstants.appName,
                     style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: AppColors.primary, letterSpacing: 4)),
                   const SizedBox(height: 8),
-                  const Text('SECURITY MONITORING SYSTEM',
-                    style: TextStyle(fontSize: 12, color: AppColors.textMuted, letterSpacing: 3)),
+                  Text('SECURITY MONITORING SYSTEM',
+                    style: TextStyle(fontSize: 12, color: context.textMuted, letterSpacing: 3)),
                   const SizedBox(height: 48),
-                  const SizedBox(
+                  SizedBox(
                     width: 40, height: 2,
                     child: LinearProgressIndicator(
-                      backgroundColor: AppColors.border,
+                      backgroundColor: context.borderColor,
                       valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                     ),
                   ),

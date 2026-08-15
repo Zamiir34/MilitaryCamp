@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, QrCode, X, Download } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, QrCode, X, Download, Eye, User } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
@@ -11,6 +11,7 @@ import { downloadQrAsPng } from '../utils/downloadQr';
 const INITIAL_FORM = { 
   fullName: '', 
   visitorType: 'Military', 
+  rank: '',
   idNumber: '', 
   phone: '', 
   email: '', 
@@ -152,6 +153,7 @@ export default function Visitors() {
                   <td><span className={`badge ${v.visitorType === 'Military' ? 'badge-blue' : 'badge-yellow'}`}>{v.visitorType}</span></td>
                   <td>
                     <span style={{ fontWeight: 600 }}>{v.fullName}</span>
+                    {v.visitorType === 'Military' && v.rank && <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--text-muted)' }}>({v.rank})</span>}
                     <br/>
                     <span className="mono" style={{ fontSize: 10, color: 'var(--text-muted)' }}>{v.idNumber}</span>
                     {v.hasVehicle && (
@@ -214,6 +216,28 @@ export default function Visitors() {
 
                   <>
                     <div className="form-group"><label className="form-label">Full Name *</label><input className="input" value={form.fullName} onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))} required /></div>
+                    
+                    {form.visitorType === 'Military' && (
+                      <div className="form-group">
+                        <label className="form-label">Rank</label>
+                        <select className="input" value={form.rank || ''} onChange={e => setForm(p => ({ ...p, rank: e.target.value }))}>
+                          <option value="">-- No Rank / Select --</option>
+                          <option value="Dable">Dable</option>
+                          <option value="Alifle">Alifle</option>
+                          <option value="Laba Alifle">Laba Alifle</option>
+                          <option value="Saddex Alifle">Saddex Alifle</option>
+                          <option value="Xidigle">Xidigle</option>
+                          <option value="Laba Xidigle">Laba Xidigle</option>
+                          <option value="Dhamme">Dhamme</option>
+                          <option value="Gaashaanle">Gaashaanle</option>
+                          <option value="Gaashaanle Dhexe">Gaashaanle Dhexe</option>
+                          <option value="Gaashaanle Sare (Colonel)">Gaashaanle Sare (Colonel)</option>
+                          <option value="Sareeye Guuto">Sareeye Guuto</option>
+                          <option value="Sareeye Gaas">Sareeye Gaas</option>
+                        </select>
+                      </div>
+                    )}
+
                     <div className="form-group"><label className="form-label">{form.visitorType === 'Military' ? 'Military ID *' : 'National ID *'}</label><input className="input" value={form.idNumber} onChange={e => setForm(p => ({ ...p, idNumber: e.target.value }))} required /></div>
                     <div className="form-group"><label className="form-label">Phone *</label><input className="input" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} required /></div>
                     <div className="form-group"><label className="form-label">Email</label><input className="input" type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} /></div>
@@ -323,7 +347,7 @@ export default function Visitors() {
                 <div style={{ fontSize: 13, color: 'var(--text-muted)' }} className="mono">{selected.visitorId}</div>
                 <div style={{ marginTop: 8 }}>
                   <span className={`badge ${selected.visitorType === 'Military' ? 'badge-blue' : 'badge-yellow'}`}>
-                    {selected.visitorType}
+                    {selected.visitorType} {selected.visitorType === 'Military' && selected.rank ? ` - ${selected.rank}` : ''}
                   </span>
                   <span className={`badge ${statusBadge[selected.status] || 'badge-gray'}`} style={{ marginLeft: 8 }}>{selected.status}</span>
                 </div>

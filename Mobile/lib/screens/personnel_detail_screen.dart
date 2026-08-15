@@ -51,20 +51,20 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
   }
 
   @override Widget build(BuildContext context) {
-    if (_loading) return const Scaffold(backgroundColor: AppColors.background,
+    if (_loading) return Scaffold(backgroundColor: context.bgColor,
       body: Center(child: CircularProgressIndicator(color: AppColors.primary)));
-    if (_p == null) return const Scaffold(backgroundColor: AppColors.background,
-      body: Center(child: Text('Not found', style: TextStyle(color: AppColors.textMuted))));
+    if (_p == null) return Scaffold(backgroundColor: context.bgColor,
+      body: Center(child: Text('Not found', style: TextStyle(color: context.textMuted))));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.bgColor,
       body: CustomScrollView(slivers: [
         SliverAppBar(
-          expandedHeight: 200, pinned: true, backgroundColor: AppColors.surface,
+          expandedHeight: 200, pinned: true, backgroundColor: context.surfaceColor,
           leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
           flexibleSpace: FlexibleSpaceBar(
             background: Container(
-              color: AppColors.surface,
+              color: context.surfaceColor,
               child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                 const SizedBox(height: 60),
                 SafeAvatar(
@@ -76,8 +76,8 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                Text(_p!.fullName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                Text('${_p!.rank} · ${_p!.unit}', style: const TextStyle(color: AppColors.textSecondary)),
+                Text(_p!.fullName, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: context.textPrimary)),
+                Text('${_p!.rank} · ${_p!.unit}', style: TextStyle(color: context.textSecondary)),
               ]),
             ),
           ),
@@ -101,7 +101,7 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             // Status row
             Row(children: [
-              _Badge(_p!.isInside ? 'INSIDE CAMP' : 'OUTSIDE', _p!.isInside ? AppColors.primary : AppColors.textMuted),
+              _Badge(_p!.isInside ? 'INSIDE CAMP' : 'OUTSIDE', _p!.isInside ? AppColors.primary : context.textMuted),
               const SizedBox(width: 8),
               _Badge(_p!.category?.toUpperCase() ?? '', AppColors.secondary),
             ]),
@@ -133,7 +133,7 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(children: [
-                  const Text('REGISTERED VEHICLES', style: TextStyle(fontSize: 10, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
+                  Text('REGISTERED VEHICLES', style: TextStyle(fontSize: 10, color: context.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
                   const SizedBox(width: 8),
                   if (_vehicles.isNotEmpty)
                     Container(
@@ -169,14 +169,14 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: context.surfaceColor,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: context.borderColor),
                 ),
                 child: Row(children: [
-                  Icon(Icons.no_crash, color: AppColors.textMuted.withOpacity(0.5), size: 28),
+                  Icon(Icons.no_crash, color: context.textMuted.withOpacity(0.5), size: 28),
                   const SizedBox(width: 12),
-                  const Text('No vehicle on file', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                  Text('No vehicle on file', style: TextStyle(color: context.textMuted, fontSize: 13)),
                 ]),
               )
             else
@@ -185,12 +185,12 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: context.surfaceColor,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: v.isBlacklisted
                           ? AppColors.danger.withOpacity(0.4)
-                          : AppColors.border,
+                          : context.borderColor,
                     ),
                   ),
                   child: Row(children: [
@@ -208,8 +208,8 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(
                           v.plateNumber,
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary, letterSpacing: 1),
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700,
+                              color: context.textPrimary, letterSpacing: 1),
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -218,7 +218,7 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
                             if (v.model != null && v.model!.isNotEmpty) v.model!,
                             v.type.toUpperCase().replaceAll('_', ' '),
                           ].join(' · '),
-                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                          style: TextStyle(fontSize: 11, color: context.textSecondary),
                         ),
                       ]),
                     ),
@@ -230,7 +230,7 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
                       const SizedBox(height: 4),
                       _Badge(
                         v.isInside ? 'INSIDE' : 'OUTSIDE',
-                        v.isInside ? AppColors.primary : AppColors.textMuted,
+                        v.isInside ? AppColors.primary : context.textMuted,
                       ),
                     ]),
                   ]),
@@ -239,13 +239,13 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
             const SizedBox(height: 24),
 
             // Activity history
-            const Text('ENTRY/EXIT HISTORY', style: TextStyle(fontSize: 10, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
+            Text('ENTRY/EXIT HISTORY', style: TextStyle(fontSize: 10, color: context.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
             const SizedBox(height: 10),
             ..._history.map((log) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.border)),
+                decoration: BoxDecoration(color: context.surfaceColor, borderRadius: BorderRadius.circular(10), border: Border.all(color: context.borderColor)),
                 child: Row(children: [
                   Container(
                     width: 32, height: 32,
@@ -258,17 +258,17 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
                   ),
                   const SizedBox(width: 10),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('${log.action.toUpperCase()} · ${log.gate}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary)),
-                    Text('by ${log.guardName ?? 'System'}', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                    Text('${log.action.toUpperCase()} · ${log.gate}', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: context.textPrimary)),
+                    Text('by ${log.guardName ?? 'System'}', style: TextStyle(fontSize: 11, color: context.textMuted)),
                   ])),
                   Text(DateFormat('MMM d\nHH:mm').format(log.timestamp),
                     textAlign: TextAlign.right,
-                    style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                    style: TextStyle(fontSize: 11, color: context.textMuted)),
                 ]),
               ),
             )),
-            if (_history.isEmpty) const Center(
-              child: Padding(padding: EdgeInsets.all(24), child: Text('No history found', style: TextStyle(color: AppColors.textMuted)))),
+            if (_history.isEmpty) Center(
+              child: Padding(padding: const EdgeInsets.all(24), child: Text('No history found', style: TextStyle(color: context.textMuted)))),
           ]),
         )),
       ]),
@@ -282,7 +282,7 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: hasAccount ? AppColors.success.withOpacity(0.4) : AppColors.primary.withOpacity(0.4),
@@ -302,7 +302,7 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
                     size: 18,
                   ),
                   const SizedBox(width: 8),
-                  const Text('GUARD SYSTEM ACCOUNT', style: TextStyle(fontSize: 10, color: AppColors.textMuted, letterSpacing: 1.5, fontWeight: FontWeight.w700)),
+                  Text('GUARD SYSTEM ACCOUNT', style: TextStyle(fontSize: 10, color: context.textMuted, letterSpacing: 1.5, fontWeight: FontWeight.w700)),
                 ],
               ),
               _Badge(
@@ -331,9 +331,9 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
               ),
             ),
           ] else ...[
-            const Text(
+            Text(
               'This personnel record currently does not have an active Guard login account.',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              style: TextStyle(color: context.textSecondary, fontSize: 12),
             ),
             const SizedBox(height: 12),
             SizedBox(
@@ -364,14 +364,14 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: AppColors.surface,
-          title: const Text('Issue Guard Account', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+          backgroundColor: context.surfaceColor,
+          title: Text('Issue Guard Account', style: TextStyle(color: context.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
           content: Form(
             key: formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Assign guard login credentials to this personnel record.', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                Text('Assign guard login credentials to this personnel record.', style: TextStyle(fontSize: 12, color: context.textMuted)),
                 const SizedBox(height: 16),
 
                 TextFormField(
@@ -437,8 +437,8 @@ class _PersonnelDetailScreenState extends State<PersonnelDetailScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: AppColors.surface,
-          title: const Text('Reset Guard Password', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+          backgroundColor: context.surfaceColor,
+          title: Text('Reset Guard Password', style: TextStyle(color: context.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
           content: Form(
             key: formKey,
             child: Column(
@@ -507,7 +507,7 @@ class _InfoCard extends StatelessWidget {
   const _InfoCard({required this.children});
   @override Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+    decoration: BoxDecoration(color: context.surfaceColor, borderRadius: BorderRadius.circular(12), border: Border.all(color: context.borderColor)),
     child: Column(children: children),
   );
 }
@@ -518,8 +518,8 @@ class _InfoRow extends StatelessWidget {
   @override Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 6),
     child: Row(children: [
-      Expanded(flex: 2, child: Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 12))),
-      Expanded(flex: 3, child: Text(value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w500))),
+      Expanded(flex: 2, child: Text(label, style: TextStyle(color: context.textMuted, fontSize: 12))),
+      Expanded(flex: 3, child: Text(value, style: TextStyle(color: context.textPrimary, fontSize: 13, fontWeight: FontWeight.w500))),
     ]),
   );
 }
@@ -536,9 +536,9 @@ class _QRCodeCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4)),
         ],
@@ -548,7 +548,7 @@ class _QRCodeCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('IDENTIFICATION QR', style: TextStyle(fontSize: 10, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w800)),
+              Text('IDENTIFICATION QR', style: TextStyle(fontSize: 10, color: context.textMuted, letterSpacing: 2, fontWeight: FontWeight.w800)),
               Icon(Icons.qr_code_2, size: 16, color: AppColors.primary.withOpacity(0.5)),
             ],
           ),
@@ -572,8 +572,8 @@ class _QRCodeCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Text('Scan this code at the gate to verify identity', 
-            style: TextStyle(color: AppColors.textMuted, fontSize: 11), textAlign: TextAlign.center),
+          Text('Scan this code at the gate to verify identity', 
+            style: TextStyle(color: context.textMuted, fontSize: 11), textAlign: TextAlign.center),
         ],
       ),
     );

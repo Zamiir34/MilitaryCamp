@@ -17,6 +17,7 @@ import MyWork from './pages/MyWork';
 import Chat from './pages/Chat';
 import Verify from './pages/Verify';
 import VisitorPortal from './pages/VisitorPortal';
+import AuditLogs from './pages/AuditLogs';
 
 const PrivateRoute = ({ children, roles }) => {
   const { user, canAccess } = useAuth();
@@ -52,16 +53,19 @@ function App() {
             <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
               <Route index element={<Dashboard />} />
               <Route path="my-work" element={<MyWork />} />
-              <Route path="personnel" element={<Personnel />} />
+              <Route path="personnel" element={<PrivateRoute roles={['Administrator', 'SecurityOfficer']}><Personnel /></PrivateRoute>} />
+              <Route path="personnels" element={<PrivateRoute roles={['Administrator', 'SecurityOfficer']}><Personnel /></PrivateRoute>} />
               <Route path="visitors" element={<Visitors />} />
               <Route path="entry-exit" element={<EntryExit />} />
               <Route path="reports" element={<PrivateRoute roles={['Administrator', 'SecurityOfficer']}><Reports /></PrivateRoute>} />
+              <Route path="report" element={<PrivateRoute roles={['Administrator', 'SecurityOfficer']}><Reports /></PrivateRoute>} />
               <Route path="notifications" element={<Alerts />} />
               <Route path="users" element={<PrivateRoute roles={['Administrator']}><Users /></PrivateRoute>} />
+              <Route path="audit-logs" element={<PrivateRoute roles={['Administrator']}><AuditLogs /></PrivateRoute>} />
               <Route path="attendance" element={<Attendance />} />
               <Route path="chat" element={<Chat />} />
             </Route>
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </AuthProvider>
       </ThemeProvider>

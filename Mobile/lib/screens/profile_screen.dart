@@ -18,7 +18,7 @@ class ProfileScreen extends StatelessWidget {
     if (user == null) return const Center(child: CircularProgressIndicator());
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
         title: const Text('USER PROFILE'),
         elevation: 0,
@@ -46,7 +46,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     child: CircleAvatar(
                       radius: 50,
-                      backgroundColor: AppColors.surface,
+                      backgroundColor: context.surfaceColor,
                       child: Text(
                         user.name.isNotEmpty ? user.name.substring(0, 1).toUpperCase() : 'U',
                         style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: AppColors.primary),
@@ -56,11 +56,11 @@ class ProfileScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     user.name,
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: context.textPrimary),
                   ),
                   Text(
                     '${user.rank ?? 'N/A'} · ${user.role.toUpperCase()}',
-                    style: const TextStyle(color: AppColors.textSecondary, letterSpacing: 1),
+                    style: TextStyle(color: context.textSecondary, letterSpacing: 1),
                   ),
                 ],
               ),
@@ -95,7 +95,7 @@ class ProfileScreen extends StatelessWidget {
             // Version Info
             Text(
               'App Version ${AppConstants.appVersion}',
-              style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+              style: TextStyle(color: context.textMuted, fontSize: 12),
             ),
             const SizedBox(height: 20),
           ],
@@ -108,7 +108,7 @@ class ProfileScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: context.surfaceColor,
         title: const Text('LOGOUT'),
         content: const Text('Are you sure you want to sign out of the system?'),
         actions: [
@@ -144,13 +144,13 @@ class _ProfileSection extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 8, bottom: 8),
-          child: Text(title, style: const TextStyle(fontSize: 11, color: AppColors.textMuted, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+          child: Text(title, style: TextStyle(fontSize: 11, color: context.textMuted, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
         ),
         Container(
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.surfaceColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: context.borderColor),
           ),
           child: Column(children: children),
         ),
@@ -171,14 +171,14 @@ class _ProfileRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: AppColors.textMuted),
+          Icon(icon, size: 20, color: context.textMuted),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
-                Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: color ?? AppColors.textPrimary)),
+                Text(label, style: TextStyle(fontSize: 10, color: context.textMuted)),
+                Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: color ?? context.textPrimary)),
               ],
             ),
           ),
@@ -201,10 +201,10 @@ class _ProfileToggleRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: AppColors.textMuted),
+          Icon(icon, size: 20, color: context.textMuted),
           const SizedBox(width: 16),
           Expanded(
-            child: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textPrimary)),
+            child: Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: context.textPrimary)),
           ),
           Switch(
             value: value,

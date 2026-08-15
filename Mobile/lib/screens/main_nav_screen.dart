@@ -1,4 +1,4 @@
-// lib/screens/main_nav_screen.dart
+﻿// lib/screens/main_nav_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -76,11 +76,11 @@ class _MainNavScreenState extends State<MainNavScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.shield, size: 64, color: AppColors.textMuted),
+                Icon(Icons.shield, size: 64, color: context.textMuted),
                 const SizedBox(height: 20),
-                const Text('SYSTEM IS OFF', style: TextStyle(color: AppColors.textPrimary, fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: 2)),
+                Text('SYSTEM IS OFF', style: TextStyle(color: context.textPrimary, fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: 2)),
                 const SizedBox(height: 10),
-                const Text('You are currently off duty. Access to the system is restricted.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
+                Text('You are currently off duty. Access to the system is restricted.', textAlign: TextAlign.center, style: TextStyle(color: context.textSecondary, fontSize: 16)),
                 const SizedBox(height: 30),
                 ElevatedButton.icon(
                   onPressed: () => auth.logout(),
@@ -97,16 +97,16 @@ class _MainNavScreenState extends State<MainNavScreen> {
 
     return Scaffold(
       drawer: Drawer(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.bgColor,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // ── Premium Header ───────────────────────────────────
             Container(
               padding: const EdgeInsets.fromLTRB(20, 60, 20, 24),
-              decoration: const BoxDecoration(
-                color: AppColors.surface,
-                border: Border(bottom: BorderSide(color: AppColors.border)),
+              decoration: BoxDecoration(
+                color: context.surfaceColor,
+                border: Border(bottom: BorderSide(color: context.borderColor)),
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
@@ -128,7 +128,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
                   const SizedBox(width: 14),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(user?.name ?? 'Unknown User',
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 17, color: AppColors.textPrimary)),
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17, color: context.textPrimary)),
                     const SizedBox(height: 4),
                     Row(children: [
                       Container(
@@ -146,21 +146,21 @@ class _MainNavScreenState extends State<MainNavScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: (user?.isOnDuty ?? false) ? AppColors.success.withOpacity(0.15) : AppColors.textMuted.withOpacity(0.1),
+                            color: (user?.isOnDuty ?? false) ? AppColors.success.withOpacity(0.15) : context.textMuted.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
                             Container(
                               width: 5, height: 5,
                               decoration: BoxDecoration(
-                                color: (user?.isOnDuty ?? false) ? AppColors.success : AppColors.textMuted,
+                                color: (user?.isOnDuty ?? false) ? AppColors.success : context.textMuted,
                                 shape: BoxShape.circle,
                               ),
                             ),
                             const SizedBox(width: 4),
                             Text((user?.isOnDuty ?? false) ? 'ON DUTY' : 'OFF DUTY',
                               style: TextStyle(
-                                color: (user?.isOnDuty ?? false) ? AppColors.success : AppColors.textMuted,
+                                color: (user?.isOnDuty ?? false) ? AppColors.success : context.textMuted,
                                 fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 0.8,
                               )),
                           ]),
@@ -287,8 +287,8 @@ class _MainNavScreenState extends State<MainNavScreen> {
             // ── Footer ──────────────────────────────────────────
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: AppColors.border)),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: context.borderColor)),
               ),
               child: Column(children: [
                 const Row(children: [
@@ -306,7 +306,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text('VERSION ${AppConstants.appVersion}',
-                  style: const TextStyle(color: AppColors.textMuted, fontSize: 10, letterSpacing: 1)),
+                  style: TextStyle(color: context.textMuted, fontSize: 10, letterSpacing: 1)),
               ]),
             ),
           ],
@@ -363,7 +363,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
       margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(color: AppColors.primary.withOpacity(0.12), blurRadius: 20, offset: const Offset(0, 8)),
@@ -399,7 +399,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(isSelected ? activeIcon : icon, color: isSelected ? AppColors.primary : AppColors.textMuted, size: 22),
+            Icon(isSelected ? activeIcon : icon, color: isSelected ? AppColors.primary : context.textMuted, size: 22),
             AnimatedSize(
               duration: const Duration(milliseconds: 350),
               curve: Curves.easeOutQuint,
@@ -425,7 +425,7 @@ class _DrawerLabel extends StatelessWidget {
   const _DrawerLabel({required this.label});
   @override Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-    child: Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textMuted, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
+    child: Text(label, style: TextStyle(fontSize: 10, color: context.textMuted, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
   );
 }
 
@@ -442,11 +442,11 @@ class _DrawerItem extends StatelessWidget {
       selected: isSelected,
       selectedTileColor: AppColors.primary.withOpacity(0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      leading: Icon(icon, size: 20, color: isSelected ? AppColors.primary : (iconColor ?? AppColors.textSecondary)),
+      leading: Icon(icon, size: 20, color: isSelected ? AppColors.primary : (iconColor ?? context.textSecondary)),
       title: Text(label, style: TextStyle(
         fontSize: 14,
         fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-        color: isSelected ? AppColors.primary : (textColor ?? AppColors.textPrimary),
+        color: isSelected ? AppColors.primary : (textColor ?? context.textPrimary),
         letterSpacing: 0.3,
       )),
     ),

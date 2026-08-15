@@ -227,7 +227,7 @@ export default function Attendance() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
-        {renderShiftCard()}
+        {(user?.role === 'SecurityOfficer' || user?.role === 'Guard') && renderShiftCard()}
 
         {canViewTeamRecords && (
           <div className="card">

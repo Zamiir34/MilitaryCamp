@@ -198,7 +198,7 @@ class _LogEntryScreenState extends State<LogEntryScreen> {
   Widget build(BuildContext context) {
     final actionColor = isEntry ? AppColors.success : AppColors.warning;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
         title: Text('RECORD ${LogEntryScreen.modalForAction(widget.action).toUpperCase()}'),
         backgroundColor: actionColor.withOpacity(0.15),
@@ -231,7 +231,7 @@ class _LogEntryScreenState extends State<LogEntryScreen> {
                 textCapitalization: TextCapitalization.characters,
                 decoration: InputDecoration(
                   hintText: _subjectType == 'Personnel' ? 'Badge number' : 'Visitor name or ID',
-                  prefixIcon: const Icon(Icons.search, color: AppColors.textMuted),
+                  prefixIcon: Icon(Icons.search, color: context.textMuted),
                 ),
                 onSubmitted: (_) => _search(),
               )),
@@ -262,14 +262,14 @@ class _LogEntryScreenState extends State<LogEntryScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: context.surfaceColor,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: actionColor.withOpacity(0.4), width: 1.5),
                 ),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(_selectedPreview!['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-                  Text(_selectedPreview!['detail'] ?? '', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                  Text(_selectedPreview!['id'] ?? '', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                  Text(_selectedPreview!['detail'] ?? '', style: TextStyle(fontSize: 12, color: context.textSecondary)),
+                  Text(_selectedPreview!['id'] ?? '', style: TextStyle(fontSize: 11, color: context.textMuted)),
                 ]),
               ),
               if (!isEntry) ...[
@@ -277,9 +277,9 @@ class _LogEntryScreenState extends State<LogEntryScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceVariant,
+                    color: context.surfaceVarColor,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: context.borderColor),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -322,8 +322,8 @@ class _LogEntryScreenState extends State<LogEntryScreen> {
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 value: _gate,
-                dropdownColor: AppColors.surfaceVariant,
-                decoration: const InputDecoration(prefixIcon: Icon(Icons.door_back_door_outlined, color: AppColors.textMuted)),
+                dropdownColor: context.surfaceVarColor,
+                decoration: InputDecoration(prefixIcon: Icon(Icons.door_back_door_outlined, color: context.textMuted)),
                 items: AppConstants.gates.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
                 onChanged: (v) => setState(() => _gate = v!),
               ),
@@ -336,7 +336,7 @@ class _LogEntryScreenState extends State<LogEntryScreen> {
                 onChanged: (v) => setState(() => _isAuthorized = v),
               ),
               const SizedBox(height: 8),
-              TextField(controller: _purposeCtrl, decoration: const InputDecoration(labelText: 'Purpose (optional)', prefixIcon: Icon(Icons.description_outlined, color: AppColors.textMuted))),
+              TextField(controller: _purposeCtrl, decoration: InputDecoration(labelText: 'Purpose (optional)', prefixIcon: Icon(Icons.description_outlined, color: context.textMuted))),
               const SizedBox(height: 24),
               SizedBox(
                 height: 52,
@@ -370,9 +370,9 @@ class _TypeChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: selected ? AppColors.primary.withOpacity(0.15) : AppColors.surfaceVariant,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: selected ? AppColors.primary : AppColors.border, width: selected ? 1.5 : 1),
+            border: Border.all(color: selected ? AppColors.primary : context.borderColor, width: selected ? 1.5 : 1),
           ),
-          child: Center(child: Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: selected ? AppColors.primary : AppColors.textMuted))),
+          child: Center(child: Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: selected ? AppColors.primary : context.textMuted))),
         ),
       );
 }
@@ -381,7 +381,7 @@ class _SectionLabel extends StatelessWidget {
   final String label;
   const _SectionLabel({required this.label});
   @override
-  Widget build(BuildContext context) => Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600));
+  Widget build(BuildContext context) => Text(label, style: TextStyle(fontSize: 10, color: context.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600));
 }
 
 class _ErrorBanner extends StatelessWidget {

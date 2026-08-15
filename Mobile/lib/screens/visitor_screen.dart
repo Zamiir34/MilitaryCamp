@@ -102,13 +102,13 @@ class _VisitorScreenState extends State<VisitorScreen> {
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('VISITOR CENTER', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-            Text('$_total visitors registered', style: const TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.normal)),
+            Text('$_total visitors registered', style: TextStyle(fontSize: 11, color: context.textMuted, fontWeight: FontWeight.normal)),
           ],
         ),
         actions: [
@@ -129,7 +129,7 @@ class _VisitorScreenState extends State<VisitorScreen> {
         children: [
           // Status Tabs Selector
           Container(
-            color: AppColors.surface,
+            color: context.surfaceColor,
             child: Row(
               children: [
                 _StatusTab(
@@ -164,10 +164,10 @@ class _VisitorScreenState extends State<VisitorScreen> {
                 Expanded(
                   child: TextField(
                     controller: _searchCtrl,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: 'Search visitor name, ID...',
-                      prefixIcon: Icon(Icons.search, color: AppColors.textMuted),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      prefixIcon: Icon(Icons.search, color: context.textMuted),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
                     onSubmitted: (_) => _load(reset: true),
                   ),
@@ -177,7 +177,7 @@ class _VisitorScreenState extends State<VisitorScreen> {
                   icon: const Icon(Icons.qr_code_scanner, color: AppColors.primary),
                   onPressed: _scanQR,
                   style: IconButton.styleFrom(
-                    backgroundColor: AppColors.surfaceVariant,
+                    backgroundColor: context.surfaceVarColor,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     padding: const EdgeInsets.all(12),
                   ),
@@ -209,7 +209,7 @@ class _VisitorScreenState extends State<VisitorScreen> {
                     onRefresh: () => _load(reset: true),
                     color: AppColors.primary,
                     child: _list.isEmpty
-                        ? const Center(child: Text('No visitors found', style: TextStyle(color: AppColors.textMuted)))
+                        ? Center(child: Text('No visitors found', style: TextStyle(color: context.textMuted)))
                         : ListView.separated(
                             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                             itemCount: _list.length,
@@ -260,7 +260,7 @@ class _StatusTab extends StatelessWidget {
               fontSize: 11,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.5,
-              color: isActive ? AppColors.primary : AppColors.textMuted,
+              color: isActive ? AppColors.primary : context.textMuted,
             ),
           ),
         ),
@@ -274,14 +274,14 @@ class _VisitorTile extends StatelessWidget {
   final VoidCallback onTap;
   const _VisitorTile({required this.v, required this.onTap});
 
-  Color get _statusColor {
+  Color _statusColor(BuildContext context) {
     switch (v.status) {
       case 'Approved':
         return AppColors.success;
       case 'Denied':
         return AppColors.danger;
       case 'Completed':
-        return AppColors.textMuted;
+        return context.textMuted;
       default:
         return AppColors.warning;
     }
@@ -300,14 +300,15 @@ class _VisitorTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final statusColor = _statusColor(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.surfaceColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.borderColor),
         ),
         child: Row(
           children: [
@@ -324,7 +325,7 @@ class _VisitorTile extends StatelessWidget {
                       Expanded(
                         child: Text(
                           v.fullName,
-                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppColors.textPrimary),
+                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: context.textPrimary),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -349,13 +350,13 @@ class _VisitorTile extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     v.organization ?? (v.visitorType == 'Military' ? 'Military Member' : 'Civilian Visitor'),
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    style: TextStyle(fontSize: 12, color: context.textSecondary),
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   Text(
                     'ID: ${v.visitorId} · ${v.idNumber}',
-                    style: const TextStyle(fontSize: 10, color: AppColors.textMuted, fontFamily: 'monospace'),
+                    style: TextStyle(fontSize: 10, color: context.textMuted, fontFamily: 'monospace'),
                   ),
                   if (v.hasVehicle) ...[
                     const SizedBox(height: 6),
@@ -377,10 +378,10 @@ class _VisitorTile extends StatelessWidget {
             // Status Badge
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: _statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+              decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
               child: Text(
                 v.status.toUpperCase(),
-                style: TextStyle(color: _statusColor, fontSize: 9, fontWeight: FontWeight.w700),
+                style: TextStyle(color: statusColor, fontSize: 9, fontWeight: FontWeight.w700),
               ),
             ),
           ],

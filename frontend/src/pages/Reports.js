@@ -249,11 +249,11 @@ export default function Reports() {
         <div className="form-grid reports-filter-grid" style={{ marginBottom: '1.25rem' }}>
           <div className="form-group">
             <label className="form-label">Start Date</label>
-            <input className="input" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+            <input className="input" type="date" value={startDate} max={todayStr} onChange={e => setStartDate(e.target.value)} />
           </div>
           <div className="form-group">
             <label className="form-label">End Date</label>
-            <input className="input" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+            <input className="input" type="date" value={endDate} max={todayStr} onChange={e => setEndDate(e.target.value)} />
           </div>
           <div className="form-group">
             <label className="form-label">Record Type</label>

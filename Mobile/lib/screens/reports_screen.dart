@@ -83,7 +83,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
       initialDateRange: DateTimeRange(start: _start, end: _end),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.dark(primary: AppColors.primary, surface: AppColors.surface),
+          colorScheme: context.isDark
+              ? const ColorScheme.dark(primary: AppColors.primary, surface: AppColors.surface)
+              : ColorScheme.light(primary: AppColors.primary, surface: Colors.white),
         ),
         child: child!,
       ),
@@ -102,7 +104,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final gateData = (_report?['gateData'] as List?) ?? [];
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
         title: const Text('ACTIVITY REPORTS'),
         actions: [
@@ -149,9 +151,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       Container(
                         padding: const EdgeInsets.all(32),
                         decoration: _cardDeco(),
-                        child: const Center(
+                        child: Center(
                           child: Text('No records match the selected filters.',
-                              style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                              style: TextStyle(color: context.textMuted, fontSize: 13)),
                         ),
                       )
                     else
@@ -174,7 +176,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('FILTERS', style: TextStyle(fontSize: 10, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.bold)),
+          Text('FILTERS', style: TextStyle(fontSize: 10, color: context.textMuted, letterSpacing: 2, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           Row(children: [
             Expanded(child: _filterDropdown('Type', _type, const ['', 'Personnel', 'Vehicle', 'Visitor'], (v) => setState(() => _type = v ?? ''))),
@@ -207,7 +209,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Widget _filterDropdown(String label, String value, List<String> options, ValueChanged<String?> onChanged, {Map<String, String>? labels}) {
     return DropdownButtonFormField<String>(
       value: value,
-      dropdownColor: AppColors.surfaceVariant,
+      dropdownColor: context.surfaceVarColor,
       decoration: InputDecoration(labelText: label, isDense: true),
       items: options.map((o) => DropdownMenuItem(value: o, child: Text(labels?[o] ?? (o.isEmpty ? 'All' : o), style: const TextStyle(fontSize: 12)))).toList(),
       onChanged: onChanged,
@@ -216,7 +218,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   Widget _buildSummary(Map<String, dynamic> s) {
     final items = [
-      ('TOTAL', s['total'], AppColors.textPrimary),
+      ('TOTAL', s['total'], context.textPrimary),
       ('ENTRIES', s['entries'], AppColors.success),
       ('EXITS', s['exits'], AppColors.warning),
       ('PERSONNEL', s['personnel'], AppColors.primary),
@@ -281,9 +283,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   BoxDecoration _cardDeco() => BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
       );
 }
 
@@ -293,12 +295,12 @@ class _ReportLogCard extends StatelessWidget {
 
   String _val(String? v) => (v == null || v.isEmpty || v == '--') ? '—' : v;
 
-  Color _typeColor(String? type) {
+  Color _typeColor(BuildContext context, String? type) {
     switch (type) {
       case 'Personnel': return AppColors.primary;
       case 'Vehicle': return AppColors.success;
       case 'Visitor': return AppColors.accent;
-      default: return AppColors.textMuted;
+      default: return context.textMuted;
     }
   }
 
@@ -311,52 +313,52 @@ class _ReportLogCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(color: _typeColor(type).withOpacity(0.12), borderRadius: BorderRadius.circular(4)),
-            child: Text(type.toUpperCase(), style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: _typeColor(type))),
+            decoration: BoxDecoration(color: _typeColor(context, type).withOpacity(0.12), borderRadius: BorderRadius.circular(4)),
+            child: Text(type.toUpperCase(), style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: _typeColor(context, type))),
           ),
           const SizedBox(width: 8),
           Text(isEntry ? '▲ ENTRY' : '▼ EXIT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: isEntry ? AppColors.success : AppColors.warning)),
           const Spacer(),
           if (createdAt != null)
-            Text(DateFormat('yyyy-MM-dd HH:mm').format(createdAt), style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+            Text(DateFormat('yyyy-MM-dd HH:mm').format(createdAt), style: TextStyle(fontSize: 10, color: context.textMuted)),
         ]),
         const SizedBox(height: 8),
-        Text(log['subjectName']?.toString() ?? '—', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+        Text(log['subjectName']?.toString() ?? '—', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.textPrimary)),
         const SizedBox(height: 8),
-        _detailRow('Vehicle Name', _val(log['vehicleName']?.toString())),
-        _detailRow('Owner Name', _val(log['ownerName']?.toString())),
-        _detailRow('Plate Number', _val(log['plateNumber']?.toString())),
-        _detailRow('Record ID', _val(log['recordId']?.toString())),
-        _detailRow('Driver', _val(log['driverName']?.toString())),
-        _detailRow('Gate', log['gate']?.toString() ?? '—'),
+        _detailRow(context, 'Vehicle Name', _val(log['vehicleName']?.toString())),
+        _detailRow(context, 'Owner Name', _val(log['ownerName']?.toString())),
+        _detailRow(context, 'Plate Number', _val(log['plateNumber']?.toString())),
+        _detailRow(context, 'Record ID', _val(log['recordId']?.toString())),
+        _detailRow(context, 'Driver', _val(log['driverName']?.toString())),
+        _detailRow(context, 'Gate', log['gate']?.toString() ?? '—'),
         Row(children: [
-          const Text('Authorized: ', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+          Text('Authorized: ', style: TextStyle(fontSize: 11, color: context.textMuted)),
           Text(log['isAuthorized'] == false ? 'NO' : 'YES',
               style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: log['isAuthorized'] == false ? AppColors.danger : AppColors.success)),
         ]),
         if (log['logId'] != null) ...[
           const SizedBox(height: 4),
-          Text(log['logId'].toString(), style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+          Text(log['logId'].toString(), style: TextStyle(fontSize: 10, color: context.textMuted)),
         ],
       ]),
     );
   }
 
-  Widget _detailRow(String label, String value) => Padding(
+  Widget _detailRow(BuildContext context, String label, String value) => Padding(
         padding: const EdgeInsets.only(bottom: 2),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(width: 90, child: Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textMuted))),
-            Expanded(child: Text(value, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary))),
+            SizedBox(width: 90, child: Text(label, style: TextStyle(fontSize: 11, color: context.textMuted))),
+            Expanded(child: Text(value, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.textSecondary))),
           ],
         ),
       );
@@ -379,7 +381,7 @@ class _PeriodBanner extends StatelessWidget {
         const Icon(Icons.date_range, color: AppColors.primary, size: 16),
         const SizedBox(width: 10),
         Text('${fmt.format(start)}  →  ${fmt.format(end)}',
-            style: const TextStyle(fontSize: 12, color: AppColors.textPrimary, fontWeight: FontWeight.w500)),
+            style: TextStyle(fontSize: 12, color: context.textPrimary, fontWeight: FontWeight.w500)),
       ]),
     );
   }
@@ -400,7 +402,7 @@ class _SummaryBox extends StatelessWidget {
         child: Column(children: [
           Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
           const SizedBox(height: 2),
-          Text(label, style: const TextStyle(fontSize: 7, color: AppColors.textMuted, letterSpacing: 0.5), textAlign: TextAlign.center),
+          Text(label, style: TextStyle(fontSize: 7, color: context.textMuted, letterSpacing: 0.5), textAlign: TextAlign.center),
         ]),
       );
 }
@@ -410,5 +412,5 @@ class _SectionTitle extends StatelessWidget {
   const _SectionTitle(this.title);
   @override
   Widget build(BuildContext context) => Text(title,
-      style: const TextStyle(fontSize: 10, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.bold));
+      style: TextStyle(fontSize: 10, color: context.textMuted, letterSpacing: 2, fontWeight: FontWeight.bold));
 }

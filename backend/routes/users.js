@@ -139,8 +139,17 @@ router.put('/:id', auth, requireRole('Administrator', 'SecurityOfficer'), async 
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    if (req.user.role === 'SecurityOfficer' && user.role !== 'Guard') {
-      return res.status(403).json({ message: 'Security Officers can only manage Guard accounts.' });
+    // SecurityOfficer: kaliya Guard-yada ayuu update gareyn karaa
+    if (req.user.role === 'SecurityOfficer') {
+      if (user.role !== 'Guard') {
+        return res.status(403).json({ message: 'Security Officers can only manage Guard accounts.' });
+      }
+      // SecurityOfficer ma bedeli karo role-ka — Guard kaliya ayuu tagi karaa
+      if (updateData.role && updateData.role !== 'Guard') {
+        return res.status(403).json({ message: 'Security Officers cannot change a Guard\'s role.' });
+      }
+      // Role-ka ha ku xidnaaado Guard
+      updateData.role = 'Guard';
     }
 
     // Check for uniqueness if fields are updated

@@ -331,10 +331,7 @@ router.post('/:id/transfer', auth, requireRole('Administrator', 'SecurityOfficer
     validateObjectId(req.params.id);
     cleanStringFields(req.body, ['newUnit', 'newRank', 'transferReason']);
     const { newUnit, newRank, transferReason, authorizedZones } = req.body;
-    if (!newUnit) {
-      return res.status(400).json({ message: 'New unit is required for transfer.' });
-    }
-
+    
     const personnel = await Personnel.findById(req.params.id);
     if (!personnel) return res.status(404).json({ message: 'Personnel not found' });
 
@@ -342,7 +339,7 @@ router.post('/:id/transfer', auth, requireRole('Administrator', 'SecurityOfficer
     const oldRank = personnel.rank;
 
     // Update fields
-    personnel.unit = newUnit;
+    if (newUnit) personnel.unit = newUnit;
     if (newRank) personnel.rank = newRank;
     if (authorizedZones) {
       personnel.authorizedZones = typeof authorizedZones === 'string'
@@ -352,7 +349,11 @@ router.post('/:id/transfer', auth, requireRole('Administrator', 'SecurityOfficer
 
     // Append to service history/remarks
     const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
-    const transferLog = `[Transfer - ${dateStr}] From Unit "${oldUnit}" to "${newUnit}"${newRank && newRank !== oldRank ? `, Rank changed from "${oldRank}" to "${newRank}"` : ''}.${transferReason ? ` Reason: ${transferReason}` : ''}`;
+    let transferLog = `[Update - ${dateStr}]`;
+    if (newUnit && newUnit !== oldUnit) transferLog += ` Transferred from Unit "${oldUnit}" to "${newUnit}".`;
+    if (newRank && newRank !== oldRank) transferLog += ` Rank changed from "${oldRank}" to "${newRank}".`;
+    if (authorizedZones) transferLog += ` Zones updated.`;
+    if (transferReason) transferLog += ` Reason: ${transferReason}`;
     
     personnel.serviceHistory = personnel.serviceHistory 
       ? `${personnel.serviceHistory}\n${transferLog}` 

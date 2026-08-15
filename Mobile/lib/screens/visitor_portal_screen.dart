@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -169,7 +169,7 @@ class _VisitorPortalScreenState extends State<VisitorPortalScreen> {
         const SizedBox(height: 16),
         const Text('VISITOR PORTAL', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
         const SizedBox(height: 8),
-        const Text('Access your approved visit details and QR pass.', style: TextStyle(color: AppColors.textMuted), textAlign: TextAlign.center),
+        Text('Access your approved visit details and QR pass.', style: TextStyle(color: context.textMuted), textAlign: TextAlign.center),
         const SizedBox(height: 32),
         TextField(
           decoration: const InputDecoration(labelText: 'Email Address', prefixIcon: Icon(Icons.email_outlined)),
@@ -198,7 +198,7 @@ class _VisitorPortalScreenState extends State<VisitorPortalScreen> {
         const SizedBox(height: 16),
         const Text('ENTER ACCESS CODE', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        Text('We sent a 6-digit code to $_maskedEmail', style: const TextStyle(color: AppColors.textMuted), textAlign: TextAlign.center),
+        Text('We sent a 6-digit code to $_maskedEmail', style: TextStyle(color: context.textMuted), textAlign: TextAlign.center),
         const SizedBox(height: 32),
         TextField(
           decoration: const InputDecoration(labelText: '6-Digit Code', counterText: ''),
@@ -240,7 +240,7 @@ class _VisitorPortalScreenState extends State<VisitorPortalScreen> {
           ),
           const SizedBox(height: 24),
           Text(_visitorData!['fullName'] ?? 'Unknown', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-          Text('${(_visitorData!['visitorType'] ?? '').toString().toUpperCase()} VISITOR - ID: ${_visitorData!['visitorId']}', style: const TextStyle(color: AppColors.textMuted)),
+          Text('${(_visitorData!['visitorType'] ?? '').toString().toUpperCase()} VISITOR - ID: ${_visitorData!['visitorId']}', style: TextStyle(color: context.textMuted)),
           const SizedBox(height: 32),
           if (_visitorData!['visitorId'] != null) ...[
             Container(
@@ -269,7 +269,7 @@ class _VisitorPortalScreenState extends State<VisitorPortalScreen> {
               ),
             ),
           ] else ...[
-            const Icon(Icons.qr_code, size: 64, color: AppColors.textMuted),
+            Icon(Icons.qr_code, size: 64, color: context.textMuted),
             const Text('QR Code not available.'),
           ],
         ],
@@ -280,7 +280,7 @@ class _VisitorPortalScreenState extends State<VisitorPortalScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.bgColor,
       appBar: AppBar(title: const Text('Visitor Access')),
       body: SafeArea(
         child: Padding(

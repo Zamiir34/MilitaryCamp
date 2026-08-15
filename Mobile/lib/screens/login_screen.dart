@@ -45,7 +45,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.bgColor,
       body: SafeArea(
         child: Consumer<AuthProvider>(
           builder: (_, auth, __) {
@@ -71,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           width: 88, height: 88,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: AppColors.surface,
+                            color: context.surfaceColor,
                             border: Border.all(color: AppColors.primary.withOpacity(0.4), width: 1.5),
                             boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.15), blurRadius: 30)],
                           ),
@@ -82,30 +82,30 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       const Text('CAMP MONITOR', textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.primary, letterSpacing: 4)),
                       const SizedBox(height: 6),
-                      const Text('SECURE ACCESS PORTAL', textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 11, color: AppColors.textMuted, letterSpacing: 3)),
+                      Text('SECURE ACCESS PORTAL', textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 11, color: context.textMuted, letterSpacing: 3)),
                       const SizedBox(height: 48),
 
                       // Form
                       Container(
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: AppColors.surface,
+                          color: context.surfaceColor,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.border),
+                          border: Border.all(color: context.borderColor),
                         ),
                         child: Form(
                           key: _form,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              const Text('AUTHENTICATION', style: TextStyle(fontSize: 12, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
+                              Text('AUTHENTICATION', style: TextStyle(fontSize: 12, color: context.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
                               const SizedBox(height: 20),
                               TextFormField(
                                 controller: _emailCtrl,
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   labelText: 'Email',
-                                  prefixIcon: Icon(Icons.email_outlined, color: AppColors.textMuted),
+                                  prefixIcon: Icon(Icons.email_outlined, color: context.textMuted),
                                 ),
                                 validator: (v) => v?.isEmpty == true ? 'Required' : null,
                               ),
@@ -115,9 +115,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                 obscureText: _obscure,
                                 decoration: InputDecoration(
                                   labelText: 'Password',
-                                  prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textMuted),
+                                  prefixIcon: Icon(Icons.lock_outline, color: context.textMuted),
                                   suffixIcon: IconButton(
-                                    icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: AppColors.textMuted),
+                                    icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: context.textMuted),
                                     onPressed: () => setState(() => _obscure = !_obscure),
                                   ),
                                 ),
@@ -230,7 +230,7 @@ class _OtpScreenState extends State<_OtpScreen> {
               width: 80, height: 80,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.surface,
+                color: context.surfaceColor,
                 border: Border.all(color: AppColors.primary.withOpacity(0.4), width: 1.5),
                 boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.15), blurRadius: 30)],
               ),
@@ -242,7 +242,7 @@ class _OtpScreenState extends State<_OtpScreen> {
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.primary, letterSpacing: 3)),
           const SizedBox(height: 8),
           Text('Code sent to\n${widget.maskedEmail}', textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 13, color: AppColors.textMuted, height: 1.5)),
+            style: TextStyle(fontSize: 13, color: context.textMuted, height: 1.5)),
           const SizedBox(height: 40),
 
           // OTP digit fields
@@ -253,10 +253,10 @@ class _OtpScreenState extends State<_OtpScreen> {
                 width: 46, height: 56,
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: context.surfaceColor,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: _ctrls[i].text.isNotEmpty ? AppColors.primary : AppColors.border,
+                    color: _ctrls[i].text.isNotEmpty ? AppColors.primary : context.borderColor,
                     width: 1.5,
                   ),
                 ),
@@ -300,7 +300,7 @@ class _OtpScreenState extends State<_OtpScreen> {
             children: [
               TextButton(
                 onPressed: () => context.read<AuthProvider>().logout(),
-                child: const Text('← Back', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                child: Text('← Back', style: TextStyle(color: context.textMuted, fontSize: 13)),
               ),
               TextButton(
                 onPressed: _resending ? null : _resend,

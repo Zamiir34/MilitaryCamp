@@ -1,4 +1,4 @@
-// lib/screens/my_work_screen.dart
+﻿// lib/screens/my_work_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -65,13 +65,13 @@ class _MyWorkScreenState extends State<MyWorkScreen> {
         (summary['resolvedAlertsCount'] ?? 0);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: context.surfaceColor,
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('MY WORK TODAY', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, letterSpacing: 1.5)),
           Text(DateFormat('MMMM dd, yyyy').format(DateTime.now()),
-            style: const TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.w400)),
+            style: TextStyle(fontSize: 11, color: context.textMuted, fontWeight: FontWeight.w400)),
         ]),
       ),
       body: _loading
@@ -96,21 +96,21 @@ class _MyWorkScreenState extends State<MyWorkScreen> {
                       const Icon(Icons.check_circle_outline, color: AppColors.primary, size: 20),
                       const SizedBox(width: 10),
                       Text('$totalActions Actions completed today',
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textPrimary)),
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: context.textPrimary)),
                       const Spacer(),
                       // On-duty indicator
                       if (user?.role == 'SecurityOfficer' || user?.role == 'Guard')
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: (user?.isOnDuty ?? false) ? AppColors.success.withOpacity(0.15) : AppColors.textMuted.withOpacity(0.1),
+                            color: (user?.isOnDuty ?? false) ? AppColors.success.withOpacity(0.15) : context.textMuted.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
                             Container(
                               width: 7, height: 7,
                               decoration: BoxDecoration(
-                                color: (user?.isOnDuty ?? false) ? AppColors.success : AppColors.textMuted,
+                                color: (user?.isOnDuty ?? false) ? AppColors.success : context.textMuted,
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -118,7 +118,7 @@ class _MyWorkScreenState extends State<MyWorkScreen> {
                             Text((user?.isOnDuty ?? false) ? 'ON DUTY' : 'OFF DUTY',
                               style: TextStyle(
                                 fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1,
-                                color: (user?.isOnDuty ?? false) ? AppColors.success : AppColors.textMuted,
+                                color: (user?.isOnDuty ?? false) ? AppColors.success : context.textMuted,
                               )),
                           ]),
                         ),
@@ -140,7 +140,7 @@ class _MyWorkScreenState extends State<MyWorkScreen> {
                   ),
 
                   const SizedBox(height: 24),
-                  const Text('RECENT ACTIVITY', style: TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.w700, letterSpacing: 2)),
+                  Text('RECENT ACTIVITY', style: TextStyle(fontSize: 11, color: context.textMuted, fontWeight: FontWeight.w700, letterSpacing: 2)),
                   const SizedBox(height: 12),
 
                   // Activity list
@@ -149,9 +149,9 @@ class _MyWorkScreenState extends State<MyWorkScreen> {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 40),
                         child: Column(children: [
-                          Icon(Icons.inbox_outlined, color: AppColors.textMuted, size: 48),
+                          Icon(Icons.inbox_outlined, color: context.textMuted, size: 48),
                           const SizedBox(height: 12),
-                          const Text('No work recorded today yet.', style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
+                          Text('No work recorded today yet.', style: TextStyle(color: context.textMuted, fontSize: 14)),
                         ]),
                       ),
                     )
@@ -204,7 +204,7 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     decoration: BoxDecoration(
-      color: AppColors.surface,
+      color: context.surfaceColor,
       borderRadius: BorderRadius.circular(12),
       border: Border(left: BorderSide(color: color, width: 3)),
     ),
@@ -216,7 +216,7 @@ class _StatCard extends StatelessWidget {
       ),
       const SizedBox(width: 12),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-        Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.w600)),
+        Text(label, style: TextStyle(fontSize: 11, color: context.textMuted, fontWeight: FontWeight.w600)),
         Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: color, height: 1.1)),
       ])),
     ]),
@@ -238,9 +238,9 @@ class _ActivityTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.border)),
+      decoration: BoxDecoration(color: context.surfaceColor, borderRadius: BorderRadius.circular(10), border: Border.all(color: context.borderColor)),
       child: Row(children: [
-        Text(timeStr, style: const TextStyle(fontSize: 12, color: AppColors.textMuted, fontFamily: 'Rajdhani', fontWeight: FontWeight.w600)),
+        Text(timeStr, style: TextStyle(fontSize: 12, color: context.textMuted, fontFamily: 'Rajdhani', fontWeight: FontWeight.w600)),
         const SizedBox(width: 12),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -249,8 +249,8 @@ class _ActivityTile extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary), overflow: TextOverflow.ellipsis),
-          Text(subtitle, style: const TextStyle(fontSize: 11, color: AppColors.textMuted), overflow: TextOverflow.ellipsis),
+          Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.textPrimary), overflow: TextOverflow.ellipsis),
+          Text(subtitle, style: TextStyle(fontSize: 11, color: context.textMuted), overflow: TextOverflow.ellipsis),
         ])),
       ]),
     );

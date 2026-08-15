@@ -170,13 +170,13 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final currentUser = context.watch<AuthProvider>().user;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        title: const Row(children: [
-          Icon(Icons.shield, color: AppColors.secondary, size: 18),
-          SizedBox(width: 8),
-          Text('COMMS', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w800, letterSpacing: 2, fontSize: 18)),
+        backgroundColor: context.surfaceColor,
+        title: Row(children: [
+          const Icon(Icons.shield, color: AppColors.secondary, size: 18),
+          const SizedBox(width: 8),
+          Text('COMMS', style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w800, letterSpacing: 2, fontSize: 18)),
         ]),
         actions: [
           Container(
@@ -220,14 +220,14 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildSearchBar() => Container(
     padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(color: AppColors.surface, border: Border(bottom: BorderSide(color: AppColors.border))),
+    decoration: BoxDecoration(color: context.surfaceColor, border: Border(bottom: BorderSide(color: context.borderColor))),
     child: TextField(
       controller: _searchCtrl,
-      style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+      style: TextStyle(color: context.textPrimary, fontSize: 14),
       decoration: InputDecoration(
         hintText: 'Search personnel...',
-        hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 14),
-        prefixIcon: const Icon(Icons.search, color: AppColors.textMuted, size: 18),
+        hintStyle: TextStyle(color: context.textMuted, fontSize: 14),
+        prefixIcon: Icon(Icons.search, color: context.textMuted, size: 18),
         filled: true,
         fillColor: AppColors.surfaceVariant,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
@@ -254,7 +254,7 @@ class _ChatScreenState extends State<ChatScreen> {
     ).toList();
 
     if (filtConvs.isEmpty && filtExtras.isEmpty) {
-      return const Center(child: Text('No personnel found', style: TextStyle(color: AppColors.textMuted)));
+      return Center(child: Text('No personnel found', style: TextStyle(color: context.textMuted)));
     }
 
     return ListView(children: [
@@ -271,24 +271,24 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildListLabel(String label) => Padding(
     padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
-    child: Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textMuted, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
+    child: Text(label, style: TextStyle(fontSize: 10, color: context.textMuted, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
   );
 
   Widget _buildChatHeader() {
     final rc = _roleColor(_selected!.role);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(color: AppColors.surface, border: Border(bottom: BorderSide(color: AppColors.border))),
+      decoration: BoxDecoration(color: context.surfaceColor, border: Border(bottom: BorderSide(color: context.borderColor))),
       child: Row(children: [
         GestureDetector(
           onTap: () { _pollTimer?.cancel(); setState(() { _selected = null; _messages = []; }); },
-          child: const Icon(Icons.arrow_back_ios, color: AppColors.textSecondary, size: 18),
+          child: Icon(Icons.arrow_back_ios, color: context.textSecondary, size: 18),
         ),
         const SizedBox(width: 12),
         _AvatarWidget(initials: _selected!.initials, color: rc, size: 40),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(_selected!.fullName, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.textPrimary, letterSpacing: 0.3)),
+          Text(_selected!.fullName, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: context.textPrimary, letterSpacing: 0.3)),
           Row(children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
@@ -297,7 +297,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             if (_selected!.rank != null) ...[
               const SizedBox(width: 6),
-              Text(_selected!.rank!, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+              Text(_selected!.rank!, style: TextStyle(fontSize: 11, color: context.textMuted)),
             ],
           ]),
         ])),
@@ -312,12 +312,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildMessagesList(User? currentUser) {
     if (_loadingMsgs) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return Center(child: CircularProgressIndicator(color: AppColors.primary));
     }
     if (_messages.isEmpty) {
-      return const Center(
+      return Center(
         child: Text('— No messages yet. Begin the conversation. —',
-          style: TextStyle(color: AppColors.textMuted, fontSize: 12), textAlign: TextAlign.center),
+          style: TextStyle(color: context.textMuted, fontSize: 12), textAlign: TextAlign.center),
       );
     }
 
@@ -347,12 +347,12 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildDateDivider(String label) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 12),
     child: Row(children: [
-      const Expanded(child: Divider(color: AppColors.border)),
+      Expanded(child: Divider(color: context.borderColor)),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Text(label.toUpperCase(), style: const TextStyle(fontSize: 10, color: AppColors.textMuted, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
+        child: Text(label.toUpperCase(), style: TextStyle(fontSize: 10, color: context.textMuted, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
       ),
-      const Expanded(child: Divider(color: AppColors.border)),
+      Expanded(child: Divider(color: context.borderColor)),
     ]),
   );
 
@@ -389,11 +389,11 @@ class _ChatScreenState extends State<ChatScreen> {
                       bottomLeft: Radius.circular(isMine ? 16 : 4),
                       bottomRight: Radius.circular(isMine ? 4 : 16),
                     ),
-                    border: isMine ? null : Border.all(color: AppColors.border),
+                    border: isMine ? null : Border.all(color: context.borderColor),
                     boxShadow: isMine ? [BoxShadow(color: AppColors.secondary.withOpacity(0.25), blurRadius: 8, offset: const Offset(0, 2))] : [],
                   ),
                   child: Text(msg.content, style: TextStyle(
-                    color: isMine ? Colors.white : AppColors.textPrimary,
+                    color: isMine ? Colors.white : context.textPrimary,
                     fontSize: 14, height: 1.5,
                   )),
                 ),
@@ -401,10 +401,10 @@ class _ChatScreenState extends State<ChatScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 3, left: 4, right: 4),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Text(_fmtTime(msg.createdAt), style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                  Text(_fmtTime(msg.createdAt), style: TextStyle(fontSize: 10, color: context.textMuted)),
                   if (isMine) ...[
                     const SizedBox(width: 4),
-                    Text(msg.read ? '✓✓' : '✓', style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                    Text(msg.read ? '✓✓' : '✓', style: TextStyle(fontSize: 10, color: context.textMuted)),
                   ],
                 ]),
               ),
@@ -418,17 +418,17 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildInput() => Container(
     padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).padding.bottom + 12),
-    decoration: BoxDecoration(color: AppColors.surface, border: Border(top: BorderSide(color: AppColors.border))),
+    decoration: BoxDecoration(color: context.surfaceColor, border: Border(top: BorderSide(color: context.borderColor))),
     child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
       Expanded(
         child: TextField(
           controller: _msgCtrl,
-          style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+          style: TextStyle(color: context.textPrimary, fontSize: 14),
           maxLines: 4, minLines: 1,
           textInputAction: TextInputAction.newline,
           decoration: InputDecoration(
             hintText: 'Type a secure message…',
-            hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 14),
+            hintStyle: TextStyle(color: context.textMuted, fontSize: 14),
             filled: true,
             fillColor: AppColors.surfaceVariant,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
@@ -452,7 +452,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           child: _sending
               ? const Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : Icon(Icons.send_rounded, color: _msgCtrl.text.trim().isNotEmpty ? Colors.white : AppColors.textMuted, size: 20),
+              : Icon(Icons.send_rounded, color: _msgCtrl.text.trim().isNotEmpty ? Colors.white : context.textMuted, size: 20),
         ),
       ),
     ]),
@@ -475,21 +475,21 @@ class _ContactTile extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.border.withOpacity(0.5)))),
+        decoration: BoxDecoration(border: Border(bottom: BorderSide(color: context.borderColor.withOpacity(0.5)))),
         child: Row(children: [
           _AvatarWidget(initials: u.initials, color: rc, size: 44),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              Expanded(child: Text(u.fullName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textPrimary), overflow: TextOverflow.ellipsis)),
+              Expanded(child: Text(u.fullName, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: context.textPrimary), overflow: TextOverflow.ellipsis)),
               if (lastMsg != null)
-                Text(_fmtTime(lastMsg.createdAt), style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                Text(_fmtTime(lastMsg.createdAt), style: TextStyle(fontSize: 10, color: context.textMuted)),
             ]),
             const SizedBox(height: 3),
             Row(children: [
               Expanded(
                 child: lastMsg != null
-                    ? Text(lastMsg.content, style: const TextStyle(fontSize: 12, color: AppColors.textMuted), overflow: TextOverflow.ellipsis, maxLines: 1)
+                    ? Text(lastMsg.content, style: TextStyle(fontSize: 12, color: context.textMuted), overflow: TextOverflow.ellipsis, maxLines: 1)
                     : Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                         decoration: BoxDecoration(color: rc.withOpacity(0.15), borderRadius: BorderRadius.circular(4)),

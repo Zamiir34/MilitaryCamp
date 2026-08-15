@@ -59,10 +59,17 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
+  const logout = useCallback(async () => {
+    try {
+      // Call backend to log the LOGOUT audit event
+      await api.post('/auth/logout');
+    } catch (_) {
+      // Even if request fails, proceed with local logout
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+    }
   }, []);
 
   const canAccess = useCallback((roles) => {

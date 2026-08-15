@@ -62,7 +62,7 @@ class _EntryLogScreenState extends State<EntryLogScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.bgColor,
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.menu),
@@ -71,7 +71,7 @@ class _EntryLogScreenState extends State<EntryLogScreen> with SingleTickerProvid
           title: const Text('ENTRY / EXIT LOGS'),
           actions: [
             PopupMenuButton<String>(
-              color: AppColors.surfaceVariant,
+              color: context.surfaceVarColor,
               icon: const Icon(Icons.filter_list),
               onSelected: (v) {
                 if (v == 'clear') {
@@ -99,7 +99,7 @@ class _EntryLogScreenState extends State<EntryLogScreen> with SingleTickerProvid
           bottom: TabBar(
             controller: _tabs,
             labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.textMuted,
+            unselectedLabelColor: context.textMuted,
             indicatorColor: AppColors.primary,
             tabs: [
               Tab(text: 'TODAY (${_today.length})'),
@@ -149,7 +149,7 @@ class _LogList extends StatelessWidget {
         onRefresh: onRefresh,
         color: AppColors.primary,
         child: logs.isEmpty
-            ? const Center(child: Text('No logs found', style: TextStyle(color: AppColors.textMuted)))
+            ? Center(child: Text('No logs found', style: TextStyle(color: context.textMuted)))
             : ListView.separated(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
                 itemCount: logs.length,
@@ -163,7 +163,7 @@ class _LogItem extends StatelessWidget {
   final EntryLog log;
   const _LogItem({required this.log});
 
-  Color _typeColor(String type) {
+  Color _typeColor(BuildContext context, String type) {
     switch (type) {
       case 'Personnel':
         return AppColors.primary;
@@ -172,21 +172,21 @@ class _LogItem extends StatelessWidget {
       case 'Visitor':
         return AppColors.accent;
       default:
-        return AppColors.textMuted;
+        return context.textMuted;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final actionColor = log.isEntry ? AppColors.success : AppColors.warning;
-    final typeColor = _typeColor(log.type);
+    final typeColor = _typeColor(context, log.type);
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: log.isAuthorized ? AppColors.border : AppColors.danger.withOpacity(0.4)),
+        border: Border.all(color: log.isAuthorized ? context.borderColor : AppColors.danger.withOpacity(0.4)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -204,7 +204,7 @@ class _LogItem extends StatelessWidget {
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                Expanded(child: Text(log.displayName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.textPrimary))),
+                Expanded(child: Text(log.displayName, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: context.textPrimary))),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(color: actionColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
@@ -212,31 +212,31 @@ class _LogItem extends StatelessWidget {
                 ),
               ]),
               const SizedBox(height: 4),
-              Text('${log.type} • ${log.displayId}', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+              Text('${log.type} • ${log.displayId}', style: TextStyle(fontSize: 11, color: context.textMuted)),
               if (log.vehicleName != null && log.vehicleName!.isNotEmpty && log.vehicleName != '--')
-                Text('Vehicle: ${log.vehicleName}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                Text('Vehicle: ${log.vehicleName}', style: TextStyle(fontSize: 11, color: context.textSecondary)),
               if (log.driverName != null && log.driverName!.isNotEmpty && log.driverName != '--')
-                Text('Driver: ${log.driverName}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                Text('Driver: ${log.driverName}', style: TextStyle(fontSize: 11, color: context.textSecondary)),
               if (log.ownerName != null && log.ownerName!.isNotEmpty && log.ownerName != '--' && log.type == 'Vehicle')
-                Text('Owner: ${log.ownerName}', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                Text('Owner: ${log.ownerName}', style: TextStyle(fontSize: 11, color: context.textMuted)),
             ]),
           ),
         ]),
         const SizedBox(height: 8),
         Row(children: [
-          const Icon(Icons.door_back_door_outlined, size: 12, color: AppColors.textMuted),
+          Icon(Icons.door_back_door_outlined, size: 12, color: context.textMuted),
           const SizedBox(width: 4),
-          Text(log.gate, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+          Text(log.gate, style: TextStyle(fontSize: 12, color: context.textMuted)),
           const SizedBox(width: 12),
           Icon(log.isAuthorized ? Icons.verified : Icons.block, size: 12, color: log.isAuthorized ? AppColors.success : AppColors.danger),
           const SizedBox(width: 4),
           Text(log.isAuthorized ? 'AUTH' : 'UNAUTH', style: TextStyle(fontSize: 11, color: log.isAuthorized ? AppColors.success : AppColors.danger, fontWeight: FontWeight.w700)),
           const Spacer(),
-          Text(DateFormat('MMM d, HH:mm').format(log.timestamp), style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+          Text(DateFormat('MMM d, HH:mm').format(log.timestamp), style: TextStyle(fontSize: 11, color: context.textMuted)),
         ]),
         if (log.recordedByName != null) ...[
           const SizedBox(height: 4),
-          Text('Officer: ${log.recordedByName}', style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+          Text('Officer: ${log.recordedByName}', style: TextStyle(fontSize: 10, color: context.textMuted)),
         ],
       ]),
     );

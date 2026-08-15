@@ -33,7 +33,7 @@ router.get('/today', auth, async (req, res) => {
   }
 });
 
-router.post('/check-in', auth, async (req, res) => {
+router.post('/check-in', auth, requireRole('SecurityOfficer', 'Guard'), async (req, res) => {
   try {
     const todayStr = getTodayDateStr();
 
@@ -58,7 +58,7 @@ router.post('/check-in', auth, async (req, res) => {
   }
 });
 
-router.post('/check-out', auth, async (req, res) => {
+router.post('/check-out', auth, requireRole('SecurityOfficer', 'Guard'), async (req, res) => {
   try {
     const todayStr = getTodayDateStr();
 

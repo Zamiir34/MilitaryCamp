@@ -63,7 +63,19 @@ export default function EntryExit() {
     setSubmitting(true);
     try {
       const endpoint = modal === 'entry' ? '/entries/entry' : '/entries/exit';
-      await api.post(endpoint, form);
+      const payload = { ...form };
+
+      if (modal === 'exit' && form.vehicleStatus) {
+        let vNote = '';
+        if (form.vehicleStatus === 'took') vNote = 'Gaariga: Waa la kaxeystay (Took vehicle)';
+        else if (form.vehicleStatus === 'left') vNote = 'Gaariga: Dhexda ayaa kaga tagay (Left vehicle in camp)';
+        
+        if (vNote) {
+          payload.notes = payload.notes ? `${payload.notes} | ${vNote}` : vNote;
+        }
+      }
+
+      await api.post(endpoint, payload);
       
       if (modal === 'exit' && form.category === 'Military') {
         toast.success('A soldier has left');
@@ -283,7 +295,8 @@ export default function EntryExit() {
                 <div className="form-group">
                   <label className="form-label">Type *</label>
                   <select className="input" value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))}>
-                    <option>Personnel</option><option>Vehicle</option><option>Visitor</option>
+                    <option>Personnel</option>
+                    <option>Visitor</option>
                   </select>
                 </div>
                 <div className="form-group">
@@ -304,7 +317,7 @@ export default function EntryExit() {
                         searchSubject(e.target.value);
                       }} 
                       required 
-                      placeholder={form.type === 'Vehicle' ? 'Type plate or make to search...' : 'Type name to search...'} 
+                      placeholder="Type name to search..." 
                     />
                     {searching && <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)' }} className="spinner-small" />}
                   </div>
@@ -313,12 +326,12 @@ export default function EntryExit() {
                     <div className="card" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100, padding: 4, maxHeight: 200, overflowY: 'auto', marginTop: 4, boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
                       {searchResults.map(item => (
                         <div key={item._id} className="dropdown-item" style={{ padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid var(--border)' }} onClick={() => selectSubject(item)}>
-                          {form.type === 'Personnel' ? <User size={14} color="var(--accent-blue)" /> : form.type === 'Vehicle' ? <Car size={14} color="var(--accent-green)" /> : <UserCheck size={14} color="var(--accent-gold)" />}
+                          {form.type === 'Personnel' ? <User size={14} color="var(--accent-blue)" /> : <UserCheck size={14} color="var(--accent-gold)" />}
                           <div>
                             <div style={{ fontSize: 13, fontWeight: 600 }}>
-                              {item.fullName || [item.make, item.model].filter(Boolean).join(' ') || item.plateNumber}
+                              {item.fullName || item.personnelId}
                             </div>
-                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{item.personnelId || item.plateNumber || item.visitorId} • {item.unit || item.organization || item.vehicleType}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{item.personnelId || item.visitorId} • {item.unit || item.organization || item.visitorType}</div>
                           </div>
                         </div>
                       ))}
@@ -326,8 +339,48 @@ export default function EntryExit() {
                   )}
                 </div>
 
+                {modal === 'exit' && (
+                  <div className="form-group" style={{ gridColumn: '1 / -1', background: 'var(--bg-secondary)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                    <label className="form-label" style={{ color: 'var(--accent-cyan)', fontWeight: 700, marginBottom: 8 }}>
+                      🚗 Gaariga maka tagtay mise waad wadataa gaariga? (Vehicle Status on Exit)
+                    </label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13 }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                        <input
+                          type="radio"
+                          name="vehicleStatus"
+                          value="took"
+                          checked={form.vehicleStatus === 'took'}
+                          onChange={() => setForm(p => ({ ...p, vehicleStatus: 'took' }))}
+                        />
+                        <span>🚗 Waan wadaa gaariga (Taking vehicle with me)</span>
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                        <input
+                          type="radio"
+                          name="vehicleStatus"
+                          value="left"
+                          checked={form.vehicleStatus === 'left'}
+                          onChange={() => setForm(p => ({ ...p, vehicleStatus: 'left' }))}
+                        />
+                        <span>🅿️ Gaariga dhexdaan kaga tagay (Left vehicle inside camp)</span>
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                        <input
+                          type="radio"
+                          name="vehicleStatus"
+                          value="none"
+                          checked={!form.vehicleStatus || form.vehicleStatus === 'none'}
+                          onChange={() => setForm(p => ({ ...p, vehicleStatus: 'none' }))}
+                        />
+                        <span>🚶 Ma wado gaari / Gaari ma laha (No vehicle)</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+
                 <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                  <label className="form-label">ID Number / Plate</label>
+                  <label className="form-label">ID Number</label>
                   <input className="input" value={form.subjectId} onChange={e => setForm(p => ({ ...p, subjectId: e.target.value }))} />
                 </div>
                 <div className="form-group" style={{ gridColumn: '1 / -1' }}>
@@ -337,10 +390,6 @@ export default function EntryExit() {
                 <div className="form-group" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <input type="checkbox" id="auth" checked={form.isAuthorized} onChange={e => setForm(p => ({ ...p, isAuthorized: e.target.checked }))} style={{ width: 16, height: 16 }} />
                   <label htmlFor="auth" className="form-label" style={{ marginTop: 0 }}>Authorized</label>
-                </div>
-                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                  <label className="form-label">Notes</label>
-                  <textarea className="input" rows={2} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: '1.5rem' }}>

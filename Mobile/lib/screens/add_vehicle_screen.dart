@@ -1,4 +1,4 @@
-// lib/screens/add_vehicle_screen.dart
+﻿// lib/screens/add_vehicle_screen.dart
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
@@ -78,7 +78,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   @override Widget build(BuildContext context) {
     final hasOwner = widget.initialOwnerName != null;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.bgColor,
       appBar: AppBar(title: const Text('REGISTER VEHICLE'), actions: [
         TextButton(
           onPressed: _saving ? null : _save,
@@ -107,9 +107,9 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   const Text('LINKED OWNER', style: TextStyle(fontSize: 10, color: AppColors.primary, letterSpacing: 1.5, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 2),
-                  Text(widget.initialOwnerName!, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                  Text(widget.initialOwnerName!, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.textPrimary)),
                   if (widget.initialOwnerPhone?.isNotEmpty == true)
-                    Text(widget.initialOwnerPhone!, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                    Text(widget.initialOwnerPhone!, style: TextStyle(fontSize: 12, color: context.textSecondary)),
                 ])),
               ]),
             ),
@@ -120,12 +120,12 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+            decoration: BoxDecoration(color: context.surfaceColor, borderRadius: BorderRadius.circular(12), border: Border.all(color: context.borderColor)),
             child: Column(children: [
               _field(_f['plateNumber']!, 'Plate Number *', required: true, hint: 'e.g. ABC-1234'),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _type, dropdownColor: AppColors.surfaceVariant,
+                value: _type, dropdownColor: context.surfaceVarColor,
                 decoration: const InputDecoration(labelText: 'Vehicle Type'),
                 items: ['car','truck','motorcycle','military_vehicle','ambulance','bus','other']
                   .map((t) => DropdownMenuItem(value: t, child: Text(t.toUpperCase().replaceAll('_',' ')))).toList(),
@@ -153,14 +153,14 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+            decoration: BoxDecoration(color: context.surfaceColor, borderRadius: BorderRadius.circular(12), border: Border.all(color: context.borderColor)),
             child: Column(children: [
               _field(_f['ownerName']!, 'Owner Name'),
               const SizedBox(height: 12),
               _field(_f['ownerPhone']!, 'Owner Phone', keyboard: TextInputType.phone),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _category, dropdownColor: AppColors.surfaceVariant,
+                value: _category, dropdownColor: context.surfaceVarColor,
                 decoration: const InputDecoration(labelText: 'Category'),
                 items: _vehicleCategories
                   .map((c) => DropdownMenuItem(value: c, child: Text(c.toUpperCase()))).toList(),
@@ -168,7 +168,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _status, dropdownColor: AppColors.surfaceVariant,
+                value: _status, dropdownColor: context.surfaceVarColor,
                 decoration: const InputDecoration(labelText: 'Status'),
                 items: ['active','inactive','blacklisted']
                   .map((s) => DropdownMenuItem(value: s, child: Text(s.toUpperCase()))).toList(),
@@ -184,7 +184,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+            decoration: BoxDecoration(color: context.surfaceColor, borderRadius: BorderRadius.circular(12), border: Border.all(color: context.borderColor)),
             child: _field(_f['notes']!, 'Notes (optional)', maxLines: 3),
           ),
           const SizedBox(height: 24),
@@ -194,7 +194,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   }
 
   Widget _sectionLabel(String label) => Text(
-    label, style: const TextStyle(fontSize: 10, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600));
+    label, style: TextStyle(fontSize: 10, color: context.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600));
 
   Widget _field(TextEditingController ctrl, String label, {bool required = false, String? hint, TextInputType? keyboard, int maxLines = 1}) =>
     TextFormField(

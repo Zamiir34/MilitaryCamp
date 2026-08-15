@@ -1,4 +1,4 @@
-// lib/screens/dashboard_screen.dart
+﻿// lib/screens/dashboard_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -101,7 +101,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.bgColor,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _load,
@@ -115,12 +115,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     const Text('CAMP MONITOR', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.primary, letterSpacing: 2)),
                     Text(DateFormat('EEEE, MMM d yyyy · HH:mm').format(DateTime.now()),
-                      style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                      style: TextStyle(fontSize: 12, color: context.textMuted)),
                   ])),
                   GestureDetector(
                     onTap: () => Scaffold.of(context).openDrawer(),
                     child: CircleAvatar(
-                      backgroundColor: AppColors.surface,
+                      backgroundColor: context.surfaceColor,
                       child: Text((user?.name.isNotEmpty == true) ? user!.name.substring(0, 1).toUpperCase() : 'U',
                         style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
                     ),
@@ -168,7 +168,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               else if (_stats != null) ...[
                 SliverToBoxAdapter(child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                  child: const Text('CURRENT STATUS', style: TextStyle(fontSize: 11, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
+                  child: Text('CURRENT STATUS', style: TextStyle(fontSize: 11, color: context.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
                 )),
                 SliverToBoxAdapter(child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
@@ -199,7 +199,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               if (_chartData.isNotEmpty) ...[
                 SliverToBoxAdapter(child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-                  child: const Text('7-DAY ACTIVITY', style: TextStyle(fontSize: 11, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
+                  child: Text('7-DAY ACTIVITY', style: TextStyle(fontSize: 11, color: context.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
                 )),
                 SliverToBoxAdapter(child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
@@ -211,7 +211,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               if (_stats != null) ...[
                 SliverToBoxAdapter(child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                  child: const Text("TODAY'S BREAKDOWN", style: TextStyle(fontSize: 11, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
+                  child: Text("TODAY'S BREAKDOWN", style: TextStyle(fontSize: 11, color: context.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
                 )),
                 SliverToBoxAdapter(child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
@@ -223,7 +223,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               SliverToBoxAdapter(child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
                 child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  const Text('MY RECENT ACTIVITY', style: TextStyle(fontSize: 11, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
+                  Text('MY RECENT ACTIVITY', style: TextStyle(fontSize: 11, color: context.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
                   GestureDetector(
                     onTap: () => Navigator.pushNamed(context, '/my-work'),
                     child: const Text('VIEW ALL', style: TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w700, letterSpacing: 1)),
@@ -248,8 +248,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               SliverToBoxAdapter(child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
                 child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  const Text('RECENT ACTIVITY', style: TextStyle(fontSize: 11, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
-                  Text('${_recentLogs.length} entries', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                  Text('RECENT ACTIVITY', style: TextStyle(fontSize: 11, color: context.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
+                  Text('${_recentLogs.length} entries', style: TextStyle(fontSize: 11, color: context.textMuted)),
                 ]),
               )),
               if (_recentLogs.isEmpty)
@@ -271,7 +271,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 SliverToBoxAdapter(child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
                   child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    const Text('ACTIVE NOTIFICATIONS', style: TextStyle(fontSize: 11, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
+                    Text('ACTIVE NOTIFICATIONS', style: TextStyle(fontSize: 11, color: context.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(color: AppColors.danger.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
@@ -294,11 +294,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 SliverToBoxAdapter(child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
                   child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    const Text('GUARD STATUS', style: TextStyle(fontSize: 11, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
+                    Text('GUARD STATUS', style: TextStyle(fontSize: 11, color: context.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
                     Row(children: [
                       _GuardBadge(label: '${_guards.where((g) => g.isOnDuty).length} ON', color: AppColors.success),
                       const SizedBox(width: 6),
-                      _GuardBadge(label: '${_guards.where((g) => !g.isOnDuty).length} OFF', color: AppColors.textMuted),
+                      _GuardBadge(label: '${_guards.where((g) => !g.isOnDuty).length} OFF', color: context.textMuted),
                     ]),
                   ]),
                 )),
@@ -316,7 +316,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 SliverToBoxAdapter(child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
                   child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    const Text('DRIVERS & VEHICLES', style: TextStyle(fontSize: 11, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
+                    Text('DRIVERS & VEHICLES', style: TextStyle(fontSize: 11, color: context.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(color: AppColors.info.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
@@ -374,7 +374,7 @@ class _StatCard extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     margin: const EdgeInsets.only(bottom: 12),
     decoration: BoxDecoration(
-      color: AppColors.surface,
+      color: context.surfaceColor,
       borderRadius: BorderRadius.circular(12),
       border: Border(left: BorderSide(color: color, width: 4)),
     ),
@@ -386,7 +386,7 @@ class _StatCard extends StatelessWidget {
       ),
       const SizedBox(width: 16),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textMuted, letterSpacing: 1.0, fontWeight: FontWeight.w700)),
+        Text(label, style: TextStyle(fontSize: 10, color: context.textMuted, letterSpacing: 1.0, fontWeight: FontWeight.w700)),
         const SizedBox(height: 4),
         Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: color)),
       ])),
@@ -405,7 +405,7 @@ class _LogTile extends StatelessWidget {
     final color = isEntry ? AppColors.success : AppColors.warning;
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.border)),
+      decoration: BoxDecoration(color: context.surfaceColor, borderRadius: BorderRadius.circular(10), border: Border.all(color: context.borderColor)),
       child: Row(children: [
         Container(
           width: 36, height: 36, decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
@@ -416,8 +416,8 @@ class _LogTile extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(log.displayName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.textPrimary)),
-          Text('${log.gate} · ${log.recordedByName ?? log.guardName ?? 'System'}', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+          Text(log.displayName, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: context.textPrimary)),
+          Text('${log.gate} · ${log.recordedByName ?? log.guardName ?? 'System'}', style: TextStyle(fontSize: 11, color: context.textMuted)),
         ])),
         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Container(
@@ -426,7 +426,7 @@ class _LogTile extends StatelessWidget {
             child: Text(isEntry ? 'ENTRY' : 'EXIT', style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1)),
           ),
           const SizedBox(height: 4),
-          Text(DateFormat('HH:mm').format(log.timestamp), style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+          Text(DateFormat('HH:mm').format(log.timestamp), style: TextStyle(fontSize: 11, color: context.textMuted)),
         ]),
       ]),
     );
@@ -456,13 +456,13 @@ class _AlertTile extends StatelessWidget {
         Row(children: [
           Expanded(
             child: Text(alert['type']?.toString() ?? 'Notification',
-              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textMuted, letterSpacing: 0.5)),
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: context.textMuted, letterSpacing: 0.5)),
           ),
-          Text(timeStr, style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+          Text(timeStr, style: TextStyle(fontSize: 10, color: context.textMuted)),
         ]),
         const SizedBox(height: 4),
         Text(alert['message']?.toString() ?? 'Alert',
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary), maxLines: 2, overflow: TextOverflow.ellipsis),
+          style: TextStyle(fontSize: 12, color: context.textSecondary), maxLines: 2, overflow: TextOverflow.ellipsis),
         if (alert['zone'] != null && alert['zone'].toString().isNotEmpty) ...[
           const SizedBox(height: 4),
           Text('Zone: ${alert['zone']}',
@@ -471,7 +471,7 @@ class _AlertTile extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           'Sent by: ${reporterName ?? 'System'}',
-          style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+          style: TextStyle(fontSize: 10, color: context.textMuted),
         ),
       ]),
     );
@@ -486,30 +486,30 @@ class _GuardTile extends StatelessWidget {
   @override Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
     decoration: BoxDecoration(
-      color: guard.isOnDuty ? AppColors.success.withOpacity(0.05) : AppColors.surface,
+      color: guard.isOnDuty ? AppColors.success.withOpacity(0.05) : context.surfaceColor,
       borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: guard.isOnDuty ? AppColors.success.withOpacity(0.2) : AppColors.border),
+      border: Border.all(color: guard.isOnDuty ? AppColors.success.withOpacity(0.2) : context.borderColor),
     ),
     child: Row(children: [
       Container(
         width: 36, height: 36,
         decoration: BoxDecoration(
-          color: AppColors.background,
+          color: context.bgColor,
           shape: BoxShape.circle,
-          border: Border.all(color: guard.isOnDuty ? AppColors.success : AppColors.border),
+          border: Border.all(color: guard.isOnDuty ? AppColors.success : context.borderColor),
         ),
         child: Center(child: Text(guard.initials,
-          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: guard.isOnDuty ? AppColors.success : AppColors.textMuted))),
+          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: guard.isOnDuty ? AppColors.success : context.textMuted))),
       ),
       const SizedBox(width: 12),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(guard.fullName, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: guard.isOnDuty ? AppColors.textPrimary : AppColors.textMuted)),
-        Text('${guard.rank ?? guard.role} • ${guard.badgeNumber ?? 'N/A'}', style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+        Text(guard.fullName, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: guard.isOnDuty ? context.textPrimary : context.textMuted)),
+        Text('${guard.rank ?? guard.role} • ${guard.badgeNumber ?? 'N/A'}', style: TextStyle(fontSize: 10, color: context.textMuted)),
       ])),
       Container(
         width: 10, height: 10,
         decoration: BoxDecoration(
-          color: guard.isOnDuty ? AppColors.success : AppColors.border,
+          color: guard.isOnDuty ? AppColors.success : context.borderColor,
           shape: BoxShape.circle,
           boxShadow: guard.isOnDuty ? [BoxShadow(color: AppColors.success.withOpacity(0.5), blurRadius: 6, spreadRadius: 1)] : [],
         ),
@@ -536,13 +536,13 @@ class _ActivityChart extends StatelessWidget {
   @override Widget build(BuildContext context) => Container(
     height: 200,
     padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+    decoration: BoxDecoration(color: context.surfaceColor, borderRadius: BorderRadius.circular(12), border: Border.all(color: context.borderColor)),
     child: LineChart(
       LineChartData(
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
-          getDrawingHorizontalLine: (_) => FlLine(color: AppColors.border, strokeWidth: 1),
+          getDrawingHorizontalLine: (_) => FlLine(color: context.borderColor, strokeWidth: 1),
         ),
         titlesData: FlTitlesData(
           leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -554,7 +554,7 @@ class _ActivityChart extends StatelessWidget {
               final i = v.toInt();
               if (i < 0 || i >= data.length) return const SizedBox();
               final label = data[i].date.length >= 5 ? data[i].date.substring(5) : data[i].date;
-              return Text(label, style: const TextStyle(fontSize: 9, color: AppColors.textMuted));
+              return Text(label, style: TextStyle(fontSize: 9, color: context.textMuted));
             },
           )),
         ),
@@ -593,13 +593,13 @@ class _BreakdownChart extends StatelessWidget {
     return Container(
       height: 180,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+      decoration: BoxDecoration(color: context.surfaceColor, borderRadius: BorderRadius.circular(12), border: Border.all(color: context.borderColor)),
       child: BarChart(BarChartData(
         barGroups: groups,
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
-          getDrawingHorizontalLine: (_) => FlLine(color: AppColors.border, strokeWidth: 1),
+          getDrawingHorizontalLine: (_) => FlLine(color: context.borderColor, strokeWidth: 1),
         ),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
@@ -611,7 +611,7 @@ class _BreakdownChart extends StatelessWidget {
             getTitlesWidget: (v, _) {
               final i = v.toInt();
               if (i < 0 || i >= labels.length) return const SizedBox();
-              return Text(labels[i], style: const TextStyle(fontSize: 10, color: AppColors.textMuted));
+              return Text(labels[i], style: TextStyle(fontSize: 10, color: context.textMuted));
             },
           )),
         ),
@@ -626,8 +626,8 @@ class _EmptyCard extends StatelessWidget {
   const _EmptyCard({required this.message});
   @override Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.border)),
-    child: Center(child: Text(message, style: const TextStyle(fontSize: 12, color: AppColors.textMuted))),
+    decoration: BoxDecoration(color: context.surfaceColor, borderRadius: BorderRadius.circular(10), border: Border.all(color: context.borderColor)),
+    child: Center(child: Text(message, style: TextStyle(fontSize: 12, color: context.textMuted))),
   );
 }
 
@@ -667,7 +667,7 @@ class _AlarmBannerState extends State<_AlarmBanner> with SingleTickerProviderSta
               Text('${widget.isCritical ? "ALARM ACTIVE:" : ""} ${widget.count} UNREAD NOTIFICATION${widget.count > 1 ? 'S' : ''}',
                 style: TextStyle(fontWeight: FontWeight.w900, color: color, fontSize: 13, letterSpacing: 0.5)),
               Text(widget.isCritical ? 'CRITICAL SECURITY BREACH DETECTED' : 'Review pending notifications immediately',
-                style: const TextStyle(fontSize: 11, color: AppColors.textPrimary, fontWeight: FontWeight.w500)),
+                style: TextStyle(fontSize: 11, color: context.textPrimary, fontWeight: FontWeight.w500)),
             ])),
             Icon(Icons.chevron_right, color: color),
           ]),
@@ -689,9 +689,9 @@ class _DriverTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
       ),
       child: Row(children: [
         Container(
@@ -705,21 +705,21 @@ class _DriverTile extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(personnel['fullName'] ?? 'Unknown', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          Text(personnel['fullName'] ?? 'Unknown', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.textPrimary)),
           Text(
             personnel['isVisitor'] == true
               ? 'Visitor • ${personnel['unit'] ?? personnel['rank'] ?? 'Guest'}'
               : '${personnel['rank'] ?? ''} ${personnel['unit'] != null ? '• ${personnel['unit']}' : ''}',
-            style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+            style: TextStyle(fontSize: 10, color: context.textMuted),
           ),
         ])),
         if (vehicle['plateNumber'] != null || vehicle['model'] != null)
           Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
             if (vehicle['plateNumber'] != null)
-              Text(vehicle['plateNumber'], style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+              Text(vehicle['plateNumber'], style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.textSecondary)),
             Text(
               [vehicle['model'], vehicle['color']].where((v) => v != null && v.toString().isNotEmpty).join(' · '),
-              style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+              style: TextStyle(fontSize: 10, color: context.textMuted),
             ),
           ]),
       ]),

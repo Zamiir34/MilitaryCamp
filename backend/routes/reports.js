@@ -1,9 +1,9 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 const EntryLog = require('../models/EntryLog');
-const { auth } = require('../middleware/auth');
+const { auth, requireRole } = require('../middleware/auth');
 const { enrichLogsWithDrivers } = require('../utils/reportLogs');
 const ExcelJS = require('exceljs');
 const { cleanStringFields, sendValidationError, validateEnum, validateObjectId, validationError } = require('../utils/validation');
@@ -201,7 +201,7 @@ const LOG_POPULATE = [
 ];
 
 // Get daily report data
-router.get('/daily', auth, async (req, res) => {
+router.get('/daily', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
     validateReportFilters(req.query);
     const { date } = req.query;
@@ -275,7 +275,7 @@ router.get('/daily', auth, async (req, res) => {
 });
 
 // Get reports by date range and filters
-router.get('/range', auth, async (req, res) => {
+router.get('/range', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
     validateReportFilters(req.query);
     const { startDate, endDate, type, gate, action, isAuthorized } = req.query;
@@ -388,7 +388,7 @@ router.get('/range', auth, async (req, res) => {
 });
 
 // Export to Excel
-router.get('/export/excel', auth, async (req, res) => {
+router.get('/export/excel', auth, requireRole('Administrator', 'SecurityOfficer'), async (req, res) => {
   try {
     validateReportFilters(req.query);
     const { startDate, endDate, type, gate, action, isAuthorized } = req.query;

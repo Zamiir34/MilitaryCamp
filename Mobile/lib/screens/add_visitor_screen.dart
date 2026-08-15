@@ -180,7 +180,7 @@ class _AddVisitorScreenState extends State<AddVisitorScreen> {
                   height: 120,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.surface,
+                    color: context.surfaceColor,
                     border: Border.all(
                       color: _imageBytes == null
                           ? AppColors.danger.withOpacity(0.8)
@@ -252,9 +252,9 @@ class _AddVisitorScreenState extends State<AddVisitorScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
+            Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: context.textPrimary)),
             const SizedBox(height: 4),
-            Text(desc, style: const TextStyle(fontSize: 11, color: AppColors.textMuted), textAlign: TextAlign.center),
+            Text(desc, style: TextStyle(fontSize: 11, color: context.textMuted), textAlign: TextAlign.center),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -274,8 +274,8 @@ class _AddVisitorScreenState extends State<AddVisitorScreen> {
                   icon: const Icon(Icons.photo_library, size: 16),
                   label: const Text('GALLERY'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.textSecondary,
-                    side: const BorderSide(color: AppColors.border),
+                    foregroundColor: context.textSecondary,
+                    side: BorderSide(color: context.borderColor),
                   ),
                 ),
               ],
@@ -289,7 +289,7 @@ class _AddVisitorScreenState extends State<AddVisitorScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
         title: const Text('REGISTER VISITOR'),
         actions: [
@@ -326,16 +326,16 @@ class _AddVisitorScreenState extends State<AddVisitorScreen> {
                             color: _visitorType == 'Military' ? AppColors.primary.withOpacity(0.15) : AppColors.surface,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: _visitorType == 'Military' ? AppColors.primary : AppColors.border,
+                              color: _visitorType == 'Military' ? AppColors.primary : context.borderColor,
                             ),
                           ),
                           child: Column(
                             children: [
-                              Icon(Icons.shield, color: _visitorType == 'Military' ? AppColors.primary : AppColors.textSecondary),
+                              Icon(Icons.shield, color: _visitorType == 'Military' ? AppColors.primary : context.textSecondary),
                               const SizedBox(height: 6),
                               const Text('MILITARY', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                               const SizedBox(height: 2),
-                              const Text('Official facility visit', style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                              Text('Official facility visit', style: TextStyle(fontSize: 10, color: context.textMuted)),
                             ],
                           ),
                         ),
@@ -356,16 +356,16 @@ class _AddVisitorScreenState extends State<AddVisitorScreen> {
                             color: _visitorType == 'Civilian' ? AppColors.primary.withOpacity(0.15) : AppColors.surface,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: _visitorType == 'Civilian' ? AppColors.primary : AppColors.border,
+                              color: _visitorType == 'Civilian' ? AppColors.primary : context.borderColor,
                             ),
                           ),
                           child: Column(
                             children: [
-                              Icon(Icons.person, color: _visitorType == 'Civilian' ? AppColors.primary : AppColors.textSecondary),
+                              Icon(Icons.person, color: _visitorType == 'Civilian' ? AppColors.primary : context.textSecondary),
                               const SizedBox(height: 6),
                               const Text('CIVILIAN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                               const SizedBox(height: 2),
-                              const Text('Visiting specific officer', style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                              Text('Visiting specific officer', style: TextStyle(fontSize: 10, color: context.textMuted)),
                             ],
                           ),
                         ),
@@ -411,14 +411,14 @@ class _AddVisitorScreenState extends State<AddVisitorScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.directions_car, color: AppColors.textMuted),
+                      Icon(Icons.directions_car, color: context.textMuted),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Has a vehicle?', style: TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500)),
-                            Text('Collect vehicle details for gate access', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                            Text('Has a vehicle?', style: TextStyle(color: context.textPrimary, fontSize: 14, fontWeight: FontWeight.w500)),
+                            Text('Collect vehicle details for gate access', style: TextStyle(color: context.textMuted, fontSize: 11)),
                           ],
                         ),
                       ),
@@ -457,15 +457,15 @@ class _Section extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 10, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 10, color: context.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.surfaceColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: context.borderColor),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -15,13 +15,14 @@ const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', exact: true },
   { to: '/my-work', icon: FileBarChart2, label: 'My Work Today' },
   { to: '/entry-exit', icon: ArrowLeftRight, label: 'Entry / Exit' },
-  { to: '/personnel', icon: Users, label: 'Personnel', hiddenFor: ['Guard'] },
+  { to: '/personnel', icon: Users, label: 'Personnel', roles: ['Administrator', 'SecurityOfficer'] },
   { to: '/visitors', icon: UserCheck, label: 'Visitors' },
   { to: '/notifications', icon: Bell, label: 'Notifications' },
   { to: '/attendance', icon: CalendarCheck, label: 'Attendance' },
   { to: '/chat', icon: MessageSquare, label: 'Chat' },
   { to: '/reports', icon: FileBarChart2, label: 'Reports', roles: ['Administrator', 'SecurityOfficer'] },
   { to: '/users', icon: Shield, label: 'Users', roles: ['Administrator'] },
+  { to: '/audit-logs', icon: Shield, label: 'Audit Logs', roles: ['Administrator'] },
 ];
 
 export default function Layout() {
@@ -110,7 +111,7 @@ export default function Layout() {
   // Check today's attendance on mount/user load
   useEffect(() => {
     const checkTodayAttendance = async () => {
-      if (!user) return;
+      if (!user || (user.role !== 'SecurityOfficer' && user.role !== 'Guard')) return;
       try {
         const { data } = await api.get('/attendance/today');
         if (!data.checkedIn) {
@@ -383,24 +384,28 @@ export default function Layout() {
             </div>
 
             <div className="top-bar-online" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: user?.isOnDuty ? 'var(--accent-green)' : 'var(--text-muted)', animation: user?.isOnDuty ? 'pulse-primary 2s infinite' : 'none' }} />
-                <span style={{ fontSize: 14, color: user?.isOnDuty ? 'var(--accent-green)' : 'var(--text-muted)', fontFamily: 'Share Tech Mono, monospace', fontWeight: 800 }}>
-                  {user?.isOnDuty ? 'ON DUTY' : 'OFF DUTY'}
-                </span>
-              </div>
-              {user?.isOnDuty && (
-                <button
-                  onClick={async () => {
-                    const res = await toggleDuty();
-                    if (res.success) toast.success('Duty Stopped');
-                    else toast.error(res.message);
-                  }}
-                  className="btn btn-ghost"
-                  style={{ fontSize: 11, padding: '4px 8px', color: 'var(--accent-red)', border: '1px solid rgba(239,68,68,0.3)' }}
-                >
-                  Stop Duty
-                </button>
+              {(user?.role === 'SecurityOfficer' || user?.role === 'Guard') && (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: user?.isOnDuty ? 'var(--accent-green)' : 'var(--text-muted)', animation: user?.isOnDuty ? 'pulse-primary 2s infinite' : 'none' }} />
+                    <span style={{ fontSize: 14, color: user?.isOnDuty ? 'var(--accent-green)' : 'var(--text-muted)', fontFamily: 'Share Tech Mono, monospace', fontWeight: 800 }}>
+                      {user?.isOnDuty ? 'ON DUTY' : 'OFF DUTY'}
+                    </span>
+                  </div>
+                  {user?.isOnDuty && (
+                    <button
+                      onClick={async () => {
+                        const res = await toggleDuty();
+                        if (res.success) toast.success('Duty Stopped');
+                        else toast.error(res.message);
+                      }}
+                      className="btn btn-ghost"
+                      style={{ padding: '4px 8px', fontSize: 11, height: 'auto', minHeight: 0 }}
+                    >
+                      End Shift
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -499,7 +504,7 @@ export default function Layout() {
         </div>
       )}
       {/* Off Duty Overlay */}
-      {user && !user.isOnDuty && (
+      {user && !user.isOnDuty && (user.role === 'SecurityOfficer' || user.role === 'Guard') && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999, 
           background: theme === 'dark' ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)',

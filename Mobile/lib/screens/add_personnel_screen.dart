@@ -1,4 +1,4 @@
-// lib/screens/add_personnel_screen.dart
+﻿// lib/screens/add_personnel_screen.dart
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -185,7 +185,7 @@ class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
                   height: 120,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.surface,
+                    color: context.surfaceColor,
                     border: Border.all(
                       color: _imageBytes == null && isVisitor
                           ? AppColors.danger.withValues(alpha: 0.8)
@@ -215,7 +215,7 @@ class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
                                 Icon(
                                   Icons.camera_enhance_outlined,
                                   size: 36,
-                                  color: isVisitor ? AppColors.danger : AppColors.textMuted,
+                                  color: isVisitor ? AppColors.danger : context.textMuted,
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
@@ -223,7 +223,7 @@ class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
-                                    color: isVisitor ? AppColors.danger : AppColors.textMuted,
+                                    color: isVisitor ? AppColors.danger : context.textMuted,
                                   ),
                                 ),
                               ],
@@ -276,8 +276,8 @@ class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
                   icon: const Icon(Icons.photo_library, size: 16),
                   label: const Text('GALLERY'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.textSecondary,
-                    side: const BorderSide(color: AppColors.border),
+                    foregroundColor: context.textSecondary,
+                    side: BorderSide(color: context.borderColor),
                   ),
                 ),
               ],
@@ -290,7 +290,7 @@ class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
 
   @override Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.bgColor,
       appBar: AppBar(title: const Text('REGISTER PERSONNEL'), actions: [
         TextButton(onPressed: _saving ? null : _save, child: _saving
           ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))
@@ -316,7 +316,7 @@ class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
               padding: const EdgeInsets.only(bottom: 12),
               child: DropdownButtonFormField<String>(
                 value: _selectedRank,
-                dropdownColor: AppColors.surfaceVariant,
+                dropdownColor: context.surfaceVarColor,
                 decoration: const InputDecoration(labelText: 'Rank *'),
                 items: AppConstants.ranks
                     .map((r) => DropdownMenuItem(value: r, child: Text(r)))
@@ -329,7 +329,7 @@ class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
               padding: const EdgeInsets.only(bottom: 12),
               child: DropdownButtonFormField<String>(
                 value: _selectedUnit,
-                dropdownColor: AppColors.surfaceVariant,
+                dropdownColor: context.surfaceVarColor,
                 decoration: const InputDecoration(labelText: 'Unit *'),
                 items: _kUnits
                     .map((u) => DropdownMenuItem(value: u, child: Text(u)))
@@ -342,7 +342,7 @@ class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
               padding: const EdgeInsets.only(bottom: 12),
               child: DropdownButtonFormField<String?>(
                 value: _transferredFrom,
-                dropdownColor: AppColors.surfaceVariant,
+                dropdownColor: context.surfaceVarColor,
                 decoration: const InputDecoration(labelText: 'Transferred From (Optional)'),
                 items: const [
                   DropdownMenuItem(value: null, child: Text('-- None --')),
@@ -364,7 +364,7 @@ class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
               padding: const EdgeInsets.only(bottom: 12),
               child: DropdownButtonFormField<String>(
                 value: _selectedZone,
-                dropdownColor: AppColors.surfaceVariant,
+                dropdownColor: context.surfaceVarColor,
                 decoration: const InputDecoration(labelText: 'Authorized Zone *'),
                 items: ['Zone A', 'Zone B', 'Zone C', 'HQ', 'All Zones']
                     .map((z) => DropdownMenuItem(value: z, child: Text(z)))
@@ -372,10 +372,10 @@ class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
                 onChanged: (v) => setState(() => _selectedZone = v!),
               ),
             ),
-            Text('Access Level: $_accessLevel', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+            Text('Access Level: $_accessLevel', style: TextStyle(color: context.textSecondary, fontSize: 12)),
             Slider(
               value: _accessLevel.toDouble(), min: 1, max: 5, divisions: 4,
-              activeColor: AppColors.primary, inactiveColor: AppColors.border,
+              activeColor: AppColors.primary, inactiveColor: context.borderColor,
               label: 'Level $_accessLevel',
               onChanged: (v) => setState(() => _accessLevel = v.round()),
             ),
@@ -384,14 +384,14 @@ class _AddPersonnelScreenState extends State<AddPersonnelScreen> {
           _Section(label: 'VEHICLE ACCESS', children: [
             Row(
               children: [
-                const Icon(Icons.directions_car, color: AppColors.textMuted),
+                Icon(Icons.directions_car, color: context.textMuted),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: const Column(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Drives a Vehicle', style: TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500)),
-                      Text('Prompt to register vehicle details next', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                      Text('Drives a Vehicle', style: TextStyle(color: context.textPrimary, fontSize: 14, fontWeight: FontWeight.w500)),
+                      Text('Prompt to register vehicle details next', style: TextStyle(color: context.textMuted, fontSize: 11)),
                     ],
                   ),
                 ),
@@ -413,11 +413,11 @@ class _Section extends StatelessWidget {
   final String label; final List<Widget> children;
   const _Section({required this.label, required this.children});
   @override Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-    Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
+    Text(label, style: TextStyle(fontSize: 10, color: context.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
     const SizedBox(height: 10),
     Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+      decoration: BoxDecoration(color: context.surfaceColor, borderRadius: BorderRadius.circular(12), border: Border.all(color: context.borderColor)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
     ),
   ]);
@@ -449,7 +449,7 @@ class _Dropdown extends StatelessWidget {
   final String label, value; final List<String> items; final ValueChanged<String?> onChanged;
   const _Dropdown({required this.label, required this.value, required this.items, required this.onChanged});
   @override Widget build(BuildContext context) => DropdownButtonFormField<String>(
-    initialValue: value, dropdownColor: AppColors.surfaceVariant,
+    initialValue: value, dropdownColor: context.surfaceVarColor,
     decoration: InputDecoration(labelText: label),
     items: items.map((i) => DropdownMenuItem(value: i, child: Text(i.toUpperCase().replaceAll('_',' ')))).toList(),
     onChanged: onChanged,

@@ -51,36 +51,36 @@ class _VisitorDetailScreenState extends State<VisitorDetailScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(
-        backgroundColor: AppColors.background,
-        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      return Scaffold(
+        backgroundColor: context.bgColor,
+        body: const Center(child: CircularProgressIndicator(color: AppColors.primary)),
       );
     }
     
     if (_visitor == null) {
-      return const Scaffold(
-        backgroundColor: AppColors.background,
-        body: Center(child: Text('Visitor not found', style: TextStyle(color: AppColors.textMuted))),
+      return Scaffold(
+        backgroundColor: context.bgColor,
+        body: Center(child: Text('Visitor not found', style: TextStyle(color: context.textMuted))),
       );
     }
 
     final isMilitary = _visitor!.visitorType == 'Military';
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.bgColor,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             expandedHeight: 200,
             pinned: true,
-            backgroundColor: AppColors.surface,
+            backgroundColor: context.surfaceColor,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => Navigator.pop(context),
             ),
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
-                color: AppColors.surface,
+                color: context.surfaceColor,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -94,12 +94,12 @@ class _VisitorDetailScreenState extends State<VisitorDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Text(_visitor!.fullName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                    Text(_visitor!.fullName, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: context.textPrimary)),
                     Text(
                       isMilitary 
                           ? '${_visitor!.organization ?? 'Military Member'}' 
                           : 'Civilian Visitor',
-                      style: const TextStyle(color: AppColors.textSecondary),
+                      style: TextStyle(color: context.textSecondary),
                     ),
                   ],
                 ),
@@ -159,14 +159,14 @@ class _VisitorDetailScreenState extends State<VisitorDetailScreen> {
                   
                   // Vehicle Section (if has vehicle)
                   if (_visitor!.hasVehicle) ...[
-                    const Text('REGISTERED VEHICLE', style: TextStyle(fontSize: 10, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
+                    Text('REGISTERED VEHICLE', style: TextStyle(fontSize: 10, color: context.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 10),
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
+                        color: context.surfaceColor,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: context.borderColor),
                       ),
                       child: Row(
                         children: [
@@ -186,7 +186,7 @@ class _VisitorDetailScreenState extends State<VisitorDetailScreen> {
                               children: [
                                 Text(
                                   _visitor!.vehiclePlate ?? 'NO PLATE',
-                                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary, letterSpacing: 1),
+                                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.textPrimary, letterSpacing: 1),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
@@ -195,7 +195,7 @@ class _VisitorDetailScreenState extends State<VisitorDetailScreen> {
                                     if (_visitor!.vehicleModel != null && _visitor!.vehicleModel!.isNotEmpty) _visitor!.vehicleModel!,
                                     'Car Details'
                                   ].join(' - '),
-                                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                  style: TextStyle(fontSize: 11, color: context.textSecondary),
                                 ),
                               ],
                             ),
@@ -207,13 +207,13 @@ class _VisitorDetailScreenState extends State<VisitorDetailScreen> {
                   ],
                   
                   // Activity History
-                  const Text('ENTRY/EXIT HISTORY', style: TextStyle(fontSize: 10, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
+                  Text('ENTRY/EXIT HISTORY', style: TextStyle(fontSize: 10, color: context.textMuted, letterSpacing: 2, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 10),
                   if (_history.isEmpty)
-                    const Center(
+                    Center(
                       child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text('No history found', style: TextStyle(color: AppColors.textMuted)),
+                        padding: const EdgeInsets.all(24),
+                        child: Text('No history found', style: TextStyle(color: context.textMuted)),
                       ),
                     )
                   else
@@ -222,9 +222,9 @@ class _VisitorDetailScreenState extends State<VisitorDetailScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppColors.surface,
+                              color: context.surfaceColor,
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: AppColors.border),
+                              border: Border.all(color: context.borderColor),
                             ),
                             child: Row(
                               children: [
@@ -248,11 +248,11 @@ class _VisitorDetailScreenState extends State<VisitorDetailScreen> {
                                     children: [
                                       Text(
                                         '${log.action.toUpperCase()} - ${log.gate}',
-                                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary),
+                                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: context.textPrimary),
                                       ),
                                       Text(
                                         'by ${log.guardName ?? 'System'}',
-                                        style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                                        style: TextStyle(fontSize: 11, color: context.textMuted),
                                       ),
                                     ],
                                   ),
@@ -260,7 +260,7 @@ class _VisitorDetailScreenState extends State<VisitorDetailScreen> {
                                 Text(
                                   DateFormat('MMM d\nHH:mm').format(log.timestamp),
                                   textAlign: TextAlign.right,
-                                  style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                                  style: TextStyle(fontSize: 11, color: context.textMuted),
                                 ),
                               ],
                             ),
@@ -289,9 +289,9 @@ class _QRCodeCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4)),
         ],
@@ -301,7 +301,7 @@ class _QRCodeCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('IDENTIFICATION QR', style: TextStyle(fontSize: 10, color: AppColors.textMuted, letterSpacing: 2, fontWeight: FontWeight.w800)),
+              Text('IDENTIFICATION QR', style: TextStyle(fontSize: 10, color: context.textMuted, letterSpacing: 2, fontWeight: FontWeight.w800)),
               Icon(Icons.qr_code_2, size: 16, color: AppColors.primary.withOpacity(0.5)),
             ],
           ),
@@ -361,9 +361,9 @@ class _InfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.borderColor),
       ),
       child: Column(children: children),
     );
@@ -381,8 +381,8 @@ class _InfoRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(flex: 2, child: Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 12))),
-          Expanded(flex: 3, child: Text(value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w500))),
+          Expanded(flex: 2, child: Text(label, style: TextStyle(color: context.textMuted, fontSize: 12))),
+          Expanded(flex: 3, child: Text(value, style: TextStyle(color: context.textPrimary, fontSize: 13, fontWeight: FontWeight.w500))),
         ],
       ),
     );

@@ -66,6 +66,10 @@ export default function Personnel() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.authorizedZones) {
+      toast.error('Authorized Zone is required.');
+      return;
+    }
     setSubmitting(true);
     try {
       const zonesArray = typeof form.authorizedZones === 'string' 
@@ -334,14 +338,12 @@ export default function Personnel() {
                   </select>
                 </div>
                 <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                  <label className="form-label">Authorized Zones</label>
-                  <select className="input" value={form.authorizedZones} onChange={e => setForm(p => ({ ...p, authorizedZones: e.target.value }))}>
+                  <label className="form-label">Authorized Zones <span style={{ color: 'var(--accent-red)' }}>*</span></label>
+                  <select className="input" value={form.authorizedZones} onChange={e => setForm(p => ({ ...p, authorizedZones: e.target.value }))} required>
                     <option value="">-- Select Zone --</option>
                     <option value="Zone A">Zone A</option>
                     <option value="Zone B">Zone B</option>
                     <option value="Zone C">Zone C</option>
-                    <option value="HQ">HQ</option>
-                    <option value="All Zones">All Zones</option>
                   </select>
                 </div>
 
@@ -480,38 +482,22 @@ export default function Personnel() {
             <form onSubmit={handleTransferSubmit}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div className="form-group">
-                  <label className="form-label">New Unit / Station *</label>
-                  <select
-                    className="input"
-                    value={transferForm.newUnit}
-                    onChange={e => setTransferForm(p => ({ ...p, newUnit: e.target.value }))}
-                    required
-                  >
-                    <option value="">-- Select Unit --</option>
-                    {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">New Rank (if promoted/demoted)</label>
-                  <select className="input" value={transferForm.newRank} onChange={e => setTransferForm(p => ({ ...p, newRank: e.target.value }))}>
-                    <option value="">-- No Change --</option>
-                    {RANKS.map(r => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Authorized Zones for New Unit</label>
-                  <input 
+                  <label className="form-label">Authorized Zone(s) *</label>
+                  <select 
                     className="input" 
                     value={transferForm.authorizedZones} 
-                    onChange={e => setTransferForm(p => ({ ...p, authorizedZones: e.target.value }))} 
-                    placeholder="e.g. Zone A, HQ, Command Center (comma separated)" 
-                  />
+                    onChange={e => setTransferForm(p => ({ ...p, authorizedZones: e.target.value }))}
+                    required
+                  >
+                    <option value="">-- Select Zone --</option>
+                    <option value="Zone A">Zone A</option>
+                    <option value="Zone B">Zone B</option>
+                    <option value="Zone C">Zone C</option>
+                  </select>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Transfer Order / Reason *</label>
+                  <label className="form-label">Purpose / Reason *</label>
                   <textarea 
                     className="input" 
                     rows={3} 

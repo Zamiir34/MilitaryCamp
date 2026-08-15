@@ -78,11 +78,11 @@ class _VehicleScreenState extends State<VehicleScreen> {
   @override Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('VEHICLES'),
-          Text('$_total registered', style: const TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.normal)),
+          Text('$_total registered', style: TextStyle(fontSize: 11, color: context.textMuted, fontWeight: FontWeight.normal)),
         ]),
         actions: [
           if (user?.isOfficer == true)
@@ -96,9 +96,9 @@ class _VehicleScreenState extends State<VehicleScreen> {
           child: Row(children: [
             Expanded(child: TextField(
               controller: _searchCtrl,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Search plate number...',
-                prefixIcon: Icon(Icons.search, color: AppColors.textMuted),
+                prefixIcon: Icon(Icons.search, color: context.textMuted),
               ),
               onSubmitted: (_) => _load(),
             )),
@@ -107,7 +107,7 @@ class _VehicleScreenState extends State<VehicleScreen> {
               icon: const Icon(Icons.qr_code_scanner, color: AppColors.secondary),
               onPressed: _scanQR,
               style: IconButton.styleFrom(
-                backgroundColor: AppColors.surfaceVariant,
+                backgroundColor: context.surfaceVarColor,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 padding: const EdgeInsets.all(12),
               ),
@@ -125,7 +125,7 @@ class _VehicleScreenState extends State<VehicleScreen> {
           : RefreshIndicator(
               onRefresh: _load, color: AppColors.primary,
               child: _list.isEmpty
-                ? const Center(child: Text('No vehicles found', style: TextStyle(color: AppColors.textMuted)))
+                ? Center(child: Text('No vehicles found', style: TextStyle(color: context.textMuted)))
                 : ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     itemCount: _list.length,
@@ -150,12 +150,12 @@ class _VehicleTile extends StatelessWidget {
 
   @override Widget build(BuildContext context) {
     final typeIcon = _typeIcons[v.type] ?? Icons.commute;
-    final statusColor = v.isBlacklisted ? AppColors.danger : (v.status == 'active' ? AppColors.success : AppColors.textMuted);
+    final statusColor = v.isBlacklisted ? AppColors.danger : (v.status == 'active' ? AppColors.success : context.textMuted);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface, borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: v.isBlacklisted ? AppColors.danger.withOpacity(0.4) : AppColors.border),
+        color: context.surfaceColor, borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: v.isBlacklisted ? AppColors.danger.withOpacity(0.4) : context.borderColor),
       ),
       child: Row(children: [
         Container(
@@ -165,9 +165,9 @@ class _VehicleTile extends StatelessWidget {
         ),
         const SizedBox(width: 14),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(v.plateNumber, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 17, color: AppColors.textPrimary, letterSpacing: 2)),
-          Text('${v.brand ?? 'Unknown'} ${v.model ?? ''}'.trim(), style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-          if (v.ownerName != null) Text(v.ownerName!, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+          Text(v.plateNumber, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17, color: context.textPrimary, letterSpacing: 2)),
+          Text('${v.brand ?? 'Unknown'} ${v.model ?? ''}'.trim(), style: TextStyle(fontSize: 12, color: context.textSecondary)),
+          if (v.ownerName != null) Text(v.ownerName!, style: TextStyle(fontSize: 11, color: context.textMuted)),
         ])),
         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Container(
@@ -178,9 +178,9 @@ class _VehicleTile extends StatelessWidget {
           const SizedBox(height: 6),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-            decoration: BoxDecoration(color: AppColors.surfaceVariant, borderRadius: BorderRadius.circular(4)),
+            decoration: BoxDecoration(color: context.surfaceVarColor, borderRadius: BorderRadius.circular(4)),
             child: Text(v.isInside ? 'INSIDE' : 'OUTSIDE',
-              style: TextStyle(color: v.isInside ? AppColors.primary : AppColors.textMuted, fontSize: 9, fontWeight: FontWeight.w700)),
+              style: TextStyle(color: v.isInside ? AppColors.primary : context.textMuted, fontSize: 9, fontWeight: FontWeight.w700)),
           ),
         ]),
       ]),
