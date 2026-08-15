@@ -55,7 +55,7 @@ async function seed() {
     if (!existingOfficer) {
       await User.create({
         password: 'officer123',
-        fullName: 'MAJ. David Clarke',
+        fullName: 'MAJ David Clarke',
         email: 'dclarke@militarycamp.mil',
         role: 'SecurityOfficer',
         rank: 'Major',
@@ -76,7 +76,7 @@ async function seed() {
     if (!existingGuard) {
       await User.create({
         password: 'guard123',
-        fullName: 'CPL. Mark Stevens',
+        fullName: 'CPL Mark Stevens',
         email: 'mstevens@militarycamp.mil',
         role: 'Guard',
         rank: 'Corporal',
@@ -97,9 +97,9 @@ async function seed() {
     if (personnelCount === 0) {
       const { buildVerifyQrDataUrl } = require('./utils/verifyUrl');
       const samplePersonnel = [
-        { personnelId: 'P20260001', fullName: 'SGT. John Mitchell', rank: 'Sergeant', unit: 'Alpha Company', idNumber: 'MIL-001234', type: 'Military', status: 'Active' },
-        { personnelId: 'P20260002', fullName: 'CPL. Sarah Adams', rank: 'Corporal', unit: 'Bravo Company', idNumber: 'MIL-001235', type: 'Military', status: 'Active' },
-        { personnelId: 'P20260003', fullName: 'Dr. Robert Chen', rank: 'Civilian', unit: 'Medical Division', idNumber: 'CIV-003421', type: 'Civilian', status: 'Active' },
+        { personnelId: 'P20260001', fullName: 'John Mitchell', rank: 'Sergeant', unit: 'Alpha Company', idNumber: 'MIL-001234', type: 'Military', status: 'Active' },
+        { personnelId: 'P20260002', fullName: 'Sarah Adams', rank: 'Corporal', unit: 'Bravo Company', idNumber: 'MIL-001235', type: 'Military', status: 'Active' },
+        { personnelId: 'P20260003', fullName: 'Robert Chen', rank: 'Civilian', unit: 'Medical Division', idNumber: 'CIV-003421', type: 'Civilian', status: 'Active' },
       ];
       for (const p of samplePersonnel) {
         const qrCode = await buildVerifyQrDataUrl(p.personnelId);
